@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block titulo %}Reglamento - BUHO Sports League{% endblock %}
+{% block contenido %}
+<div class="min-h-[calc(100vh-64px)] bg-gray-50 px-6 py-8">
+    <div class="text-center mb-6">
+        <h1 class="text-4xl font-bold text-green-800">Reglamento</h1>
+        <div class="mt-2 h-1 w-20 bg-green-600 mx-auto rounded"></div>
+    </div>
+    <div class="grid grid-cols-3 gap-3 max-w-6xl mx-auto" style="grid-template-rows: auto;">
+        <div class="col-span-2 bg-white border border-gray-100 shadow-sm rounded-2xl p-5 flex flex-col justify-between">
+            <div class="flex items-center gap-3 mb-2">
+                <span
+                    class="bg-green-800 text-white font-bold text-xs w-7 h-7 rounded-full flex items-center justify-center shrink-0">1</span>
+                <h2 class="font-bold text-base text-green-800">Uso de la plataforma</h2>
+            </div>
+            <p class="text-gray-600 text-sm leading-relaxed">BUHO SPORT es una plataforma destinada a la gestión,
+                difusión y seguimiento de ligas, torneos y eventos deportivos. Todos los usuarios deberán utilizarla de
+                manera responsable.</p>
+        </div>
+        <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+            <div class="flex items-center gap-3 mb-3">
+                <span
+                    class="bg-green-800 text-white font-bold text-xs w-7 h-7 rounded-full flex items-center justify-center shrink-0">2</span>
+                <h2 class="font-bold text-sm text-green-800">Registro de usuarios</h2>
+            </div>
+            <ul class="space-y-1 text-xs text-gray-600">
+                <li class="flex gap-2"><span class="text-green-600">✔</span> Información verídica y actualizada.</li>
+                <li class="flex gap-2"><span class="text-green-600">✔</span> Responsable de su cuenta y contraseña.</li>
+                <li class="flex gap-2"><span class="text-red-500">✖</span> No compartir cuentas con terceros.</li>
+            </ul>
+        </div>
+        <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+            <div class="flex items-center gap-3 mb-3">
+                <span
+                    class="bg-green-800 text-white font-bold text-xs w-7 h-7 rounded-full flex items-center justify-center shrink-0">3</span>
+                <h2 class="font-bold text-sm text-green-800">Conducta</h2>
+            </div>
+            <ul class="space-y-1 text-xs text-gray-600">
+                <li class="flex gap-2"><span class="text-green-600">✔</span> Trato respetuoso hacia todos.</li>
+                <li class="flex gap-2"><span class="text-red-500">✖</span> No contenido ofensivo o discriminatorio.</li>
+                <li class="flex gap-2"><span class="text-red-500">✖</span> No suplantar identidad de personas.</li>
+            </ul>
+        </div>
+        <div class="col-span-2 bg-white border border-gray-200 rounded-2xl p-5">
+            <div class="flex items-center gap-3 mb-3">
+                <span
+                    class="bg-green-800 text-white font-bold text-xs w-7 h-7 rounded-full flex items-center justify-center shrink-0">6</span>
+                <h2 class="font-bold text-sm text-green-800">Uso adecuado — Queda prohibido</h2>
+            </div>
+            <div class="grid grid-cols-2 gap-1 text-xs text-gray-600">
+                <p class="flex gap-2"><span class="text-red-500">✖</span> Utilizar la plataforma para fines ilícitos.
+                </p>
+                <p class="flex gap-2"><span class="text-red-500">✖</span> Manipular resultados o estadísticas.</p>
+                <p class="flex gap-2"><span class="text-red-500">✖</span> Intentar vulnerar la seguridad del sistema.
+                </p>
+                <p class="flex gap-2"><span class="text-red-500">✖</span> Distribuir software malicioso.</p>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+            <div class="flex items-center gap-3 mb-2">
+                <span
+                    class="bg-green-800 text-white font-bold text-xs w-7 h-7 rounded-full flex items-center justify-center shrink-0">4</span>
+                <h2 class="font-bold text-sm text-green-800">Información deportiva</h2>
+            </div>
+            <p class="text-xs text-gray-600 leading-relaxed">Los organizadores son responsables de la veracidad de
+                equipos, jugadores, resultados y estadísticas registradas.</p>
+        </div>
+        <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+            <div class="flex items-center gap-3 mb-2">
+                <span
+                    class="bg-green-800 text-white font-bold text-xs w-7 h-7 rounded-full flex items-center justify-center shrink-0">5</span>
+                <h2 class="font-bold text-sm text-green-800">Equipos y torneos</h2>
+            </div>
+            <p class="text-xs text-gray-600 leading-relaxed">Cada liga gestiona sus propias reglas internas. BUHO SPORT
+                no interviene en decisiones arbitrales o conflictos deportivos.</p>
+        </div>
+        <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+            <div class="flex items-center gap-3 mb-2">
+                <span
+                    class="bg-green-800 text-white font-bold text-xs w-7 h-7 rounded-full flex items-center justify-center shrink-0">7</span>
+                <h2 class="font-bold text-sm text-green-800">Disponibilidad</h2>
+            </div>
+            <p class="text-xs text-gray-600 leading-relaxed">Podrán realizarse mantenimientos o interrupciones
+                temporales cuando sea necesario.</p>
+        </div>
+        <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+            <div class="flex items-center gap-3 mb-2">
+                <span
+                    class="bg-green-800 text-white font-bold text-xs w-7 h-7 rounded-full flex items-center justify-center shrink-0">8</span>
+                <h2 class="font-bold text-sm text-green-800">Privacidad</h2>
+            </div>
+            <p class="text-xs text-gray-600 leading-relaxed">La información personal se usa únicamente para el
+                funcionamiento de la plataforma.</p>
+        </div>
+        <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+            <div class="flex items-center gap-3 mb-2">
+                <span
+                    class="bg-green-800 text-white font-bold text-xs w-7 h-7 rounded-full flex items-center justify-center shrink-0">9</span>
+                <h2 class="font-bold text-sm text-green-800">Propiedad intelectual</h2>
+            </div>
+            <p class="text-xs text-gray-600 leading-relaxed">El nombre, logo y software de BUHO SPORT no podrán usarse
+                sin autorización.</p>
+        </div>
+        <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+            <div class="flex items-center gap-3 mb-2">
+                <span
+                    class="bg-green-800 text-white font-bold text-xs w-7 h-7 rounded-full flex items-center justify-center shrink-0">10</span>
+                <h2 class="font-bold text-sm text-green-800">Modificaciones</h2>
+            </div>
+            <p class="text-xs text-gray-600 leading-relaxed">El reglamento podrá actualizarse. Los cambios entrarán en
+                vigor una vez publicados en la plataforma.</p>
+        </div>
+        <div class="col-span-3 bg-green-50 border-2 border-green-700 rounded-2xl p-5 flex items-center gap-6">
+            <span
+                class="bg-green-700 text-white font-bold text-lg w-10 h-10 rounded-full flex items-center justify-center shrink-0">11</span>
+            <div>
+                <h2 class="font-bold text-green-800 mb-1">Aceptación</h2>
+                <p class="text-sm text-green-900 leading-relaxed">Al registrarse o utilizar BUHO SPORT, el usuario
+                    acepta este reglamento y se compromete a cumplir todas las normas para garantizar una comunidad
+                    deportiva organizada, segura y respetuosa.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

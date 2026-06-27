@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block titulo %}Quiénes somos - BUHO Sports League{% endblock %}
+{% block contenido %}
+<section class="max-w-4xl mx-auto px-6 py-12">
+    <div class="text-center mb-10">
+        <img src="{% static 'img/buho-sport.jpeg' %}" alt="BUHO SPORT"
+            class="h-24 mx-auto mb-4 rounded-lg object-cover">
+        <h1 class="text-4xl font-bold text-green-800">¿Quiénes somos?</h1>
+        <div class="mt-3 h-1 w-24 bg-green-600 mx-auto rounded"></div>
+    </div>
+    <div class="bg-white rounded-2xl shadow-md p-8 mb-8 text-gray-700 leading-relaxed space-y-4">
+        <p>
+            <strong class="text-green-800">BUHO SPORT</strong> es una plataforma digital dedicada a impulsar el deporte,
+            conectand ligas, torneos, equipos, jugadores y aficionados en un solo lugar. Nuestro objetivo es facilitar
+            la organización de competencias y ofrecer información confiable mediante calendarios, resultados,
+            estadísticas, tablas de posiciones y herramientas que mejoran la experiencia deportiva para toda la
+            comunidad.
+        </p>
+        <p>
+            Nos inspira el búho, un símbolo de <strong>inteligencia, visión y estrategia</strong>. Creemos que ganar no
+            depen únicamente del talento, sino también de la preparación, la constancia y la capacidad de tomar las
+            mejores decisiones dentro y fuera de la cancha.
+        </p>
+        <p>
+            En <strong class="text-green-800">BUHO SPORT</strong> buscamos desarrollar atletas competitivos, fomentar
+            valores y crear oportunidades
+            para que niños, jóvenes y adultos disfruten y crezcan a través del deporte.
+        </p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-green-800 text-white rounded-2xl shadow-md p-8">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="text-3xl">🎯</span>
+                <h2 class="text-2xl font-bold">Misión</h2>
+            </div>
+            <p class="leading-relaxed text-green-100">
+                Brindar una plataforma digital innovadora que facilite la gestión y difusión de ligas, torneos y
+                competencias deportivas, ofreciendo herramientas eficientes para la administración de equipos,
+                jugadores, estadísticas, calendarios y resultados, fortaleciendo la conexión entre organizadores,
+                deportistas y aficionados.
+            </p>
+        </div>
+        <div class="bg-white border-2 border-green-800 rounded-2xl shadow-md p-8">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="text-3xl">🔭</span>
+                <h2 class="text-2xl font-bold text-green-800">Visión</h2>
+            </div>
+            <p class="leading-relaxed text-gray-700">
+                Ser la plataforma deportiva líder en la gestión y seguimiento de competencias, reconocida por su
+                innovación, confiabilidad y facilidad de uso, impulsando el crecimiento del deporte mediante tecnología
+                que conecte a toda la comunidad deportiva a nivel nacional.
+            </p>
+        </div>
+    </div>
+</section>
+{% endblock %}

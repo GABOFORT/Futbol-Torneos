@@ -1,0 +1,78 @@
+{% load static %}
+<nav class="bg-green-800 shadow-lg">
+    <div class="max-w-7xl mx-auto px-4">
+        <div class="flex items-center justify-between h-16">
+            <div class="flex items-center gap-3">
+                <img src="{% static 'img/buho-sport.jpeg' %}" alt="Logo" class="h-12 w-35 rounded object-cover">
+                <span class="text-white font-bold text-lg hidden sm:block">BUHO Sports League</span>
+            </div>
+            <div class="hidden md:flex items-center gap-1">
+                <a href="/" class="text-white hover:bg-green-700 px-3 py-2 rounded-md text-sm font-medium">Inicio</a>
+                <a href="/equipos/" class="text-white hover:bg-green-700 px-3 py-2 rounded-md text-sm font-medium">Equipos</a>
+                <a href="/roles/" class="text-white hover:bg-green-700 px-3 py-2 rounded-md text-sm font-medium">Roles</a>
+                <a href="/estadisticas/" class="text-white hover:bg-green-700 px-3 py-2 rounded-md text-sm font-medium">Estadísticas</a>
+                <!-- Dropdown Información -->
+                <div class="relative group">
+                    <button class="text-white hover:bg-green-700 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1">
+                        Información
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                    <div class="absolute left-0 mt-1 w-52 bg-white rounded-md shadow-lg hidden group-hover:block z-50">
+                        <a href="/informacion/quienes-somos/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50">Quiénes somos</a>
+                        <a href="/informacion/donde-estamos/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50">Dónde estamos</a>
+                        <a href="/informacion/reglamento/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50">Reglamento</a>
+                        <hr class="my-1 border-gray-200">
+                        <a href="/informacion/aviso-privacidad/" class="block px-4 py-2 text-sm text-gray-500 hover:bg-green-50">Aviso de privacidad</a>
+                    </div>
+                </div>
+                <div class="relative group">
+                    <button class="text-white hover:bg-green-700 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1">
+                        Más
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                    <div class="absolute right-0 mt-1 w-44 bg-white rounded-md shadow-lg hidden group-hover:block z-50">
+                        <a href="/torneos/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50">Torneos</a>
+                        <a href="/jugadores/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50">Jugadores</a>
+                        <a href="/partidos/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50">Partidos</a>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="/usuarios/login/" class="hidden md:block bg-white text-green-800 font-semibold px-4 py-2 rounded-full text-sm hover:bg-green-100 transition">
+                    Iniciar sesión
+                </a>
+                <button id="menu-btn" class="md:hidden text-white focus:outline-none">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path id="menu-icon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+    <div id="menu-movil" class="hidden md:hidden bg-green-900 px-4 pb-4">
+        <a href="/" class="block text-white py-2 text-sm hover:text-green-300">Inicio</a>
+        <a href="/equipos/" class="block text-white py-2 text-sm hover:text-green-300">Equipos</a>
+        <a href="/roles/" class="block text-white py-2 text-sm hover:text-green-300">Roles</a>
+        <a href="/estadisticas/" class="block text-white py-2 text-sm hover:text-green-300">Estadísticas</a>
+        <p class="text-green-400 text-xs uppercase mt-3 mb-1 font-semibold">Información</p>
+        <a href="/informacion/quienes-somos/" class="block text-white py-2 pl-3 text-sm hover:text-green-300">Quiénes somos</a>
+        <a href="/informacion/donde-estamos/" class="block text-white py-2 pl-3 text-sm hover:text-green-300">Dónde estamos</a>
+        <a href="/informacion/reglamento/" class="block text-white py-2 pl-3 text-sm hover:text-green-300">Reglamento</a>
+        <a href="/informacion/aviso-privacidad/" class="block text-gray-400 py-2 pl-3 text-sm hover:text-green-300">Aviso de privacidad</a>
+        <a href="/torneos/" class="block text-white py-2 text-sm hover:text-green-300">Torneos</a>
+        <a href="/jugadores/" class="block text-white py-2 text-sm hover:text-green-300">Jugadores</a>
+        <a href="/partidos/" class="block text-white py-2 text-sm hover:text-green-300">Partidos</a>
+        <a href="/usuarios/login/" class="block mt-3 bg-white text-green-800 font-semibold px-4 py-2 rounded-full text-sm text-center hover:bg-green-100">
+            Iniciar sesión
+        </a>
+    </div>
+</nav>
+<script>
+    document.getElementById('menu-btn').addEventListener('click', function () {
+        document.getElementById('menu-movil').classList.toggle('hidden');
+    });
+</script>
