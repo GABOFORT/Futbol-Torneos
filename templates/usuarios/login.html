@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Iniciar sesión - Futbol Torneos{% endblock %}
+
+{% block contenido %}
+<div class="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100 py-12">
+    <div class="max-w-6xl mx-auto px-4">
+        <div class="grid gap-8 lg:grid-cols-[1.4fr_1fr] items-center">
+            <div class="space-y-6">
+                <p class="text-sm text-green-800 font-semibold uppercase tracking-[0.2em]">Bienvenido a BUHO Sports</p>
+                <h1 class="text-4xl md:text-5xl font-bold text-green-900 leading-tight">Accede a tu panel y administra tu liga, tu equipo o el sistema desde la web.</h1>
+                <p class="max-w-xl text-gray-700 text-lg">Inicia sesión con tu usuario para ver tu panel: Administración General, Administración de Liga o tu Equipo como Entrenador.</p>
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div class="rounded-3xl bg-white p-6 shadow-sm border border-green-100">
+                        <h2 class="text-lg font-semibold text-green-900 mb-2">Administración General</h2>
+                        <p class="text-sm text-gray-600">Control total del sistema, usuarios, ligas y permisos.</p>
+                    </div>
+                    <div class="rounded-3xl bg-white p-6 shadow-sm border border-green-100">
+                        <h2 class="text-lg font-semibold text-green-900 mb-2">Administración de Liga</h2>
+                        <p class="text-sm text-gray-600">Gestiona torneos, categorías y equipos de tu liga.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-[2rem] shadow-2xl border border-green-100 p-8">
+                <h2 class="text-2xl font-bold text-green-900 mb-4 text-center">Iniciar sesión</h2>
+                <form method="post" class="space-y-5">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ next }}">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Usuario</label>
+                        <input type="text" name="username" required class="mt-2 w-full rounded-2xl border border-gray-300 px-4 py-3 shadow-sm focus:border-green-600 focus:ring-2 focus:ring-green-200" placeholder="Tu usuario">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Contraseña</label>
+                        <input type="password" name="password" required class="mt-2 w-full rounded-2xl border border-gray-300 px-4 py-3 shadow-sm focus:border-green-600 focus:ring-2 focus:ring-green-200" placeholder="Tu contraseña">
+                    </div>
+                    <button type="submit" class="w-full rounded-2xl bg-green-800 px-5 py-3 text-white font-semibold shadow-lg shadow-green-200/50 hover:bg-green-700 transition">Ingresar al panel</button>
+                </form>
+                <p class="mt-6 text-center text-sm text-gray-500">Si no tienes cuenta, contacta al Administrador para que te asigne rol.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

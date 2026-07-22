@@ -9,6 +9,10 @@ def donde_estamos(request):
     return render(request, 'informacion/donde_estamos.html')
 
 
+def aviso_privacidad(request):
+    return render(request, 'informacion/aviso_privacidad.html')
+
+
 def reglamento(request):
     articulos = [
         {

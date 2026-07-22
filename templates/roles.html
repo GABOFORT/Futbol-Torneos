@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Cómo funciona BUHO Sports{% endblock %}
+
+{% block contenido %}
+<div class="max-w-6xl mx-auto py-16 px-4">
+    <h1 class="text-4xl md:text-5xl font-bold text-green-900 mb-6">¿Qué puedes hacer en BUHO Sports?</h1>
+    <p class="text-gray-700 text-lg mb-8">Cada cuenta tiene un propósito claro. Así se organiza el trabajo dentro de la plataforma.</p>
+
+    <div class="grid gap-6 md:grid-cols-3">
+        <div class="bg-white rounded-3xl p-6 shadow-sm border border-green-100">
+            <span class="text-3xl">🛡️</span>
+            <h2 class="text-2xl font-semibold text-green-900 mt-3 mb-3">Administración general</h2>
+            <p class="text-gray-600 mb-4">Controla toda la plataforma: usuarios, accesos y configuración general del sistema.</p>
+            <ul class="text-sm text-gray-500 space-y-2">
+                <li>Crear y administrar cuentas de usuario</li>
+                <li>Dar de alta a quienes administran cada liga</li>
+                <li>Supervisar toda la plataforma</li>
+            </ul>
+        </div>
+        <div class="bg-white rounded-3xl p-6 shadow-sm border border-green-100">
+            <span class="text-3xl">🏆</span>
+            <h2 class="text-2xl font-semibold text-green-900 mt-3 mb-3">Administración de una liga</h2>
+            <p class="text-gray-600 mb-4">Organiza una liga de principio a fin: categorías, torneos, calendario y equipos.</p>
+            <ul class="text-sm text-gray-500 space-y-2">
+                <li>Crear categorías</li>
+                <li>Aprobar o rechazar equipos inscritos</li>
+                <li>Programar partidos y capturar resultados</li>
+            </ul>
+        </div>
+        <div class="bg-white rounded-3xl p-6 shadow-sm border border-green-100">
+            <span class="text-3xl">⚽</span>
+            <h2 class="text-2xl font-semibold text-green-900 mt-3 mb-3">Tu equipo</h2>
+            <p class="text-gray-600 mb-4">Registra tu equipo y lleva el control de tu plantilla de jugadores.</p>
+            <ul class="text-sm text-gray-500 space-y-2">
+                <li>Registrar tu equipo en una liga y categoría</li>
+                <li>Agregar y actualizar tu plantilla</li>
+                <li>Ver el calendario y resultados de tu equipo</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="mt-12 text-center">
+        <p class="text-gray-700 mb-4">¿Ya tienes una cuenta? Inicia sesión para acceder a tu panel.</p>
+        <a href="/usuarios/login/" class="inline-flex items-center justify-center bg-green-800 text-white px-8 py-3 rounded-full font-semibold hover:bg-green-700 transition">Iniciar sesión</a>
+    </div>
+</div>
+{% endblock %}

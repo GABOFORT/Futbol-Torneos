@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Estadísticas - {{ liga.nombre }}{% endblock %}
+
+{% block contenido %}
+<div class="max-w-4xl mx-auto p-6">
+    <div class="mb-8">
+        <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">Estadísticas</p>
+        <h1 class="text-3xl font-bold text-green-900">{{ liga.nombre }}</h1>
+        <p class="text-gray-600 mt-2">Elige una categoría para ver su tabla de posiciones.</p>
+    </div>
+
+    <div class="grid gap-4">
+        {% for categoria in categorias %}
+            <a href="{% url 'estadisticas-categoria' categoria.pk %}" class="rounded-2xl bg-white border border-green-100 p-5 shadow-sm hover:border-green-300 transition flex items-center justify-between">
+                <div>
+                    <p class="text-lg font-bold text-gray-900">{{ categoria.nombre }}</p>
+                </div>
+                <span class="text-green-700 font-semibold">Ver tabla →</span>
+            </a>
+        {% empty %}
+            <p class="text-gray-500">Esta liga todavía no tiene categorías activas.</p>
+        {% endfor %}
+    </div>
+
+    <a href="{% url 'estadisticas-ligas' %}" class="mt-6 inline-flex items-center text-sm font-semibold text-green-700 hover:text-green-900">← Volver a ligas</a>
+</div>
+{% endblock %}

@@ -1,0 +1,42 @@
+<div class="rounded-[2rem] bg-white p-5 sm:p-8 shadow-2xl w-full max-w-lg sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+    <div class="flex items-start justify-between border-b border-green-100 pb-4 mb-6">
+        <div>
+            <p class="text-xs sm:text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">Formulario</p>
+            <h2 class="mt-1 text-xl sm:text-2xl font-bold text-green-900">{{ title }}</h2>
+            <p class="mt-2 text-sm text-gray-500">Completa los datos y guarda sin salir de la ventana.</p>
+        </div>
+        <button type="button" id="modal-close" class="shrink-0 text-gray-400 hover:text-gray-700" aria-label="Cerrar">✕</button>
+    </div>
+    <form id="modal-form" method="post" enctype="multipart/form-data" class="space-y-5">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        {% for field in form %}
+            {% if field.name == 'categorias' %}
+                {% include 'equipos/_categorias_checkboxes.html' %}
+            {% elif field.field.widget.input_type == 'checkbox' %}
+                <div class="flex items-center gap-2 rounded-2xl border border-gray-200 px-4 py-3">
+                    {{ field }}
+                    <label class="text-sm font-medium text-gray-700">{{ field.label }}</label>
+                    {% for error in field.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}
+                        <p class="mt-2 text-sm text-gray-500">{{ field.help_text }}</p>
+                    {% endif %}
+                    {% for error in field.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endfor %}
+        <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4 border-t border-green-100">
+            <button type="button" id="modal-cancel" class="rounded-full border border-gray-300 bg-white px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50">Cancelar</button>
+            <button type="submit" class="rounded-full bg-green-800 px-6 py-3 text-sm font-semibold text-white hover:bg-green-700">Guardar</button>
+        </div>
+    </form>
+</div>

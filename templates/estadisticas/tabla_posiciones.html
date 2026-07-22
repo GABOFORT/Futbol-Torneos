@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Tabla de posiciones - {{ categoria.nombre }}{% endblock %}
+
+{% block contenido %}
+<div class="max-w-5xl mx-auto p-6">
+    <div class="mb-8">
+        <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">{{ categoria.liga.nombre }}</p>
+        <h1 class="text-3xl font-bold text-green-900">{{ categoria.nombre }}</h1>
+    </div>
+
+    <div class="overflow-x-auto rounded-3xl bg-white border border-green-100 shadow-sm">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-green-50">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">#</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Equipo</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-600">PJ</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-600">PG</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-600">PE</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-600">PP</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-600">GF</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-600">GC</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-600">DG</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-600">Pts</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 bg-white">
+                {% for fila in posiciones %}
+                    <tr>
+                        <td class="px-4 py-3 text-sm text-gray-500">{{ forloop.counter }}</td>
+                        <td class="px-4 py-3 text-sm font-semibold text-gray-900">{{ fila.equipo.nombre }}</td>
+                        <td class="px-4 py-3 text-center text-sm text-gray-800">{{ fila.pj }}</td>
+                        <td class="px-4 py-3 text-center text-sm text-gray-800">{{ fila.pg }}</td>
+                        <td class="px-4 py-3 text-center text-sm text-gray-800">{{ fila.pe }}</td>
+                        <td class="px-4 py-3 text-center text-sm text-gray-800">{{ fila.pp }}</td>
+                        <td class="px-4 py-3 text-center text-sm text-gray-800">{{ fila.gf }}</td>
+                        <td class="px-4 py-3 text-center text-sm text-gray-800">{{ fila.gc }}</td>
+                        <td class="px-4 py-3 text-center text-sm text-gray-800">{{ fila.dg }}</td>
+                        <td class="px-4 py-3 text-center text-sm font-bold text-green-800">{{ fila.pts }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="10" class="px-6 py-8 text-center text-sm text-gray-500">Sin equipos inscritos en esta categoría.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <a href="{% url 'estadisticas-liga-categorias' categoria.liga_id %}" class="mt-6 inline-flex items-center text-sm font-semibold text-green-700 hover:text-green-900">← Volver a {{ categoria.liga.nombre }}</a>
+</div>
+{% endblock %}

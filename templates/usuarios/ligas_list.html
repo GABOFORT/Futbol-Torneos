@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Ligas - Administrador{% endblock %}
+
+{% block contenido %}
+<div class="max-w-7xl mx-auto p-6">
+    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
+        <div>
+            <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">Ligas</p>
+            <h1 class="text-3xl font-bold text-green-900">Gestión de ligas</h1>
+            <p class="text-gray-600 mt-2">Crea, edita y controla las ligas desde una interfaz totalmente web.</p>
+        </div>
+        <button class="open-modal inline-flex items-center justify-center rounded-full bg-green-800 px-5 py-3 text-sm font-semibold text-white hover:bg-green-700" data-url="{% url 'liga-create' %}?modal=1">Crear liga</button>
+    </div>
+
+    <div class="overflow-x-auto rounded-3xl bg-white border border-green-100 shadow-sm">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-green-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Nombre</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Inicio</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Final</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Estado</th>
+                    {% if es_superadmin %}
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Mensualidad</th>
+                    {% endif %}
+                    <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-600">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 bg-white">
+                {% for liga in ligas %}
+                    <tr>
+                        <td class="px-6 py-4 text-sm text-gray-800">{{ liga.nombre }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-800">{{ liga.fecha_inicio|default:'-' }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-800">{{ liga.fecha_final|default:'-' }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-800">{{ liga.activa|yesno:'Activa,Inactiva' }}</td>
+                        {% if es_superadmin %}
+                            <td class="px-6 py-4 text-sm">
+                                {% if not liga.fecha_pago %}
+                                    <span class="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">Sin pago registrado</span>
+                                {% elif liga.esta_vencida %}
+                                    <span class="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">Vencida — cuenta bloqueada</span>
+                                {% elif liga.dias_para_vencer <= 0 %}
+                                    <span class="inline-flex items-center rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-800">En gracia, vence el {{ liga.fecha_limite }}</span>
+                                {% else %}
+                                    <span class="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-800">Vence en {{ liga.dias_para_vencer }} día(s)</span>
+                                {% endif %}
+                                <form action="{% url 'liga-registrar-pago' liga.pk %}" method="post" class="inline ml-2">
+                                    {% csrf_token %}
+                                    <button type="submit" class="text-xs font-semibold text-green-700 hover:text-green-900">Registrar pago</button>
+                                </form>
+                            </td>
+                        {% endif %}
+                        <td class="px-6 py-4 text-right text-sm font-medium">
+                            <button data-url="{% url 'liga-edit' liga.pk %}?modal=1" class="open-modal text-green-700 hover:text-green-900">Editar</button>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-8 text-center text-sm text-gray-500">No hay ligas registradas.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% include '_modal.html' %}
+{% endblock %}

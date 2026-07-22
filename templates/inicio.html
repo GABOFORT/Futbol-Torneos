@@ -1,8 +1,72 @@
 {% extends 'base.html' %}
 
-{% block titulo %}Inicio - Futbol Torneos{% endblock %}
+{% block titulo %}BUHO Sports League{% endblock %}
 
 {% block contenido %}
-    <h1>Bienvenido a Futbol Torneos</h1>
-    <p>Pagina principal funcionando.</p>
+<div class="bg-gradient-to-br from-green-800 to-green-900">
+    <div class="max-w-6xl mx-auto py-16 px-4 text-center text-white">
+        <h1 class="text-4xl md:text-5xl font-bold mb-4">Bienvenido a BUHO Sports League</h1>
+        <p class="text-green-100 text-lg mb-8 max-w-2xl mx-auto">Sigue tus ligas, categorías y equipos favoritos: calendario, resultados y tabla de posiciones en un solo lugar.</p>
+        <div class="flex flex-col sm:flex-row justify-center gap-4">
+            <a href="{% url 'categoria-list' %}" class="bg-white text-green-800 px-6 py-3 rounded-full font-semibold hover:bg-green-50 transition">Ver categorías</a>
+            <a href="{% url 'estadisticas-ligas' %}" class="border border-white text-white px-6 py-3 rounded-full font-semibold hover:bg-white/10 transition">Ver estadísticas</a>
+        </div>
+    </div>
+</div>
+
+<div class="max-w-6xl mx-auto px-4 py-12 space-y-12">
+
+    <section>
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-2xl font-bold text-green-900">Próximos partidos</h2>
+            <a href="{% url 'partido-list' %}" class="text-sm font-semibold text-green-700 hover:text-green-900">Ver calendario completo →</a>
+        </div>
+        <div class="grid gap-4 md:grid-cols-2">
+            {% for partido in proximos_partidos %}
+                <div class="rounded-2xl bg-white border border-green-100 p-5 shadow-sm">
+                    <p class="text-xs uppercase tracking-wide text-green-700 font-semibold">{{ partido.categoria.liga.nombre }} · {{ partido.categoria.nombre }}</p>
+                    <p class="mt-2 text-lg font-bold text-gray-900">{{ partido.equipo_local.nombre }} vs {{ partido.equipo_visitante.nombre }}</p>
+                    <p class="mt-1 text-sm text-gray-500">{{ partido.fecha|date:'d/m/Y H:i' }}</p>
+                </div>
+            {% empty %}
+                <p class="text-gray-500">No hay partidos programados por el momento.</p>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section>
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-2xl font-bold text-green-900">Ligas activas</h2>
+            <a href="{% url 'estadisticas-ligas' %}" class="text-sm font-semibold text-green-700 hover:text-green-900">Ver todas →</a>
+        </div>
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {% for liga in ligas_activas %}
+                <a href="{% url 'estadisticas-liga-categorias' liga.pk %}" class="rounded-2xl bg-white border border-green-100 p-5 shadow-sm hover:border-green-300 transition">
+                    <p class="text-lg font-bold text-gray-900">{{ liga.nombre }}</p>
+                    <p class="mt-1 text-sm text-gray-500">{{ liga.categorias.count }} categoría(s)</p>
+                </a>
+            {% empty %}
+                <p class="text-gray-500">Todavía no hay ligas registradas.</p>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section>
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-2xl font-bold text-green-900">Categorías vigentes</h2>
+            <a href="{% url 'categoria-list' %}" class="text-sm font-semibold text-green-700 hover:text-green-900">Ver todas →</a>
+        </div>
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {% for categoria in categorias_vigentes %}
+                <div class="rounded-2xl bg-white border border-green-100 p-5 shadow-sm">
+                    <p class="text-xs uppercase tracking-wide text-green-700 font-semibold">{{ categoria.liga.nombre }}</p>
+                    <p class="mt-2 text-lg font-bold text-gray-900">{{ categoria.nombre }}</p>
+                </div>
+            {% empty %}
+                <p class="text-gray-500">Todavía no hay categorías vigentes.</p>
+            {% endfor %}
+        </div>
+    </section>
+
+</div>
 {% endblock %}

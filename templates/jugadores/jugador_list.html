@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Plantilla - {{ equipo.nombre }}{% endblock %}
+
+{% block contenido %}
+<div class="max-w-6xl mx-auto p-6">
+    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
+        <div>
+            <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">Plantilla</p>
+            <h1 class="text-3xl font-bold text-green-900">{{ equipo.nombre }}</h1>
+            <p class="text-gray-600 mt-2">{{ equipo.liga.nombre }} · {{ equipo.categoria.nombre }}</p>
+        </div>
+        {% if puede_gestionar %}
+            <button class="open-modal inline-flex items-center justify-center rounded-full bg-green-800 px-5 py-3 text-sm font-semibold text-white hover:bg-green-700" data-url="{% url 'jugador-create' equipo.pk %}?modal=1">Agregar jugador</button>
+        {% endif %}
+    </div>
+
+    <div class="overflow-x-auto rounded-3xl bg-white border border-green-100 shadow-sm">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-green-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Jugador</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Posición</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Número</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Estado</th>
+                    {% if puede_gestionar %}
+                        <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-600">Acciones</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 bg-white">
+                {% for jugador in jugadores %}
+                    <tr>
+                        <td class="px-6 py-4 text-sm text-gray-800">
+                            <div class="flex items-center gap-3">
+                                {% if jugador.foto %}
+                                    <img src="{{ jugador.foto.url }}" alt="{{ jugador.nombre }}" class="h-9 w-9 rounded-full object-cover border border-green-100">
+                                {% else %}
+                                    <span class="h-9 w-9 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-xs font-semibold">{{ jugador.nombre|first }}{{ jugador.apellido|first }}</span>
+                                {% endif %}
+                                <span>{{ jugador.nombre }} {{ jugador.apellido }}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-800">{{ jugador.get_posicion_display }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-800">{{ jugador.numero|default:'-' }}</td>
+                        <td class="px-6 py-4 text-sm">
+                            <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold
+                                {% if jugador.estado == 'activo' %}bg-green-100 text-green-800
+                                {% elif jugador.estado == 'lesion' %}bg-yellow-100 text-yellow-800
+                                {% elif jugador.estado == 'sancion' %}bg-orange-100 text-orange-800
+                                {% else %}bg-gray-100 text-gray-700{% endif %}">
+                                {{ jugador.get_estado_display }}
+                            </span>
+                        </td>
+                        {% if puede_gestionar %}
+                            <td class="px-6 py-4 text-right text-sm font-medium space-x-3">
+                                <a href="#" class="open-modal text-green-700 hover:text-green-900" data-url="{% url 'jugador-edit' jugador.pk %}?modal=1">Editar</a>
+                                <div class="inline-flex gap-2">
+                                    {% for estado_valor, estado_label in jugador.ESTADO_CHOICES %}
+                                        {% if estado_valor != jugador.estado %}
+                                            <form action="{% url 'jugador-estado' jugador.pk estado_valor %}" method="post" class="inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="text-xs text-gray-500 hover:text-green-800">{{ estado_label }}</button>
+                                            </form>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </td>
+                        {% endif %}
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-8 text-center text-sm text-gray-500">Sin jugadores registrados todavía.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <a href="{% url 'equipo-detail' equipo.pk %}" class="mt-6 inline-flex items-center text-sm font-semibold text-green-700 hover:text-green-900">← Volver al equipo</a>
+</div>
+
+{% include '_modal.html' %}
+{% endblock %}
