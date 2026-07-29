@@ -13,7 +13,10 @@
             </div>
             <div class="flex flex-wrap gap-3">
                 <a href="/" class="inline-flex items-center justify-center rounded-full border border-green-200 bg-white px-5 py-3 text-sm font-semibold text-green-800 hover:bg-green-50">Ver sitio</a>
-                <a href="/usuarios/logout/" class="inline-flex items-center justify-center rounded-full bg-green-800 px-5 py-3 text-sm font-semibold text-white hover:bg-green-700">Cerrar sesión</a>
+                <form action="{% url 'logout' %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="inline-flex items-center justify-center rounded-full bg-green-800 px-5 py-3 text-sm font-semibold text-white hover:bg-green-700">Cerrar sesión</button>
+                </form>
             </div>
         </div>
 

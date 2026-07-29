@@ -1,5 +1,7 @@
 from django.db import models
 
+from apps.usuarios.imagenes import achicar_imagen
+
 
 class Jugador(models.Model):
     POSICIONES = [
@@ -34,12 +36,25 @@ class Jugador(models.Model):
     posicion = models.CharField('Posición', max_length=20, choices=POSICIONES, default='medio')
     numero = models.PositiveIntegerField('Número', null=True, blank=True)
     estado = models.CharField('Estado del jugador', max_length=20, choices=ESTADO_CHOICES, default=ESTADO_ACTIVO)
-    activo = models.BooleanField('Activo', default=True)
     observaciones = models.TextField('Observaciones', blank=True)
 
     class Meta:
         verbose_name = 'Jugador'
         verbose_name_plural = 'Jugadores'
+        constraints = [
+            # El dorsal no se puede repetir dentro del mismo equipo. La condicion
+            # deja fuera a los que no tienen numero: de esos puede haber varios.
+            models.UniqueConstraint(
+                fields=['equipo', 'numero'],
+                condition=models.Q(numero__isnull=False),
+                name='dorsal_unico_por_equipo',
+                violation_error_message='Ese número ya lo tiene otro jugador del equipo.',
+            ),
+        ]
 
     def __str__(self):
         return f'{self.nombre} {self.apellido} ({self.equipo.nombre})'
+
+    def save(self, *args, **kwargs):
+        achicar_imagen(self.foto)
+        super().save(*args, **kwargs)

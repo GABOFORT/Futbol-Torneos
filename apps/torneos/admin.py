@@ -12,6 +12,6 @@ class LigaAdmin(admin.ModelAdmin):
 
 @admin.register(Categoria)
 class CategoriaAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'liga', 'cupo_equipos', 'inscripcion_abierta', 'activa', 'fecha_inicio', 'fecha_final')
-    list_filter = ('liga', 'activa', 'inscripcion_abierta')
+    list_display = ('nombre', 'liga', 'limite_edad', 'cupo_equipos', 'inscripcion_abierta', 'activa')
+    list_filter = ('liga', 'limite_edad', 'activa', 'inscripcion_abierta')
     search_fields = ('nombre', 'liga__nombre')

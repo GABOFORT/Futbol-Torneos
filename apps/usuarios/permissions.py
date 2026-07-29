@@ -36,6 +36,21 @@ def entrenador_required(view_func):
     return role_required(Usuario.ROLE_ENTRENADOR)(view_func)
 
 
+def ligas_visibles(user):
+    """Las ligas que este usuario debe ver en los listados generales.
+
+    Un admin de liga ve solo las suyas: cada liga es un negocio aparte y no
+    tiene por que ver los equipos ni las tablas de las demas. El superadmin ve
+    todas, y el publico sin cuenta ve las activas, porque esas pantallas son la
+    vitrina del sistema.
+    """
+    from apps.torneos.models import Liga
+
+    if user.is_authenticated and (user.is_superuser or user.role == user.ROLE_ADMIN_LIGA):
+        return ligas_administradas(user)
+    return Liga.objects.filter(activa=True)
+
+
 def ligas_administradas(user):
     """Queryset of Liga this user may manage: all for superuser, own for admin liga, none otherwise."""
     from apps.torneos.models import Liga

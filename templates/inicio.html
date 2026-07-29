@@ -42,8 +42,13 @@
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {% for liga in ligas_activas %}
                 <a href="{% url 'estadisticas-liga-categorias' liga.pk %}" class="rounded-2xl bg-white border border-green-100 p-5 shadow-sm hover:border-green-300 transition">
-                    <p class="text-lg font-bold text-gray-900">{{ liga.nombre }}</p>
-                    <p class="mt-1 text-sm text-gray-500">{{ liga.categorias.count }} categoría(s)</p>
+                    <div class="flex items-center gap-3">
+                        {% include 'usuarios/_logo_liga.html' %}
+                        <div>
+                            <p class="text-lg font-bold text-gray-900">{{ liga.nombre }}</p>
+                            <p class="mt-1 text-sm text-gray-500">{{ liga.categorias.count }} categoría(s)</p>
+                        </div>
+                    </div>
                 </a>
             {% empty %}
                 <p class="text-gray-500">Todavía no hay ligas registradas.</p>

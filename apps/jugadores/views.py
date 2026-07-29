@@ -48,7 +48,7 @@ def jugador_create(request, equipo_id):
 
     modal = request.GET.get('modal') == '1'
     if request.method == 'POST':
-        form = JugadorForm(request.POST, request.FILES)
+        form = JugadorForm(equipo, request.POST, request.FILES)
         if form.is_valid():
             jugador = form.save(commit=False)
             jugador.equipo = equipo
@@ -58,7 +58,7 @@ def jugador_create(request, equipo_id):
                 return JsonResponse({'success': True})
             return redirect('jugador-list', equipo_id=equipo.pk)
     else:
-        form = JugadorForm()
+        form = JugadorForm(equipo)
 
     context = {'form': form, 'title': f'Agregar jugador: {equipo.nombre}'}
     if modal:
@@ -74,7 +74,7 @@ def jugador_edit(request, pk):
 
     modal = request.GET.get('modal') == '1'
     if request.method == 'POST':
-        form = JugadorForm(request.POST, request.FILES, instance=jugador)
+        form = JugadorForm(jugador.equipo, request.POST, request.FILES, instance=jugador)
         if form.is_valid():
             form.save()
             messages.success(request, 'Jugador actualizado.')
@@ -82,7 +82,7 @@ def jugador_edit(request, pk):
                 return JsonResponse({'success': True})
             return redirect('jugador-list', equipo_id=jugador.equipo_id)
     else:
-        form = JugadorForm(instance=jugador)
+        form = JugadorForm(jugador.equipo, instance=jugador)
 
     context = {'form': form, 'title': f'Editar jugador: {jugador.nombre} {jugador.apellido}'}
     if modal:
@@ -90,17 +90,3 @@ def jugador_edit(request, pk):
     return render(request, 'jugadores/jugador_form.html', context)
 
 
-@login_required
-def jugador_estado(request, pk, estado):
-    jugador = get_object_or_404(Jugador.objects.select_related('equipo'), pk=pk)
-    if not _puede_gestionar(request.user, jugador.equipo):
-        return HttpResponseForbidden('No tienes acceso a este jugador.')
-    if estado not in dict(Jugador.ESTADO_CHOICES):
-        return HttpResponseForbidden('Estado inválido.')
-
-    if request.method == 'POST':
-        jugador.estado = estado
-        jugador.activo = estado == Jugador.ESTADO_ACTIVO
-        jugador.save(update_fields=['estado', 'activo'])
-        messages.success(request, f'Estado de {jugador.nombre} actualizado a {jugador.get_estado_display()}.')
-    return redirect('jugador-list', equipo_id=jugador.equipo_id)

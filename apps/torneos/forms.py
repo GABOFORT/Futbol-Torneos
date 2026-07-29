@@ -7,21 +7,24 @@ from .models import Categoria
 
 
 class CategoriaForm(StyledFormMixin, forms.ModelForm):
+    CAMPOS_OBLIGATORIOS = ('liga', 'nombre', 'cupo_equipos', 'limite_edad')
+    CAMPOS_CAPITALIZAR = ('nombre',)
+
     class Meta:
         model = Categoria
         fields = [
-            'liga', 'nombre', 'cupo_equipos', 'descripcion',
-            'fecha_inicio', 'fecha_final', 'reglas', 'activa',
+            'liga', 'nombre', 'cupo_equipos', 'limite_edad',
+            'descripcion', 'reglas', 'activa',
         ]
         widgets = {
             'descripcion': forms.Textarea(attrs={'rows': 3}),
             'reglas': forms.Textarea(attrs={'rows': 3}),
-            'fecha_inicio': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
-            'fecha_final': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'limite_edad': forms.RadioSelect,
         }
 
     def __init__(self, user, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['liga'].queryset = ligas_administradas(user)
-        self.fields['nombre'].required = True
-        self.fields['cupo_equipos'].required = True
+        # El campo permite vacio en el modelo, asi que Django agrega una opcion
+        # en blanco: con radios seria un boton mas, sin etiqueta y elegible.
+        self.fields['limite_edad'].choices = Categoria.LIMITE_EDAD_CHOICES

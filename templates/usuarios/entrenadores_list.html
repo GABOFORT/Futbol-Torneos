@@ -3,7 +3,7 @@
 {% block titulo %}Entrenadores{% endblock %}
 
 {% block contenido %}
-<div class="max-w-7xl mx-auto p-6">
+<div class="max-w-[100rem] mx-auto p-6">
     <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
         <div>
             <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">Entrenadores</p>
@@ -13,33 +13,66 @@
         <button class="open-modal inline-flex items-center justify-center rounded-full bg-green-800 px-5 py-3 text-sm font-semibold text-white hover:bg-green-700" data-url="{% url 'entrenador-create' %}?modal=1">Crear entrenador</button>
     </div>
 
-    <div class="overflow-x-auto rounded-3xl bg-white border border-green-100 shadow-sm">
+    <div class="mb-6">
+        {% include '_filtros.html' with etiqueta_resultados='entrenador' %}
+    </div>
+
+    <div data-resultados class="overflow-x-auto rounded-3xl bg-white border border-green-100 shadow-sm">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-green-50">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Usuario</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Nombre</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Correo</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Teléfono</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Equipos</th>
-                    <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-600">Acciones</th>
+                    <th class="col-numero px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-600">N°</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Usuario</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Nombre</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Liga</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Equipo</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Correo</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Teléfono</th>
+                    <th class="col-acciones px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-600">Acciones</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 bg-white">
                 {% for entrenador in entrenadores %}
                     <tr>
-                        <td class="px-6 py-4 text-sm text-gray-800">{{ entrenador.username }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-800">{{ entrenador.get_full_name|default:'-' }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-800">{{ entrenador.email }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-800">{{ entrenador.phone|default:'-' }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-800">{{ entrenador.equipos.count }}</td>
-                        <td class="px-6 py-4 text-right text-sm font-medium">
-                            <button data-url="{% url 'entrenador-edit' entrenador.pk %}?modal=1" class="open-modal text-green-700 hover:text-green-900">Editar</button>
+                        <td class="col-numero px-4 py-4 text-sm text-gray-400">{{ forloop.counter }}</td>
+                        <td class="px-4 py-4 text-sm text-gray-800">{{ entrenador.username }}</td>
+                        <td class="px-4 py-4 text-sm text-gray-800">
+                            {% if entrenador.get_full_name %}{{ entrenador.get_full_name }}{% else %}<span class="sin-dato">Sin nombre</span>{% endif %}
+                        </td>
+                        <td class="px-4 py-4 text-sm text-gray-800">
+                            {% for liga in entrenador.ligas_del_usuario %}
+                                <span class="etiqueta-tabla">{{ liga.nombre }}</span>
+                            {% empty %}
+                                <span class="sin-dato">Sin liga</span>
+                            {% endfor %}
+                        </td>
+                        <td class="px-4 py-4 text-sm text-gray-800">
+                            {% for equipo in entrenador.equipos_del_usuario %}
+                                <span class="etiqueta-tabla">{{ equipo.nombre }}</span>
+                            {% empty %}
+                                <span class="sin-dato">Sin equipo</span>
+                            {% endfor %}
+                        </td>
+                        <td class="px-4 py-4 text-sm text-gray-800">
+                            {% if entrenador.email %}{{ entrenador.email }}{% else %}<span class="sin-dato">Sin correo</span>{% endif %}
+                        </td>
+                        <td class="px-4 py-4 text-sm text-gray-800">
+                            {% if entrenador.phone %}{{ entrenador.phone }}{% else %}<span class="sin-dato">Sin teléfono</span>{% endif %}
+                        </td>
+                        <td class="col-acciones px-4 py-4">
+                            <div class="acciones">
+                                <button data-url="{% url 'entrenador-edit' entrenador.pk %}?modal=1" class="open-modal btn-accion">
+                                    <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+                                    </svg>
+                                    Editar
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="6" class="px-6 py-8 text-center text-sm text-gray-500">No hay entrenadores registrados.</td>
+                        <td colspan="8" class="px-4 py-8 text-center text-sm text-gray-500">No hay entrenadores que coincidan con la búsqueda.</td>
                     </tr>
                 {% endfor %}
             </tbody>

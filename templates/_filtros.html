@@ -1,0 +1,42 @@
+{% comment %}
+Barra de filtros compartida por los listados. Se dibuja a partir de la lista
+`filtros` que arma la vista (ver apps/usuarios/filtros.py).
+
+Va por GET a proposito: los filtros quedan en la URL, se pueden combinar,
+sobreviven al recargar y el enlace se puede compartir.
+
+static/js/filtros.js la vuelve instantanea: al escribir o cambiar un
+desplegable recarga solo el bloque de resultados. Sin JS sigue andando con
+Enter, por eso el boton de enviar existe aunque este oculto.
+{% endcomment %}
+<form method="get" class="barra-filtros" data-filtros>
+    <div class="filtro-busqueda">
+        <svg class="filtro-lupa" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+        </svg>
+        {% for campo in filtros %}{% if campo.tipo == 'texto' %}
+            <input type="search" name="{{ campo.nombre }}" value="{{ campo.valor }}"
+                   placeholder="{{ campo.ayuda }}" autocomplete="off"
+                   aria-label="{{ campo.etiqueta }}" class="filtro-texto">
+        {% endif %}{% endfor %}
+        <span class="filtro-cargando" aria-hidden="true"></span>
+    </div>
+
+    {% for campo in filtros %}{% if campo.tipo == 'opciones' %}
+        <select name="{{ campo.nombre }}" aria-label="{{ campo.etiqueta }}" class="filtro-select">
+            <option value="">{{ campo.vacio }}</option>
+            {% for valor, etiqueta in campo.opciones %}
+                <option value="{{ valor }}" {% if valor == campo.valor %}selected{% endif %}>{{ etiqueta }}</option>
+            {% endfor %}
+        </select>
+    {% endif %}{% endfor %}
+
+    {% if filtros_activos %}
+        <a href="{{ request.path }}" class="filtro-limpiar">Limpiar</a>
+    {% endif %}
+
+    <span class="filtro-contador" data-contador>{{ total_resultados }} {{ etiqueta_resultados|default:"resultado" }}{{ total_resultados|pluralize:"s" }}</span>
+
+    {# Respaldo para cuando no hay JavaScript: Enter envia el formulario. #}
+    <button type="submit" class="filtro-enviar">Buscar</button>
+</form>

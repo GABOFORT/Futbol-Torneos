@@ -1,0 +1,21 @@
+{% comment %}
+Reemplaza el widget de subida de archivos de Django. El original imprime
+"Actualmente: ruta/archivo.png [x] Borrar Modificar:" todo seguido en una
+linea, sin miniatura. Aca se muestra la imagen actual y el boton de eliminar
+queda alineado a la derecha del bloque.
+{% endcomment %}
+<div class="campo-archivo">
+    {% if widget.is_initial %}
+        <div class="campo-archivo-actual">
+            <img src="{{ widget.value.url }}" alt="Imagen actual" class="campo-archivo-miniatura">
+            <a href="{{ widget.value.url }}" target="_blank" rel="noopener" class="campo-archivo-nombre">{{ widget.value }}</a>
+            {% if not widget.required %}
+                <label class="campo-archivo-borrar" for="{{ widget.checkbox_id }}">
+                    <input type="checkbox" name="{{ widget.checkbox_name }}" id="{{ widget.checkbox_id }}">
+                    Eliminar
+                </label>
+            {% endif %}
+        </div>
+    {% endif %}
+    <input type="{{ widget.type }}" name="{{ widget.name }}"{% include "django/forms/widgets/attrs.html" %}>
+</div>

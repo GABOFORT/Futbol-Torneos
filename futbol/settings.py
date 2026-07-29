@@ -42,7 +42,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
+    # Habilita el lookup __unaccent, para buscar sin importar acentos ni ñ.
+    'django.contrib.postgres',
+    # Permite reemplazar plantillas de widgets desde templates/django/forms/.
+    'django.forms',
+
     'django_browser_reload',
     # Apps del proyecto
     'apps.usuarios',
@@ -56,6 +60,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django_browser_reload.middleware.BrowserReloadMiddleware',
+    # Solo actua con DEBUG=True; con DEBUG=False Django lo descarta al arrancar.
+    'futbol.middleware.NoCacheEnDesarrolloMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -81,6 +87,10 @@ TEMPLATES = [
         },
     },
 ]
+
+# Hace que los widgets de formulario se busquen tambien en templates/, para
+# poder reemplazar el de subida de archivos por uno con mejor presentacion.
+FORM_RENDERER = 'django.forms.renderers.TemplatesSetting'
 
 WSGI_APPLICATION = 'futbol.wsgi.application'
 

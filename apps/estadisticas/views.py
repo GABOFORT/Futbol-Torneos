@@ -3,10 +3,12 @@ from django.shortcuts import get_object_or_404, render
 from apps.equipos.models import Equipo
 from apps.partidos.models import Partido
 from apps.torneos.models import Categoria, Liga
+from apps.usuarios.permissions import ligas_visibles
 
 
 def estadisticas_ligas(request):
-    ligas = Liga.objects.filter(activa=True).order_by('nombre')
+    # Mismo criterio que en equipos y partidos: el admin de liga solo ve las suyas.
+    ligas = ligas_visibles(request.user).order_by('nombre')
     return render(request, 'estadisticas/estadisticas_ligas.html', {'ligas': ligas})
 
 

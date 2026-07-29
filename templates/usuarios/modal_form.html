@@ -7,12 +7,14 @@
         </div>
         <button type="button" id="modal-close" class="shrink-0 text-gray-400 hover:text-gray-700" aria-label="Cerrar">✕</button>
     </div>
-    <form id="modal-form" method="post" enctype="multipart/form-data" class="space-y-5">
+    <form id="modal-form" method="post" enctype="multipart/form-data" novalidate class="space-y-5">
         {% csrf_token %}
         {{ form.non_field_errors }}
         {% for field in form %}
             {% if field.name == 'categorias' %}
                 {% include 'equipos/_categorias_checkboxes.html' %}
+            {% elif field.field.widget.input_type == 'radio' %}
+                {% include '_radios.html' %}
             {% elif field.field.widget.input_type == 'checkbox' %}
                 <div class="flex items-center gap-2 rounded-2xl border border-gray-200 px-4 py-3">
                     {{ field }}

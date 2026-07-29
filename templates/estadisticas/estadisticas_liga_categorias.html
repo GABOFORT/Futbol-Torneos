@@ -4,10 +4,13 @@
 
 {% block contenido %}
 <div class="max-w-4xl mx-auto p-6">
-    <div class="mb-8">
-        <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">Estadísticas</p>
-        <h1 class="text-3xl font-bold text-green-900">{{ liga.nombre }}</h1>
-        <p class="text-gray-600 mt-2">Elige una categoría para ver su tabla de posiciones.</p>
+    <div class="mb-8 flex items-center gap-4">
+        {% include 'usuarios/_logo_liga.html' with liga=liga clase='logo-liga-lg' %}
+        <div>
+            <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">Estadísticas</p>
+            <h1 class="text-3xl font-bold text-green-900">{{ liga.nombre }}</h1>
+            <p class="text-gray-600 mt-2">Elige una categoría para ver su tabla de posiciones.</p>
+        </div>
     </div>
 
     <div class="grid gap-4">

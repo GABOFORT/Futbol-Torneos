@@ -1,9 +1,9 @@
-{% load static %}
+{% load static estaticos %}
 <nav class="bg-green-800 shadow-lg">
     <div class="max-w-7xl mx-auto px-4">
         <div class="flex items-center justify-between h-16">
             <div class="flex items-center gap-3">
-                <img src="{% static 'img/buho-sport.jpeg' %}" alt="Logo" class="h-12 w-auto object-contain rounded">
+                <img src="{% static_v 'img/buho-sport.jpeg' %}" alt="Logo" class="h-12 w-auto object-contain rounded">
                 <span class="text-white font-bold text-lg hidden sm:block">BUHO Sports League</span>
             </div>
             <div class="hidden md:flex items-center gap-1">
@@ -43,12 +43,22 @@
             </div>
             <div class="flex items-center gap-3">
                 {% if request.user.is_authenticated %}
+                    <div class="usuario-chip" title="{{ request.user.nombre_visible }} — {{ request.user.rol_visible }}">
+                        <span class="usuario-avatar">{{ request.user.iniciales }}</span>
+                        <span class="usuario-datos">
+                            <span class="usuario-nombre">{{ request.user.nombre_visible }}</span>
+                            <span class="usuario-rol">{{ request.user.rol_visible }}</span>
+                        </span>
+                    </div>
                     <a href="/usuarios/dashboard/" class="hidden md:block bg-white text-green-800 font-semibold px-4 py-2 rounded-full text-sm hover:bg-green-100 transition">
                         Dashboard
                     </a>
-                    <a href="/usuarios/logout/" class="hidden md:block bg-white text-green-800 font-semibold px-4 py-2 rounded-full text-sm hover:bg-green-100 transition">
-                        Cerrar sesión
-                    </a>
+                    <form action="{% url 'logout' %}" method="post" class="hidden md:block">
+                        {% csrf_token %}
+                        <button type="submit" class="bg-white text-green-800 font-semibold px-4 py-2 rounded-full text-sm hover:bg-green-100 transition">
+                            Cerrar sesión
+                        </button>
+                    </form>
                 {% else %}
                     <a href="/usuarios/login/" class="hidden md:block bg-white text-green-800 font-semibold px-4 py-2 rounded-full text-sm hover:bg-green-100 transition">
                         Iniciar sesión
@@ -76,8 +86,18 @@
         <a href="/jugadores/" class="block text-white py-2 text-sm hover:text-green-300">Jugadores</a>
         <a href="/partidos/" class="block text-white py-2 text-sm hover:text-green-300">Partidos</a>
         {% if request.user.is_authenticated %}
+            <div class="mt-4 flex items-center gap-3 rounded-2xl bg-green-800 px-3 py-3">
+                <span class="usuario-avatar">{{ request.user.iniciales }}</span>
+                <span class="usuario-datos">
+                    <span class="usuario-nombre">{{ request.user.nombre_visible }}</span>
+                    <span class="usuario-rol">{{ request.user.rol_visible }}</span>
+                </span>
+            </div>
             <a href="/usuarios/dashboard/" class="block mt-3 bg-white text-green-800 font-semibold px-4 py-2 rounded-full text-sm text-center hover:bg-green-100">Dashboard</a>
-            <a href="/usuarios/logout/" class="block mt-3 bg-white text-green-800 font-semibold px-4 py-2 rounded-full text-sm text-center hover:bg-green-100">Cerrar sesión</a>
+            <form action="{% url 'logout' %}" method="post" class="mt-3">
+                {% csrf_token %}
+                <button type="submit" class="block w-full bg-white text-green-800 font-semibold px-4 py-2 rounded-full text-sm text-center hover:bg-green-100">Cerrar sesión</button>
+            </form>
         {% else %}
             <a href="/usuarios/login/" class="block mt-3 bg-white text-green-800 font-semibold px-4 py-2 rounded-full text-sm text-center hover:bg-green-100">Iniciar sesión</a>
         {% endif %}

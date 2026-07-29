@@ -2,14 +2,17 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
-from apps.usuarios.permissions import admin_liga_required, ligas_administradas
+from apps.usuarios.permissions import admin_liga_required, ligas_administradas, ligas_visibles
 
 from .forms import PartidoFechaForm, ResultadoForm
 from .models import Partido
 
 
 def partido_list(request):
-    partidos = Partido.objects.select_related('categoria', 'categoria__liga', 'equipo_local', 'equipo_visitante').order_by('fecha')
+    # Mismo criterio que en equipos: el admin de liga solo ve los suyos.
+    partidos = Partido.objects.filter(
+        categoria__liga__in=ligas_visibles(request.user)
+    ).select_related('categoria', 'categoria__liga', 'equipo_local', 'equipo_visitante').order_by('fecha')
     categoria_id = request.GET.get('categoria')
     if categoria_id:
         partidos = partidos.filter(categoria_id=categoria_id)

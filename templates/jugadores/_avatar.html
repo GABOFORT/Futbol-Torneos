@@ -1,0 +1,13 @@
+{% comment %}
+Avatar del jugador. Si tiene foto se muestra la foto; si no, la camiseta con
+su numero encima. El numero no esta dibujado en el PNG: se superpone con CSS,
+asi la misma imagen sirve para cualquier dorsal.
+{% endcomment %}
+{% if jugador.foto %}
+    <img src="{{ jugador.foto.url }}" alt="Foto de {{ jugador.nombre }} {{ jugador.apellido }}" class="avatar-jugador">
+{% else %}
+    <span class="dorsal" role="img" data-digitos="{% if jugador.numero is not None %}{{ jugador.numero|stringformat:'s'|length }}{% endif %}"
+          aria-label="{% if jugador.numero %}Dorsal {{ jugador.numero }}{% else %}Sin foto ni número{% endif %}">
+        {% if jugador.numero is not None %}<span class="dorsal-numero">{{ jugador.numero }}</span>{% endif %}
+    </span>
+{% endif %}

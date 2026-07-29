@@ -3,8 +3,10 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
-from apps.torneos.models import Liga
-from apps.usuarios.permissions import admin_liga_required, ligas_administradas
+from apps.torneos.models import Categoria, Liga
+from apps.usuarios.eliminar import vista_eliminar
+from apps.usuarios.filtros import buscar, campo_texto, campo_opciones, hay_filtros
+from apps.usuarios.permissions import admin_liga_required, ligas_administradas, ligas_visibles
 
 from .forms import EquipoCreateForm, EquipoForm, EquipoFormacionForm
 from .models import Equipo
@@ -24,19 +26,45 @@ def equipo_list(request):
             'liga_id': None,
         })
 
-    liga_id = request.GET.get('liga') or None
-    directorio = Equipo.objects.select_related('liga', 'categoria', 'entrenador')
-    if liga_id:
-        directorio = directorio.filter(liga_id=liga_id)
+    # Un admin de liga solo ve las suyas; el superadmin y el publico ven todas.
+    visibles = ligas_visibles(user)
+    puede_administrar = user.is_authenticated and (user.is_superuser or user.role == user.ROLE_ADMIN_LIGA)
+
+    termino = request.GET.get('q', '')
+    liga_id = request.GET.get('liga', '')
+    categoria_id = request.GET.get('categoria', '')
+
+    directorio = Equipo.objects.filter(liga__in=visibles).select_related('liga', 'categoria', 'entrenador')
+    directorio = buscar(directorio, termino, [
+        'nombre', 'entrenador__first_name', 'entrenador__last_name', 'entrenador__username',
+    ])
+    if liga_id.isdigit():
+        directorio = directorio.filter(liga_id=int(liga_id))
+    if categoria_id.isdigit():
+        directorio = directorio.filter(categoria_id=int(categoria_id))
     directorio = directorio.order_by('liga__nombre', 'categoria__nombre', 'nombre')
 
+    # Las categorias del desplegable se acotan a la liga elegida: con 13
+    # categorias repartidas en 7 ligas, ofrecerlas todas juntas confunde.
+    categorias = Categoria.objects.filter(liga__in=visibles)
+    if liga_id.isdigit():
+        categorias = categorias.filter(liga_id=int(liga_id))
+
+    filtros = [
+        campo_texto('q', 'Buscar', termino, 'Nombre del equipo o del entrenador'),
+        campo_opciones('liga', 'Liga', liga_id, visibles.order_by('nombre').values_list('id', 'nombre'), vacio='Todas'),
+        campo_opciones('categoria', 'Categoría', categoria_id,
+                       categorias.order_by('nombre').values_list('id', 'nombre'), vacio='Todas'),
+    ]
     return render(request, 'equipos/equipo_list.html', {
         'equipos': directorio,
         'mis_equipos': Equipo.objects.none(),
-        'puede_crear': user.is_authenticated and (user.is_superuser or user.role == user.ROLE_ADMIN_LIGA),
+        'puede_crear': puede_administrar,
         'solo_mis_equipos': False,
-        'ligas': Liga.objects.filter(activa=True).order_by('nombre'),
-        'liga_id': int(liga_id) if liga_id else None,
+        'puede_filtrar': puede_administrar,
+        'filtros': filtros,
+        'filtros_activos': hay_filtros(filtros),
+        'total_resultados': directorio.count(),
     })
 
 
@@ -44,15 +72,17 @@ def equipo_list(request):
 def equipo_create(request):
     modal = request.GET.get('modal') == '1'
     if request.method == 'POST':
-        form = EquipoCreateForm(request.user, request.POST)
+        form = EquipoCreateForm(request.user, request.POST, request.FILES)
         if form.is_valid():
             nombre = form.cleaned_data['nombre']
+            escudo = form.cleaned_data['escudo']
             entrenador = form.cleaned_data['entrenador']
             observaciones = form.cleaned_data['observaciones']
             categorias = form.cleaned_data['categorias']
             for categoria in categorias:
                 Equipo.objects.create(
                     nombre=nombre,
+                    escudo=escudo,
                     liga=categoria.liga,
                     categoria=categoria,
                     entrenador=entrenador,
@@ -86,7 +116,7 @@ def equipo_edit(request, pk):
     form_class = EquipoForm if puede_administrar else EquipoFormacionForm
 
     if request.method == 'POST':
-        form = form_class(request.user, request.POST, instance=equipo) if puede_administrar else form_class(request.POST, instance=equipo)
+        form = form_class(request.user, request.POST, request.FILES, instance=equipo) if puede_administrar else form_class(request.POST, request.FILES, instance=equipo)
         if form.is_valid():
             form.save()
             messages.success(request, 'Equipo actualizado correctamente.')
@@ -100,6 +130,30 @@ def equipo_edit(request, pk):
     if modal:
         return render(request, 'usuarios/modal_form.html', context)
     return render(request, 'equipos/equipo_form.html', context)
+
+
+@admin_liga_required
+def equipo_delete(request, pk):
+    equipo = get_object_or_404(Equipo, pk=pk, liga__in=ligas_administradas(request.user))
+
+    # Jugador.equipo y Partido.equipo_local/visitante son CASCADE: se van con el
+    # equipo, asi que hay que decirlo antes y no despues.
+    jugadores = equipo.jugadores.count()
+    partidos = equipo.partidos_local.count() + equipo.partidos_visitante.count()
+    arrastra = []
+    if jugadores:
+        arrastra.append(f'{jugadores} jugador(es) de la plantilla')
+    if partidos:
+        arrastra.append(f'{partidos} partido(s) con sus resultados')
+
+    return vista_eliminar(
+        request,
+        instancia=equipo,
+        etiqueta=f'Equipo: {equipo.nombre} ({equipo.categoria.nombre})',
+        url_listado='equipo-list',
+        mensaje_ok=f'Se eliminó el equipo "{equipo.nombre}".',
+        arrastra=arrastra,
+    )
 
 
 def equipo_detail(request, pk):
@@ -119,4 +173,7 @@ def equipo_detail(request, pk):
     return render(request, 'equipos/equipo_detail.html', {
         'equipo': equipo,
         'puede_editar': es_dueno or puede_administrar,
+        # Eliminar es solo para admin de liga y superadmin: el entrenador dueño
+        # puede editar su equipo pero no borrarlo.
+        'puede_administrar': puede_administrar,
     })

@@ -6,5 +6,4 @@ urlpatterns = [
     path('equipo/<int:equipo_id>/', views.jugador_list, name='jugador-list'),
     path('equipo/<int:equipo_id>/crear/', views.jugador_create, name='jugador-create'),
     path('<int:pk>/editar/', views.jugador_edit, name='jugador-edit'),
-    path('<int:pk>/estado/<str:estado>/', views.jugador_estado, name='jugador-estado'),
 ]

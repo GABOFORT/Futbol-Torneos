@@ -1,0 +1,60 @@
+{% comment %}
+Confirmacion de borrado. Dentro del modal reusa el mecanismo de _modal.html:
+si hay un <form id="modal-form">, el JS lo envia por POST y recarga. Cuando el
+borrado esta bloqueado no se dibuja el form, asi que no hay nada que enviar.
+Fuera del modal los mismos botones se dibujan como enlaces al listado.
+{% endcomment %}
+<div class="rounded-[2rem] bg-white p-5 sm:p-8 shadow-2xl w-full max-w-lg">
+    <div class="flex items-start justify-between border-b border-gray-100 pb-4 mb-6">
+        <div>
+            <p class="text-xs sm:text-sm uppercase tracking-[0.2em] font-semibold {% if bloqueo %}text-yellow-700{% else %}text-red-700{% endif %}">
+                {% if bloqueo %}No se puede eliminar{% else %}Eliminar{% endif %}
+            </p>
+            <h2 class="mt-1 text-xl sm:text-2xl font-bold text-gray-900">{{ objeto }}</h2>
+        </div>
+        {% if en_modal %}
+            <button type="button" id="modal-close" class="shrink-0 text-gray-400 hover:text-gray-700" aria-label="Cerrar">&#10005;</button>
+        {% endif %}
+    </div>
+
+    {% if bloqueo %}
+        <div class="rounded-2xl border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
+            {{ bloqueo }}
+        </div>
+        <div class="acciones-modal">
+            {% if en_modal %}
+                <button type="button" id="modal-cancel" class="rounded-full border border-gray-300 bg-white px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50">Entendido</button>
+            {% else %}
+                <a href="{% url cancel_url %}" class="rounded-full border border-gray-300 bg-white px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50">Entendido</a>
+            {% endif %}
+        </div>
+    {% else %}
+        {% if arrastra %}
+            <div class="rounded-2xl border border-red-200 bg-red-50 p-4">
+                <p class="text-sm font-semibold text-red-800">También se va a eliminar:</p>
+                <ul class="mt-2 space-y-1 text-sm text-red-800">
+                    {% for linea in arrastra %}
+                        <li>&bull; {{ linea }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% else %}
+            <p class="text-sm text-gray-600">No tiene nada asociado, se elimina solo este registro.</p>
+        {% endif %}
+        <p class="mt-4 text-sm font-semibold text-gray-900">Esta acción no se puede deshacer.</p>
+
+        <form id="modal-form" method="post">
+            {% csrf_token %}
+            <div class="acciones-modal">
+                {% if en_modal %}
+                    <button type="button" id="modal-cancel" class="rounded-full border border-gray-300 bg-white px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50">Cancelar</button>
+                {% else %}
+                    <a href="{% url cancel_url %}" class="rounded-full border border-gray-300 bg-white px-6 py-3 text-center text-sm font-semibold text-gray-700 hover:bg-gray-50">Cancelar</a>
+                {% endif %}
+                <button type="submit" class="btn-peligro">
+                    Sí, eliminar
+                </button>
+            </div>
+        </form>
+    {% endif %}
+</div>

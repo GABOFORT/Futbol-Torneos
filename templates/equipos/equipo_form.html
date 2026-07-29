@@ -9,7 +9,7 @@
             <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">Equipos</p>
             <h1 class="mt-3 text-3xl font-bold text-green-900">{{ title }}</h1>
         </div>
-        <form method="post" class="space-y-6">
+        <form method="post" enctype="multipart/form-data" novalidate class="space-y-6">
             {% csrf_token %}
             {{ form.non_field_errors }}
             {% for field in form %}

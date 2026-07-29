@@ -5,12 +5,21 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.http import require_POST
 
 from .models import Usuario
 from .forms import (
     UsuarioCreateForm, UsuarioUpdateForm, EntrenadorCreateForm, EntrenadorUpdateForm, LigaForm,
 )
+from django.db.models import Q
+
+from .eliminar import vista_eliminar
+from .filtros import buscar, campo_texto, campo_opciones, hay_filtros
 from .permissions import superadmin_required, admin_liga_required, ligas_administradas
+from apps.equipos.models import Equipo
+from apps.jugadores.models import Jugador
+from apps.partidos.models import Partido
 from apps.torneos.models import Liga
 
 MENSAJE_CUENTA_BLOQUEADA = 'Tu cuenta está bloqueada por falta de pago. Contacta al Administrador General.'
@@ -22,11 +31,26 @@ def _liga_bloqueada(user):
     return any(liga.esta_vencida for liga in user.ligas_administradas.all())
 
 
+def _destino_seguro(request):
+    """A donde mandar al usuario despues de entrar.
+
+    El 'next' llega por la URL, asi que cualquiera puede armar un enlace con un
+    dominio ajeno: sin este filtro el login terminaria redirigiendo a un sitio
+    externo (por ejemplo una copia falsa que vuelve a pedir la contrasena).
+    """
+    destino = request.POST.get('next') or request.GET.get('next')
+    if destino and url_has_allowed_host_and_scheme(
+        destino, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+    ):
+        return destino
+    return 'dashboard'
+
+
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
 
-    next_url = request.GET.get('next') or request.POST.get('next') or 'dashboard'
+    next_url = _destino_seguro(request)
 
     if request.method == 'POST':
         username = request.POST.get('username')
@@ -44,7 +68,10 @@ def login_view(request):
     return render(request, 'usuarios/login.html', {'next': next_url})
 
 
+@require_POST
 def logout_view(request):
+    # Solo POST: por GET, cualquier sitio externo podria cerrar la sesion con
+    # un <img src="...\/logout\/">, sin que el usuario haga nada.
     logout(request)
     return redirect('login')
 
@@ -72,8 +99,31 @@ def dashboard(request):
 
 @superadmin_required
 def usuarios_list(request):
-    usuarios = Usuario.objects.order_by('username')
-    return render(request, 'usuarios/usuarios_list.html', {'usuarios': usuarios})
+    termino = request.GET.get('q', '')
+    rol = request.GET.get('rol', '')
+
+    # prefetch: sin esto la tabla dispara dos consultas por usuario para armar
+    # las columnas de liga y equipo, o sea mas de 400 con la lista completa.
+    usuarios = Usuario.objects.prefetch_related(
+        'ligas_administradas', 'equipos__liga'
+    ).order_by('username')
+    usuarios = buscar(usuarios, termino, [
+        'username', 'first_name', 'last_name', 'email',
+        'equipos__nombre', 'equipos__liga__nombre', 'ligas_administradas__nombre',
+    ])
+    if rol:
+        usuarios = usuarios.filter(role=rol)
+
+    filtros = [
+        campo_texto('q', 'Buscar', termino, 'Usuario, nombre, correo, equipo o liga'),
+        campo_opciones('rol', 'Rol', rol, Usuario.ROLE_CHOICES, vacio='Todos los roles'),
+    ]
+    return render(request, 'usuarios/usuarios_list.html', {
+        'usuarios': usuarios,
+        'filtros': filtros,
+        'filtros_activos': hay_filtros(filtros),
+        'total_resultados': usuarios.count(),
+    })
 
 
 @superadmin_required
@@ -119,8 +169,33 @@ def usuario_edit(request, pk):
 
 @admin_liga_required
 def entrenadores_list(request):
-    entrenadores = Usuario.objects.filter(role=Usuario.ROLE_ENTRENADOR).order_by('username')
-    return render(request, 'usuarios/entrenadores_list.html', {'entrenadores': entrenadores})
+    termino = request.GET.get('q', '')
+    liga_id = request.GET.get('liga', '')
+
+    # prefetch: la tabla muestra liga y equipo de cada uno, y sin esto seria
+    # una consulta por fila.
+    entrenadores = Usuario.objects.entrenadores(request.user).prefetch_related(
+        'equipos__liga'
+    ).order_by('first_name', 'last_name', 'username')
+    entrenadores = buscar(entrenadores, termino, [
+        'username', 'first_name', 'last_name', 'phone', 'email',
+        'equipos__nombre', 'equipos__liga__nombre',
+    ])
+    if liga_id.isdigit():
+        # Un entrenador no cuelga de una liga: se llega a ella por sus equipos.
+        entrenadores = entrenadores.filter(equipos__liga_id=int(liga_id)).distinct()
+
+    ligas = ligas_administradas(request.user)
+    filtros = [
+        campo_texto('q', 'Buscar', termino, 'Nombre, usuario, teléfono, equipo o liga'),
+        campo_opciones('liga', 'Liga', liga_id, ligas.order_by('nombre').values_list('id', 'nombre'), vacio='Todas'),
+    ]
+    return render(request, 'usuarios/entrenadores_list.html', {
+        'entrenadores': entrenadores,
+        'filtros': filtros,
+        'filtros_activos': hay_filtros(filtros),
+        'total_resultados': entrenadores.count(),
+    })
 
 
 @admin_liga_required
@@ -129,7 +204,11 @@ def entrenador_create(request):
     if request.method == 'POST':
         form = EntrenadorCreateForm(request.POST)
         if form.is_valid():
-            form.save()
+            entrenador = form.save(commit=False)
+            # Queda registrado quien lo dio de alta: es lo que despues permite
+            # que cada admin de liga vea unicamente a los suyos.
+            entrenador.creado_por = request.user
+            entrenador.save()
             messages.success(request, 'Entrenador creado correctamente.')
             if modal:
                 return JsonResponse({'success': True})
@@ -145,7 +224,9 @@ def entrenador_create(request):
 
 @admin_liga_required
 def entrenador_edit(request, pk):
-    entrenador = get_object_or_404(Usuario, pk=pk, role=Usuario.ROLE_ENTRENADOR)
+    # El manager acota a los entrenadores que este usuario puede administrar,
+    # asi que un admin de liga no llega a los de otro ni forzando la URL.
+    entrenador = get_object_or_404(Usuario.objects.entrenadores(request.user), pk=pk)
     modal = request.GET.get('modal') == '1'
     if request.method == 'POST':
         form = EntrenadorUpdateForm(request.POST, instance=entrenador)
@@ -166,23 +247,43 @@ def entrenador_edit(request, pk):
 
 @admin_liga_required
 def ligas_list(request):
+    termino = request.GET.get('q', '')
+    activa = request.GET.get('activa', '')
+
     ligas = ligas_administradas(request.user).order_by('nombre')
+    ligas = buscar(ligas, termino, ['nombre', 'descripcion'])
+    if activa in ('1', '0'):
+        ligas = ligas.filter(activa=(activa == '1'))
+
+    filtros = [
+        campo_texto('q', 'Buscar', termino, 'Nombre o descripción de la liga'),
+        campo_opciones('activa', 'Estado', activa, [('1', 'Activa'), ('0', 'Inactiva')], vacio='Todos'),
+    ]
     return render(request, 'usuarios/ligas_list.html', {
         'ligas': ligas,
-        'es_superadmin': request.user.is_superuser,
+        # es_super_admin() y no is_superuser: contempla tambien al usuario con
+        # role='superadmin' que no tiene marcada la casilla de superusuario.
+        'es_superadmin': request.user.es_super_admin(),
+        'filtros': filtros,
+        'filtros_activos': hay_filtros(filtros),
+        'total_resultados': ligas.count(),
     })
 
 
 @admin_liga_required
 def liga_create(request):
     user = request.user
+    modal = request.GET.get('modal') == '1'
     if not user.is_superuser and ligas_administradas(user).count() >= user.limite_ligas:
         messages.error(request, f'Alcanzaste el límite de {user.limite_ligas} liga(s) que puedes crear. Contacta al Administrador General.')
+        if modal:
+            # Un redirect aca devolveria la pagina entera y el modal la inyectaria
+            # sobre si misma. Se le pide recargar para que solo salga el mensaje.
+            return JsonResponse({'success': False, 'recargar': True})
         return redirect('ligas-list')
 
-    modal = request.GET.get('modal') == '1'
     if request.method == 'POST':
-        form = LigaForm(request.POST)
+        form = LigaForm(request.POST, request.FILES)
         if form.is_valid():
             liga = form.save()
             if not user.is_superuser and user.role == Usuario.ROLE_ADMIN_LIGA:
@@ -205,7 +306,7 @@ def liga_edit(request, pk):
     liga = get_object_or_404(ligas_administradas(request.user), pk=pk)
     modal = request.GET.get('modal') == '1'
     if request.method == 'POST':
-        form = LigaForm(request.POST, instance=liga)
+        form = LigaForm(request.POST, request.FILES, instance=liga)
         if form.is_valid():
             form.save()
             messages.success(request, 'Liga actualizada correctamente.')
@@ -219,6 +320,71 @@ def liga_edit(request, pk):
         return render(request, 'usuarios/modal_form.html', {'form': form, 'title': f'Editar liga: {liga.nombre}'})
 
     return render(request, 'usuarios/liga_form.html', {'form': form, 'title': f'Editar liga: {liga.nombre}'})
+
+
+@superadmin_required
+def usuario_delete(request, pk):
+    usuario = get_object_or_404(Usuario, pk=pk)
+
+    bloqueo = ''
+    arrastra = []
+    equipos = usuario.equipos.count()
+    if usuario.pk == request.user.pk:
+        bloqueo = 'No puedes eliminar tu propia cuenta mientras la estás usando.'
+    elif equipos:
+        # Equipo.entrenador es PROTECT: sin este aviso reventaria el borrado.
+        bloqueo = (
+            f'Este usuario es entrenador de {equipos} equipo(s). Asigna esos equipos a otro '
+            f'entrenador o eliminalos antes de borrar la cuenta.'
+        )
+    else:
+        ligas = usuario.ligas_administradas.count()
+        if ligas:
+            # Es M2M: se desvincula, las ligas siguen existiendo.
+            arrastra.append(f'Dejará de administrar {ligas} liga(s), que no se eliminan')
+
+    return vista_eliminar(
+        request,
+        instancia=usuario,
+        etiqueta=f'Usuario: {usuario.nombre_visible} ({usuario.rol_visible})',
+        url_listado='usuarios-list',
+        mensaje_ok=f'Se eliminó el usuario "{usuario.username}".',
+        arrastra=arrastra,
+        bloqueo=bloqueo,
+    )
+
+
+@superadmin_required
+def liga_delete(request, pk):
+    # Eliminar ligas es solo del superadmin. El admin de liga administra la suya
+    # y puede borrar sus categorias y equipos, pero no la liga en si.
+    liga = get_object_or_404(Liga, pk=pk)
+
+    equipos = Equipo.objects.filter(liga=liga)
+    arrastra = []
+    for cantidad, etiqueta in (
+        (liga.categorias.count(), 'categoría(s)'),
+        (equipos.count(), 'equipo(s)'),
+        (Jugador.objects.filter(equipo__liga=liga).count(), 'jugador(es)'),
+        (Partido.objects.filter(
+            Q(categoria__liga=liga) | Q(equipo_local__liga=liga) | Q(equipo_visitante__liga=liga)
+        ).distinct().count(), 'partido(s)'),
+    ):
+        if cantidad:
+            arrastra.append(f'{cantidad} {etiqueta}')
+
+    return vista_eliminar(
+        request,
+        instancia=liga,
+        etiqueta=f'Liga: {liga.nombre}',
+        url_listado='ligas-list',
+        mensaje_ok=f'Se eliminó la liga "{liga.nombre}" con todo su contenido.',
+        arrastra=arrastra,
+        # Equipo.liga es PROTECT y se deja asi a proposito: protege contra
+        # borrados accidentales desde el admin o un script. La cascada se hace
+        # explicita solo aca, borrando los equipos antes que la liga.
+        antes_de_borrar=equipos.delete,
+    )
 
 
 @superadmin_required
