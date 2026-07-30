@@ -24,7 +24,8 @@
                     {% endfor %}
                 </div>
             {% else %}
-                <div>
+                {# data-campo permite que el JS oculte o muestre un campo segun otro. #}
+                <div data-campo="{{ field.name }}">
                     <label class="block text-sm font-medium text-gray-700">{{ field.label }}</label>
                     {{ field }}
                     {% if field.help_text %}

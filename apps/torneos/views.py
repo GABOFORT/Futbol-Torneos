@@ -1,5 +1,3 @@
-import itertools
-
 from django.contrib import messages
 from django.db.models import Q
 from django.http import JsonResponse
@@ -7,6 +5,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.equipos.models import Equipo
 from apps.jugadores.models import Jugador
+from apps.partidos.calendario import armar_jornadas
 from apps.partidos.models import Partido
 from apps.usuarios.eliminar import vista_eliminar
 from apps.usuarios.filtros import buscar, campo_texto, campo_opciones, hay_filtros
@@ -18,7 +17,9 @@ from .models import Categoria, Liga
 
 def inicio(request):
     context = {
-        'proximos_partidos': Partido.objects.filter(estado=Partido.ESTADO_PROGRAMADO)
+        # Los reprogramados tambien son proximos partidos: si se filtrara solo
+        # por 'programado' desaparecerian de la portada al moverles la fecha.
+        'proximos_partidos': Partido.objects.filter(estado__in=Partido.ESTADOS_POR_JUGARSE)
             .select_related('categoria', 'categoria__liga', 'equipo_local', 'equipo_visitante').order_by('fecha')[:5],
         'ligas_activas': Liga.objects.filter(activa=True)[:6],
         # Antes se ordenaba por fecha_inicio, que era la fecha del torneo. Ese
@@ -172,11 +173,19 @@ def categoria_generar_partidos(request, pk):
         elif Partido.objects.filter(categoria=categoria).exists():
             messages.error(request, 'Ya se generaron los partidos de esta categoría.')
         else:
-            equipos = list(Equipo.objects.filter(categoria=categoria))
+            equipos = list(Equipo.objects.filter(categoria=categoria).order_by('nombre'))
             if len(equipos) < 2:
                 messages.error(request, 'Necesitas al menos 2 equipos inscritos para generar partidos.')
             else:
-                for local, visitante in itertools.combinations(equipos, 2):
-                    Partido.objects.create(categoria=categoria, equipo_local=local, equipo_visitante=visitante)
-                messages.success(request, f'Se generaron {len(equipos) * (len(equipos) - 1) // 2} partidos. Ahora asígnales fecha y hora.')
+                jornadas = armar_jornadas(equipos)
+                partidos = [
+                    Partido(categoria=categoria, jornada=numero, equipo_local=local, equipo_visitante=visitante)
+                    for numero, encuentros in enumerate(jornadas, start=1)
+                    for local, visitante in encuentros
+                ]
+                Partido.objects.bulk_create(partidos)
+                aviso = f'Se generaron {len(partidos)} partidos en {len(jornadas)} jornadas.'
+                if len(equipos) % 2:
+                    aviso += ' Al ser una cantidad impar de equipos, uno descansa por jornada.'
+                messages.success(request, aviso + ' Ahora asígnales fecha y hora.')
     return redirect('categoria-list')

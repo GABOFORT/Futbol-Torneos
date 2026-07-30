@@ -1,0 +1,41 @@
+{% comment %}
+Una seccion de filas (Goles o Asistencias). El contador de la derecha compara
+lo asignado contra el marcador y se pone en verde al cuadrar.
+{% endcomment %}
+<section class="seccion-actuaciones" data-seccion="{{ seccion }}">
+    <div class="cabecera-actuaciones">
+        <h3>{{ titulo }}</h3>
+        <div class="contadores">
+            <span class="contador-equipo" data-contador-equipo="{{ partido.equipo_local_id }}">{{ partido.equipo_local.nombre }} <b>0</b> de <b class="meta">0</b></span>
+            <span class="contador-equipo" data-contador-equipo="{{ partido.equipo_visitante_id }}">{{ partido.equipo_visitante.nombre }} <b>0</b> de <b class="meta">0</b></span>
+        </div>
+    </div>
+
+    <div class="filas-actuacion" data-filas>
+        {% for fila in filas %}
+            <div class="fila-actuacion">
+                <select name="{{ seccion }}_jugador" class="filtro-select select-actuacion">
+                    <option value="">Elegir jugador…</option>
+                    <optgroup label="{{ partido.equipo_local.nombre }}">
+                        {% for j in plantel_local %}<option value="{{ j.pk }}" data-equipo="{{ partido.equipo_local_id }}" {% if j.pk == fila.jugador_id %}selected{% endif %}>{{ j.nombre }} {{ j.apellido }}{% if j.numero %} · {{ j.numero }}{% endif %}</option>{% endfor %}
+                    </optgroup>
+                    <optgroup label="{{ partido.equipo_visitante.nombre }}">
+                        {% for j in plantel_visitante %}<option value="{{ j.pk }}" data-equipo="{{ partido.equipo_visitante_id }}" {% if j.pk == fila.jugador_id %}selected{% endif %}>{{ j.nombre }} {{ j.apellido }}{% if j.numero %} · {{ j.numero }}{% endif %}</option>{% endfor %}
+                    </optgroup>
+                </select>
+                <input type="number" name="{{ seccion }}_cantidad" min="1" max="20" value="{{ fila.cantidad }}" class="cantidad-actuacion" aria-label="Cantidad">
+                {% if seccion == 'gol' %}
+                    <label class="check-en-contra" data-solo-goles>
+                        <input type="checkbox" name="gol_en_contra" value="{{ forloop.counter0 }}" {% if fila.en_contra %}checked{% endif %}>
+                        <span>En contra</span>
+                    </label>
+                {% endif %}
+                <button type="button" class="quitar-fila" aria-label="Quitar">✕</button>
+            </div>
+        {% endfor %}
+    </div>
+
+    <button type="button" class="agregar-fila" data-agregar="{{ seccion }}">
+        + Agregar {% if seccion == 'gol' %}goleador{% else %}asistente{% endif %}
+    </button>
+</section>

@@ -1,31 +1,75 @@
-{% extends 'base.html' %}
+{% comment %}
+Formulario de resultado con goleadores y asistencias.
 
-{% block titulo %}{{ title }} - Partidos{% endblock %}
-
-{% block contenido %}
-<div class="max-w-md mx-auto p-6">
-    <div class="rounded-[2rem] bg-white border border-green-100 p-8 shadow-lg">
-        <div class="mb-8">
-            <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">Resultado</p>
-            <h1 class="mt-3 text-2xl font-bold text-green-900">{{ title }}</h1>
+No usa modal_form.html porque necesita dos secciones de filas que se agregan y
+quitan, con contadores que verifican contra el marcador. Mantiene los mismos
+ganchos (#modal-form, #modal-close, #modal-cancel) para que el modal siga
+funcionando igual.
+{% endcomment %}
+<div class="rounded-[2rem] bg-white p-5 sm:p-8 shadow-2xl w-full max-w-lg sm:max-w-3xl max-h-[85vh] overflow-y-auto">
+    <div class="flex items-start justify-between border-b border-green-100 pb-4 mb-6">
+        <div>
+            <p class="text-xs sm:text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">Jornada {{ partido.jornada }}</p>
+            <h2 class="mt-1 text-xl sm:text-2xl font-bold text-green-900">{{ title }}</h2>
+            <p class="mt-2 text-sm text-gray-500">Carga el marcador y después quién anotó y quién asistió.</p>
         </div>
-        <form method="post" class="space-y-6">
-            {% csrf_token %}
-            {{ form.non_field_errors }}
+        <button type="button" id="modal-close" class="shrink-0 text-gray-400 hover:text-gray-700" aria-label="Cerrar">✕</button>
+    </div>
+
+    {% if problemas %}
+        <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4">
+            <p class="text-sm font-semibold text-red-800">Revisá lo siguiente:</p>
+            <ul class="mt-2 space-y-1">
+                {% for problema in problemas %}
+                    <li class="text-sm text-red-700">• {{ problema }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    <form id="modal-form" method="post" novalidate class="space-y-6"
+          data-local="{{ partido.equipo_local_id }}" data-visitante="{{ partido.equipo_visitante_id }}">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+
+        <section class="grid gap-4 sm:grid-cols-2">
             {% for field in form %}
-                <div>
+                <div data-campo="{{ field.name }}" {% if field.name == 'ganador_penales' %}class="sm:col-span-2"{% endif %}>
                     <label class="block text-sm font-medium text-gray-700">{{ field.label }}</label>
                     {{ field }}
-                    {% for error in field.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ error }}</p>
-                    {% endfor %}
+                    {% if field.help_text %}<p class="mt-2 text-sm text-gray-500">{{ field.help_text }}</p>{% endif %}
+                    {% for error in field.errors %}<p class="mt-1 text-sm text-red-600">{{ error }}</p>{% endfor %}
                 </div>
             {% endfor %}
-            <div class="flex items-center gap-3">
-                <button type="submit" class="inline-flex items-center justify-center rounded-full bg-green-800 px-6 py-3 text-sm font-semibold text-white hover:bg-green-700">Guardar resultado</button>
-                <a href="{% url 'partido-list' %}" class="text-sm font-semibold text-green-700 hover:text-green-900">Cancelar</a>
-            </div>
-        </form>
-    </div>
+        </section>
+
+        {% include 'partidos/_seccion_actuaciones.html' with seccion='gol' titulo='Goles' filas=goleadores %}
+        {% include 'partidos/_seccion_actuaciones.html' with seccion='asistencia' titulo='Asistencias' filas=asistentes %}
+
+        <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4 border-t border-green-100">
+            <button type="button" id="modal-cancel" class="rounded-full border border-gray-300 bg-white px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50">Cancelar</button>
+            <button type="submit" class="rounded-full bg-green-800 px-6 py-3 text-sm font-semibold text-white hover:bg-green-700">Guardar</button>
+        </div>
+    </form>
+
+    {# Plantilla oculta que el JS clona cada vez que se agrega una fila. #}
+    <template id="plantilla-fila">
+        <div class="fila-actuacion">
+            <select name="__CAMPO___jugador" class="filtro-select select-actuacion">
+                <option value="">Elegir jugador…</option>
+                <optgroup label="{{ partido.equipo_local.nombre }}">
+                    {% for j in plantel_local %}<option value="{{ j.pk }}" data-equipo="{{ partido.equipo_local_id }}">{{ j.nombre }} {{ j.apellido }}{% if j.numero %} · {{ j.numero }}{% endif %}</option>{% endfor %}
+                </optgroup>
+                <optgroup label="{{ partido.equipo_visitante.nombre }}">
+                    {% for j in plantel_visitante %}<option value="{{ j.pk }}" data-equipo="{{ partido.equipo_visitante_id }}">{{ j.nombre }} {{ j.apellido }}{% if j.numero %} · {{ j.numero }}{% endif %}</option>{% endfor %}
+                </optgroup>
+            </select>
+            <input type="number" name="__CAMPO___cantidad" min="1" max="20" value="1" class="cantidad-actuacion" aria-label="Cantidad">
+            <label class="check-en-contra" data-solo-goles>
+                <input type="checkbox" name="gol_en_contra" value="">
+                <span>En contra</span>
+            </label>
+            <button type="button" class="quitar-fila" aria-label="Quitar">✕</button>
+        </div>
+    </template>
 </div>
-{% endblock %}

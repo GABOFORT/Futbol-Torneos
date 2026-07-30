@@ -3,59 +3,165 @@
 {% block titulo %}Partidos{% endblock %}
 
 {% block contenido %}
-<div class="max-w-6xl mx-auto p-6">
+<div class="max-w-[90rem] mx-auto p-6">
     <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
         <div>
             <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">Partidos</p>
             <h1 class="text-3xl font-bold text-green-900">Calendario de partidos</h1>
-            <p class="text-gray-600 mt-2">Los partidos se generan desde la categoría al cerrar inscripciones. Aquí solo se les asigna fecha y hora.</p>
+            <p class="text-gray-600 mt-2">Cada jornada enfrenta a todos los equipos una vez. Elige la jornada para ver sus partidos.</p>
         </div>
     </div>
 
-    <div class="overflow-x-auto rounded-3xl bg-white border border-green-100 shadow-sm">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-green-50">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Categoría</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Local</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Visitante</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Fecha</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Resultado</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Estado</th>
-                    {% if puede_gestionar %}
-                        <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-600">Acciones</th>
-                    {% endif %}
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100 bg-white">
-                {% for partido in partidos %}
-                    <tr>
-                        <td class="px-6 py-4 text-sm text-gray-800">{{ partido.categoria.liga.nombre }} · {{ partido.categoria.nombre }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-800">{{ partido.equipo_local.nombre }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-800">{{ partido.equipo_visitante.nombre }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-800">{{ partido.fecha|date:'d/m/Y H:i'|default:'Sin fecha asignada' }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-800">
-                            {% if partido.estado == 'finalizado' %}
-                                {{ partido.goles_local }} - {{ partido.goles_visitante }}
+    {% if puede_gestionar %}
+        <div class="mb-4">
+            {% include '_filtros.html' with etiqueta_resultados='partido' %}
+        </div>
+    {% endif %}
+
+    {% comment %}
+    Las jornadas van como pastillas y no como desplegable: se ve de un golpe
+    cuantas hay, en cual estas y se salta de una a otra con un clic.
+    {% endcomment %}
+    <div class="selector-jornadas" data-jornadas>
+        <span class="etiqueta-jornadas">Jornada</span>
+        <div class="tira-jornadas">
+            {% for pastilla in jornadas %}
+                <a href="{{ pastilla.url }}" data-jornada="{{ pastilla.valor }}"
+                   class="pastilla-jornada {% if pastilla.activa %}pastilla-activa{% endif %}">{{ pastilla.etiqueta }}</a>
+            {% empty %}
+                <span class="sin-dato">Todavía no hay partidos generados</span>
+            {% endfor %}
+        </div>
+        {% if not puede_gestionar %}
+            <span class="filtro-contador" data-contador>{{ total_resultados }} partido{{ total_resultados|pluralize:"s" }}</span>
+        {% endif %}
+    </div>
+
+    <div data-resultados>
+    {% for grupo in grupos %}
+        <section class="mb-10">
+            <div class="bloque-jornada">
+                <div class="flex items-center gap-3">
+                    {% include 'usuarios/_logo_liga.html' with liga=grupo.categoria.liga %}
+                    <div>
+                        <p class="text-xs uppercase tracking-[0.2em] font-semibold text-green-700">{{ grupo.categoria.liga.nombre }} · {{ grupo.categoria.nombre }}</p>
+                        <h2 class="text-2xl font-bold text-green-900">Jornada {{ grupo.jornada }}</h2>
+                    </div>
+                </div>
+                {% if grupo.partidos %}
+                    <span class="conteo-jornada">{{ grupo.partidos|length }} partido{{ grupo.partidos|length|pluralize:"s" }}</span>
+                {% elif grupo.descanso_propio %}
+                    <span class="conteo-jornada">No juegas esta jornada</span>
+                {% endif %}
+            </div>
+
+            <div class="grid gap-4 lg:grid-cols-2">
+                {% for partido in grupo.partidos %}
+                    <article class="tarjeta-partido {% if partido.jugado %}tarjeta-jugada{% endif %}">
+                        <div class="cruce">
+                            <div class="lado-equipo">
+                                <img src="{{ partido.equipo_local.escudo_url }}" alt="Escudo de {{ partido.equipo_local.nombre }}" class="escudo-cruce">
+                                <p class="nombre-cruce">{{ partido.equipo_local.nombre }}</p>
+                                {% if partido.ganador_penales_id == partido.equipo_local_id %}
+                                    <span class="chip-penales" title="Ganó los penales: +1 punto">+1 penales</span>
+                                {% endif %}
+                            </div>
+
+                            <div class="marcador">
+                                {% if partido.jugado %}
+                                    <p class="marcador-cifras">{{ partido.goles_local }} <span>-</span> {{ partido.goles_visitante }}</p>
+                                    {% if partido.empatado %}
+                                        <p class="marcador-nota">Empate</p>
+                                    {% endif %}
+                                {% else %}
+                                    <p class="marcador-vs">VS</p>
+                                {% endif %}
+                            </div>
+
+                            <div class="lado-equipo">
+                                <img src="{{ partido.equipo_visitante.escudo_url }}" alt="Escudo de {{ partido.equipo_visitante.nombre }}" class="escudo-cruce">
+                                <p class="nombre-cruce">{{ partido.equipo_visitante.nombre }}</p>
+                                {% if partido.ganador_penales_id == partido.equipo_visitante_id %}
+                                    <span class="chip-penales" title="Ganó los penales: +1 punto">+1 penales</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="pie-partido">
+                            <span class="fecha-partido">
+                                {% if partido.fecha %}
+                                    {{ partido.fecha|date:'d/m/Y' }} · {{ partido.fecha|date:'H:i' }}
+                                    {% if partido.fue_movido %}
+                                        {# Se muestra aunque el partido ya este finalizado: importa saber para cuando era. #}
+                                        <span class="fecha-anterior">antes: {{ partido.fecha_original|date:'d/m/Y H:i' }}</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="sin-dato">Sin fecha asignada</span>
+                                {% endif %}
+                            </span>
+
+                            {% if partido.jugado %}
+                                <span class="insignia insignia-final">Finalizado</span>
+                            {% elif partido.ya_empezo %}
+                                <span class="insignia insignia-pendiente">Esperando resultado</span>
+                            {% elif partido.reprogramado %}
+                                <span class="insignia insignia-reprogramado">Reprogramado</span>
+                            {% elif partido.fecha %}
+                                <span class="insignia insignia-programado">Programado</span>
                             {% else %}
-                                -
+                                <span class="insignia insignia-sinfecha">Sin programar</span>
                             {% endif %}
-                        </td>
-                        <td class="px-6 py-4 text-sm text-gray-800">{{ partido.get_estado_display }}</td>
-                        {% if puede_gestionar %}
-                            <td class="px-6 py-4 text-right text-sm font-medium space-x-3">
-                                <button data-url="{% url 'partido-edit' partido.pk %}?modal=1" class="open-modal text-green-700 hover:text-green-900">Fecha/hora</button>
-                                <button data-url="{% url 'partido-resultado' partido.pk %}?modal=1" class="open-modal text-green-700 hover:text-green-900">Resultado</button>
-                            </td>
-                        {% endif %}
-                    </tr>
-                {% empty %}
-                    <tr>
-                        <td colspan="7" class="px-6 py-8 text-center text-sm text-gray-500">No hay partidos programados.</td>
-                    </tr>
+
+                            {% if puede_gestionar %}
+                                <div class="acciones-partido">
+                                    {% comment %}
+                                    Una sola accion por momento: antes de la hora se toca el cuando,
+                                    desde la hora en adelante el marcador, y con resultado cargado
+                                    queda cerrado salvo para el Administrador General.
+                                    {% endcomment %}
+                                    {% if partido.jugado %}
+                                        {% if es_superadmin %}
+                                            <button data-url="{% url 'partido-resultado' partido.pk %}?modal=1" class="open-modal btn-accion">Corregir resultado</button>
+                                        {% endif %}
+                                    {% elif partido.ya_empezo %}
+                                        <button data-url="{% url 'partido-resultado' partido.pk %}?modal=1" class="open-modal btn-accion btn-accion-principal">Resultado</button>
+                                        <button data-url="{% url 'partido-edit' partido.pk %}?modal=1" class="open-modal btn-accion">Reprogramar</button>
+                                    {% else %}
+                                        <button data-url="{% url 'partido-edit' partido.pk %}?modal=1" class="open-modal btn-accion">Fecha y hora</button>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </article>
                 {% endfor %}
-            </tbody>
-        </table>
+
+                {% if grupo.descansa %}
+                    {% comment %}
+                    Con cantidad impar de equipos siempre queda uno afuera. Va como
+                    tarjeta y no como aviso al costado para que se lea de un golpe
+                    quien no juega, igual que se leen los cruces.
+                    {% endcomment %}
+                    <article class="tarjeta-descansa {% if grupo.descanso_propio %}tarjeta-descansa-propia{% endif %}">
+                        <img src="{{ grupo.descansa.escudo_url }}" alt="Escudo de {{ grupo.descansa.nombre }}" class="escudo-descansa">
+                        <div>
+                            <p class="nombre-descansa">{{ grupo.descansa.nombre }}</p>
+                            <p class="leyenda-descansa">
+                                {% if grupo.descanso_propio %}Te toca descansar esta jornada{% else %}Descansa esta jornada{% endif %}
+                            </p>
+                            {% if grupo.descanso_propio %}
+                                <p class="nota-descansa">Tu próximo partido está en otra jornada. Elígela arriba para verlo.</p>
+                            {% endif %}
+                        </div>
+                    </article>
+                {% endif %}
+            </div>
+        </section>
+    {% empty %}
+        <div class="rounded-3xl border border-green-100 bg-white p-10 text-center">
+            <p class="text-gray-500">No hay partidos que coincidan con la búsqueda.</p>
+            <p class="mt-2 text-sm text-gray-400">Los partidos se generan desde Categorías, al cerrar la inscripción.</p>
+        </div>
+    {% endfor %}
     </div>
 </div>
 

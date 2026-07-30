@@ -60,3 +60,42 @@ def ligas_administradas(user):
     if user.role == user.ROLE_ADMIN_LIGA:
         return user.ligas_administradas.all()
     return Liga.objects.none()
+
+
+def cascada_equipos(user, parametros):
+    """Resuelve la seleccion Liga -> Categoria -> Equipo acotando cada nivel.
+
+    Si un nivel no pertenece al que lo contiene se descarta: asi cambiar de liga
+    limpia sola la categoria vieja, y nadie llega a datos de otra liga pasando
+    ids a mano en la URL.
+
+    Devuelve (seleccion, disponibles) para armar los filtros y las consultas.
+    """
+    from apps.equipos.models import Equipo
+    from apps.torneos.models import Categoria
+
+    ligas = ligas_visibles(user).order_by('nombre')
+    categorias = Categoria.objects.filter(liga__in=ligas).order_by('liga__nombre', 'nombre')
+    equipos = Equipo.objects.filter(liga__in=ligas).order_by('nombre')
+
+    def elegido(nombre, disponibles):
+        valor = parametros.get(nombre, '')
+        if valor.isdigit() and disponibles.filter(pk=int(valor)).exists():
+            return int(valor)
+        return None
+
+    liga = elegido('liga', ligas)
+    if liga:
+        categorias = categorias.filter(liga_id=liga)
+        equipos = equipos.filter(liga_id=liga)
+
+    categoria = elegido('categoria', categorias)
+    if categoria:
+        equipos = equipos.filter(categoria_id=categoria)
+
+    equipo = elegido('equipo', equipos)
+
+    return (
+        {'liga': liga, 'categoria': categoria, 'equipo': equipo},
+        {'ligas': ligas, 'categorias': categorias, 'equipos': equipos},
+    )

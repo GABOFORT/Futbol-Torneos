@@ -4,3 +4,5 @@ db.sqlite3
 venv/
 .env
 tools/tailwindcss.exe
+# Credenciales generadas: nunca al repositorio
+credenciales-*.csv

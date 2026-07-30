@@ -10,7 +10,20 @@
                 <a href="/" class="text-white hover:bg-green-700 px-3 py-2 rounded-md text-sm font-medium">Inicio</a>
                 <a href="/equipos/" class="text-white hover:bg-green-700 px-3 py-2 rounded-md text-sm font-medium">Equipos</a>
                 <a href="/roles/" class="text-white hover:bg-green-700 px-3 py-2 rounded-md text-sm font-medium">Roles</a>
-                <a href="/estadisticas/" class="text-white hover:bg-green-700 px-3 py-2 rounded-md text-sm font-medium">Estadísticas</a>
+                <!-- Dropdown Estadísticas: las tres tablas juntas, que es donde se las busca -->
+                <div class="relative group">
+                    <button class="text-white hover:bg-green-700 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1">
+                        Estadísticas
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                    <div class="absolute left-0 mt-1 w-56 bg-white rounded-md shadow-lg hidden group-hover:block z-50">
+                        <a href="/estadisticas/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50">Tablas de posiciones</a>
+                        <a href="/estadisticas/goleo/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50">Tabla de goleo</a>
+                        <a href="/estadisticas/asistencias/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50">Tabla de asistencias</a>
+                    </div>
+                </div>
                 <!-- Dropdown Información -->
                 <div class="relative group">
                     <button class="text-white hover:bg-green-700 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1">
@@ -76,7 +89,10 @@
         <a href="/" class="block text-white py-2 text-sm hover:text-green-300">Inicio</a>
         <a href="/equipos/" class="block text-white py-2 text-sm hover:text-green-300">Equipos</a>
         <a href="/roles/" class="block text-white py-2 text-sm hover:text-green-300">Roles</a>
-        <a href="/estadisticas/" class="block text-white py-2 text-sm hover:text-green-300">Estadísticas</a>
+        <p class="text-green-400 text-xs uppercase mt-3 mb-1 font-semibold">Estadísticas</p>
+        <a href="/estadisticas/" class="block text-white py-2 pl-3 text-sm hover:text-green-300">Tablas de posiciones</a>
+        <a href="/estadisticas/goleo/" class="block text-white py-2 pl-3 text-sm hover:text-green-300">Tabla de goleo</a>
+        <a href="/estadisticas/asistencias/" class="block text-white py-2 pl-3 text-sm hover:text-green-300">Tabla de asistencias</a>
         <p class="text-green-400 text-xs uppercase mt-3 mb-1 font-semibold">Información</p>
         <a href="/informacion/quienes-somos/" class="block text-white py-2 pl-3 text-sm hover:text-green-300">Quiénes somos</a>
         <a href="/informacion/donde-estamos/" class="block text-white py-2 pl-3 text-sm hover:text-green-300">Dónde estamos</a>

@@ -22,6 +22,7 @@
                     <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-600">GF</th>
                     <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-600">GC</th>
                     <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-600">DG</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-600" title="Puntos extra ganados en penales">PEX</th>
                     <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-600">Pts</th>
                 </tr>
             </thead>
@@ -37,17 +38,23 @@
                         <td class="px-4 py-3 text-center text-sm text-gray-800">{{ fila.gf }}</td>
                         <td class="px-4 py-3 text-center text-sm text-gray-800">{{ fila.gc }}</td>
                         <td class="px-4 py-3 text-center text-sm text-gray-800">{{ fila.dg }}</td>
+                        <td class="px-4 py-3 text-center text-sm text-gray-800">{% if fila.pen %}<span class="chip-penales">+{{ fila.pen }}</span>{% else %}<span class="text-gray-300">0</span>{% endif %}</td>
                         <td class="px-4 py-3 text-center text-sm font-bold text-green-800">{{ fila.pts }}</td>
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="10" class="px-6 py-8 text-center text-sm text-gray-500">Sin equipos inscritos en esta categoría.</td>
+                        <td colspan="11" class="px-6 py-8 text-center text-sm text-gray-500">Sin equipos inscritos en esta categoría.</td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 
-    <a href="{% url 'estadisticas-liga-categorias' categoria.liga_id %}" class="mt-6 inline-flex items-center text-sm font-semibold text-green-700 hover:text-green-900">← Volver a {{ categoria.liga.nombre }}</a>
+    <div class="mt-6 flex flex-wrap items-center gap-3">
+        <a href="{% url 'estadisticas-liga-categorias' categoria.liga_id %}" class="text-sm font-semibold text-green-700 hover:text-green-900">← Volver a {{ categoria.liga.nombre }}</a>
+        <span class="text-gray-300">|</span>
+        <a href="{% url 'estadisticas-goleo' %}?liga={{ categoria.liga_id }}&categoria={{ categoria.pk }}" class="btn-accion">⚽ Goleo de esta categoría</a>
+        <a href="{% url 'estadisticas-asistencias' %}?liga={{ categoria.liga_id }}&categoria={{ categoria.pk }}" class="btn-accion">🅰 Asistencias</a>
+    </div>
 </div>
 {% endblock %}

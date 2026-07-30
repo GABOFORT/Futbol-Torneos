@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block titulo %}{{ titulo }}{% endblock %}
+
+{% block contenido %}
+<div class="max-w-[100rem] mx-auto p-6">
+    <div class="mb-8">
+        <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">Estadísticas</p>
+        <h1 class="text-3xl font-bold text-green-900">{{ titulo }}</h1>
+        <p class="text-gray-600 mt-2">Ranking de jugadores. Usa los filtros para acotar por liga, categoría o equipo.</p>
+    </div>
+
+    <div class="mb-6">
+        {% include '_filtros.html' with etiqueta_resultados='jugador' sufijo_resultados='es' %}
+    </div>
+
+    <div data-resultados class="overflow-x-auto rounded-3xl bg-white border border-green-100 shadow-sm">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-green-50">
+                <tr>
+                    <th class="col-numero px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-600">N°</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Jugador</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Equipo</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Categoría</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Liga</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-600" title="Partidos jugados por su equipo">PJ</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-600">{{ etiqueta }}</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-600" title="{{ etiqueta }} por partido">Prom.</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 bg-white">
+                {% for fila in filas %}
+                    <tr {% if forloop.counter <= 3 %}class="bg-green-50/40"{% endif %}>
+                        <td class="col-numero px-4 py-4 text-sm {% if forloop.counter <= 3 %}font-bold text-green-800{% else %}text-gray-400{% endif %}">{{ forloop.counter }}</td>
+                        <td class="px-4 py-4 text-sm font-semibold text-gray-900">
+                            {{ fila.jugador }}
+                            {% if fila.numero %}<span class="etiqueta-tabla">{{ fila.numero }}</span>{% endif %}
+                        </td>
+                        <td class="px-4 py-4 text-sm text-gray-800">{{ fila.equipo }}</td>
+                        <td class="px-4 py-4 text-sm text-gray-800">{{ fila.categoria }}</td>
+                        <td class="px-4 py-4 text-sm text-gray-800">{{ fila.liga }}</td>
+                        <td class="px-4 py-4 text-center text-sm text-gray-500">{{ fila.pj }}</td>
+                        <td class="px-4 py-4 text-center"><span class="cifra-ranking">{{ fila.total }}</span></td>
+                        <td class="px-4 py-4 text-center text-sm text-gray-600">{% if fila.promedio %}{{ fila.promedio }}{% else %}<span class="sin-dato">—</span>{% endif %}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="8" class="px-4 py-10 text-center">
+                            <p class="text-sm text-gray-500">Todavía no hay {{ etiqueta|lower }} registrados.</p>
+                            <p class="mt-2 text-sm text-gray-400">Se cargan junto con el resultado de cada partido.</p>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

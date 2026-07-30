@@ -13,6 +13,12 @@
         </div>
     </div>
 
+    {# Rankings de la liga entera, sin tener que entrar a una categoria. #}
+    <div class="mb-6 flex flex-wrap gap-3">
+        <a href="{% url 'estadisticas-goleo' %}?liga={{ liga.pk }}" class="btn-accion">⚽ Tabla de goleo</a>
+        <a href="{% url 'estadisticas-asistencias' %}?liga={{ liga.pk }}" class="btn-accion">🅰 Tabla de asistencias</a>
+    </div>
+
     <div class="grid gap-4">
         {% for categoria in categorias %}
             <a href="{% url 'estadisticas-categoria' categoria.pk %}" class="rounded-2xl bg-white border border-green-100 p-5 shadow-sm hover:border-green-300 transition flex items-center justify-between">

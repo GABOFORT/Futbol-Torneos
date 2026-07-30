@@ -44,6 +44,15 @@ def campo_opciones(nombre, etiqueta, valor, opciones, vacio='Todas'):
     }
 
 
+def campo_oculto(nombre, valor):
+    """Viaja con el formulario sin dibujarse.
+
+    Sirve para lo que se elige por fuera de la barra, como la jornada, que se
+    selecciona con las pastillas y no con un desplegable.
+    """
+    return {'tipo': 'oculto', 'nombre': nombre, 'valor': str(valor or ''), 'etiqueta': '', 'ayuda': ''}
+
+
 def hay_filtros(campos):
     """Si el usuario aplico alguno, para decidir si mostrar el boton Limpiar."""
     return any(c['valor'] for c in campos)
