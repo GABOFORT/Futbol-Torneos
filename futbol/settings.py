@@ -150,7 +150,12 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+# Carpeta donde se guardan las imagenes que suben los usuarios (escudos, logos
+# y fotos). Se define en el .env para que apunte a un lugar distinto en cada
+# maquina sin tocar el codigo, y sobre todo para que en el servidor quede fuera
+# del proyecto: si estuviera adentro, un despliegue la borraria con todo.
+# Sin la variable usa media/ dentro del proyecto, para que un clon nuevo ande.
+MEDIA_ROOT = config('MEDIA_ROOT', default=str(BASE_DIR / 'media'))
 
 LANGUAGE_CODE = 'es-mx'
 TIME_ZONE = 'America/Mexico_City'

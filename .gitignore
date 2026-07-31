@@ -6,3 +6,6 @@ venv/
 tools/tailwindcss.exe
 # Credenciales generadas: nunca al repositorio
 credenciales-*.csv
+
+# Imagenes que suben los usuarios: van fuera del proyecto (ver MEDIA_ROOT en .env)
+media/
