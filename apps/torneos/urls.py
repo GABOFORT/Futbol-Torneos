@@ -11,4 +11,5 @@ urlpatterns = [
     path('categorias/<int:pk>/cerrar-inscripcion/', views.categoria_cerrar_inscripcion, name='categoria-cerrar-inscripcion'),
     path('categorias/<int:pk>/reabrir-inscripcion/', views.categoria_reabrir_inscripcion, name='categoria-reabrir-inscripcion'),
     path('categorias/<int:pk>/generar-partidos/', views.categoria_generar_partidos, name='categoria-generar-partidos'),
+    path('categorias/<int:pk>/iniciar-liguilla/', views.categoria_iniciar_liguilla, name='categoria-iniciar-liguilla'),
 ]

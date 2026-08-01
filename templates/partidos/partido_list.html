@@ -1,6 +1,20 @@
 {% extends 'base.html' %}
+{% load estaticos %}
 
 {% block titulo %}Partidos{% endblock %}
+
+{% comment %}
+Leaflet se carga solo aca: es la unica pantalla donde se marca una cancha en el
+mapa. Va sin defer porque el modal lo inyecta por fetch y necesita que L ya
+exista cuando se abre.
+{% endcomment %}
+{% block cabecera_extra %}
+    {% if puede_gestionar %}
+        <link rel="stylesheet" href="{% static_v 'vendor/leaflet/leaflet.css' %}">
+        <script src="{% static_v 'vendor/leaflet/leaflet.js' %}"></script>
+        <script defer src="{% static_v 'js/sedes.js' %}"></script>
+    {% endif %}
+{% endblock %}
 
 {% block contenido %}
 <div class="max-w-[90rem] mx-auto p-6">
@@ -45,7 +59,8 @@
                     {% include 'usuarios/_logo_liga.html' with liga=grupo.categoria.liga %}
                     <div>
                         <p class="text-xs uppercase tracking-[0.2em] font-semibold text-green-700">{{ grupo.categoria.liga.nombre }} · {{ grupo.categoria.nombre }}</p>
-                        <h2 class="text-2xl font-bold text-green-900">Jornada {{ grupo.jornada }}</h2>
+                        {# En liguilla la etiqueta es la fase (Semifinal, Final); si no, la jornada. #}
+                        <h2 class="text-2xl font-bold text-green-900">{{ grupo.etiqueta }}</h2>
                     </div>
                 </div>
                 {% if grupo.partidos %}
@@ -57,7 +72,16 @@
 
             <div class="grid gap-4 lg:grid-cols-2">
                 {% for partido in grupo.partidos %}
-                    <article class="tarjeta-partido {% if partido.jugado %}tarjeta-jugada{% endif %}">
+                    {% comment %}
+                    La tarjeta entera abre la ficha del partido. Los botones de
+                    adentro tambien llevan .open-modal, y el listener toma el
+                    .open-modal mas cercano al clic: al pulsar un boton gana el
+                    boton, no la tarjeta.
+                    {% endcomment %}
+                    <article class="tarjeta-partido open-modal {% if partido.jugado %}tarjeta-jugada{% endif %}"
+                             data-url="{% url 'partido-detalle' partido.pk %}"
+                             role="button" tabindex="0"
+                             aria-label="Ver ficha de {{ partido.equipo_local.nombre }} contra {{ partido.equipo_visitante.nombre }}">
                         <div class="cruce">
                             <div class="lado-equipo">
                                 <img src="{{ partido.equipo_local.escudo_url }}" alt="Escudo de {{ partido.equipo_local.nombre }}" class="escudo-cruce">
@@ -98,6 +122,20 @@
                                 {% else %}
                                     <span class="sin-dato">Sin fecha asignada</span>
                                 {% endif %}
+                                {% comment %}
+                                La cancha va debajo de la fecha porque se lee junto con ella:
+                                el cuando y el donde son la misma pregunta para quien va a ir.
+                                {% endcomment %}
+                                <span class="sede-partido">
+                                    {% if partido.sede %}
+                                        {{ partido.sede.nombre }}
+                                        {% if partido.cambio_de_cancha %}
+                                            <span class="fecha-anterior">antes: {{ partido.sede_original.nombre }}</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="sin-dato">Sede por confirmar</span>
+                                    {% endif %}
+                                </span>
                             </span>
 
                             {% if partido.jugado %}

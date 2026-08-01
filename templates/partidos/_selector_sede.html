@@ -1,0 +1,81 @@
+{% comment %}
+Selector de cancha del formulario de programar un partido.
+
+El mapa esta siempre a la vista y tiene dos modos, que maneja static/js/sedes.js:
+
+  ver     - el partido ya tiene cancha: el mapa la muestra con el pin fijo y
+            debajo salen su nombre y direccion. No hay que pulsar nada.
+  marcar  - todavia no hay cancha, o se pidio cambiarla: el pin se arrastra,
+            aparece el buscador y los campos para nombrarla y guardarla.
+
+Arranca en 'marcar' cuando el partido no tiene cancha, porque en ese caso hay
+que elegir una si o si.
+
+Las coordenadas nunca se escriben a mano: salen del pin.
+{% endcomment %}
+<div class="selector-sede"
+     data-selector-sede
+     data-url-guardar="{% url 'partido-sede-crear' partido.pk %}"
+     data-centro-lat="{{ centro_mapa.0|stringformat:'s' }}"
+     data-centro-lng="{{ centro_mapa.1|stringformat:'s' }}">
+
+    <label class="block text-sm font-medium text-gray-700">{{ field.label }}</label>
+    {{ field }}
+    {% if field.help_text %}
+        <p class="mt-1 text-sm text-gray-500">{{ field.help_text }}</p>
+    {% endif %}
+    {% for error in field.errors %}
+        <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+    {% endfor %}
+
+    <div class="sede-mapa" data-sede-mapa></div>
+
+    {# Modo ver: lo que hay cargado en la cancha elegida. #}
+    <div class="sede-resumen" data-sede-resumen hidden>
+        <div class="sede-resumen-datos">
+            <p class="sede-resumen-nombre" data-sede-resumen-nombre></p>
+            <p class="sede-resumen-direccion" data-sede-resumen-direccion></p>
+        </div>
+        <button type="button" class="btn-accion" data-sede-abrir>Cambiar de cancha</button>
+    </div>
+
+    {# Modo marcar: todo lo necesario para dar de alta una cancha nueva. #}
+    <div class="sede-marcar" data-sede-marcar hidden>
+        <p class="sede-ayuda">
+            Busca por calle, colonia o una referencia conocida para acercarte, y después
+            <strong>arrastra el pin</strong> hasta la cancha. Los nombres de canchas casi nunca
+            aparecen en el buscador; el pin es lo que define el lugar.
+        </p>
+
+        <div class="sede-buscador">
+            <input type="text" data-sede-buscar autocomplete="off"
+                   placeholder="Av. Gregorio Méndez, Villahermosa"
+                   class="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-green-600 focus:ring-2 focus:ring-green-200">
+            <button type="button" class="btn-accion" data-sede-buscar-btn>Buscar</button>
+        </div>
+        <p class="sede-estado" data-sede-estado></p>
+
+        <div class="sede-datos">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Nombre de la cancha *</label>
+                <input type="text" data-sede-nombre maxlength="150" autocomplete="off"
+                       placeholder="Cancha Nido Águila"
+                       class="mt-2 w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-green-600 focus:ring-2 focus:ring-green-200">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Dirección</label>
+                <input type="text" data-sede-direccion maxlength="255" autocomplete="off"
+                       placeholder="Se llena sola al mover el pin"
+                       class="mt-2 w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-green-600 focus:ring-2 focus:ring-green-200">
+            </div>
+        </div>
+
+        <p class="sede-error" data-sede-error hidden></p>
+
+        <div class="sede-acciones">
+            {# Cancelar solo tiene sentido si hay una cancha a la que volver. #}
+            <button type="button" class="btn-accion" data-sede-cancelar hidden>Cancelar</button>
+            <button type="button" class="btn-accion btn-accion-principal" data-sede-guardar>Guardar cancha</button>
+        </div>
+    </div>
+</div>

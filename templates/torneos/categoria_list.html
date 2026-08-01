@@ -72,6 +72,21 @@
                                     </form>
                                 {% else %}
                                     <a href="{% url 'partido-list' %}?categoria={{ categoria.pk }}" class="text-sm font-semibold text-green-700 hover:text-green-900">Ver calendario →</a>
+                                    {% comment %}
+                                    La liguilla solo se ofrece con el torneo regular terminado:
+                                    la siembra sale de la tabla de posiciones, y mientras queden
+                                    partidos por jugarse esa tabla todavia puede cambiar.
+                                    {% endcomment %}
+                                    {% if categoria.liguilla_iniciada %}
+                                        <a href="{% url 'categoria-liguilla' categoria.pk %}" class="text-sm font-semibold text-green-700 hover:text-green-900">Ver Liguilla </a>
+                                    {% elif categoria.puede_iniciar_liguilla %}
+                                        <form action="{% url 'categoria-iniciar-liguilla' categoria.pk %}" method="post">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn-liguilla">Iniciar Liguilla</button>
+                                        </form>
+                                    {% elif categoria.n_pendientes %}
+                                        <span class="sin-dato">Faltan {{ categoria.n_pendientes }} partido(s) para la liguilla</span>
+                                    {% endif %}
                                 {% endif %}
                             {% endif %}
                         </div>

@@ -34,15 +34,30 @@ El proyecto usa el **CLI standalone de Tailwind** (sin Node/npm). El CSS ya comp
 `static/css/tailwind.css` y está versionado en el repo, así que no necesitas nada extra para correr el
 proyecto tal cual.
 
-Solo necesitas reconstruirlo cuando agregues o cambies clases de Tailwind en algún template:
+Solo necesitas reconstruirlo cuando agregues o cambies clases de Tailwind:
 
 ```powershell
 # Si no tienes tools/tailwindcss.exe (está en .gitignore por su tamaño), descárgalo una vez:
 curl -L -o tools/tailwindcss.exe https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-windows-x64.exe
 
-# Reconstruir el CSS (purgado y minificado) a partir de templates/**/*.html:
+# Reconstruir el CSS (purgado y minificado):
 ./tools/tailwindcss.exe -i static/css/input.css -o static/css/tailwind.css --minify
 ```
+
+**Importante — dónde busca las clases.** `static/css/input.css` escanea dos lugares:
+
+- `templates/**/*.html`
+- `apps/**/*.py` — porque `StyledFormMixin` (en `apps/usuarios/forms.py`) define ahí las clases de
+  todos los campos de formulario.
+
+Si sacas la segunda línea, al reconstruir el CSS **todos los formularios pierden el estilo** y no
+aparece ningún error que lo avise.
+
+**Componentes en CSS plano.** Algunos componentes (`.btn-accion`, `.dorsal`, `.usuario-chip`,
+`.campo-archivo`…) están escritos como CSS normal dentro del `<style>` de `templates/base.html`, no
+como clases de Tailwind. Ahí viven porque necesitan cosas que Tailwind no cubre bien —
+`:has()`, superponer el número sobre la camiseta, la flecha propia de los `<select>`. No dependen de
+la reconstrucción del CSS.
 
 ## Variable de entorno empresarial
 Usa `.env` para definir:

@@ -1,10 +1,11 @@
 from django.contrib import messages
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.equipos.models import Equipo
 from apps.jugadores.models import Jugador
+from apps.partidos import liguilla
 from apps.partidos.calendario import armar_jornadas
 from apps.partidos.models import Partido
 from apps.usuarios.eliminar import vista_eliminar
@@ -54,7 +55,33 @@ def categoria_list(request):
     if inscripcion in ('1', '0'):
         categorias = categorias.filter(inscripcion_abierta=(inscripcion == '1'))
 
-    categorias = categorias.select_related('liga').order_by('liga__nombre', 'nombre')
+    # Los tres conteos van como anotacion y no consultando categoria por
+    # categoria: son 13 categorias y serian 40 consultas para dibujar un boton.
+    # Todos cuelgan de la misma relacion, asi que es un solo JOIN.
+    categorias = categorias.select_related('liga').annotate(
+        n_regulares=Count('partidos', filter=Q(partidos__fase=Partido.FASE_REGULAR)),
+        n_pendientes=Count('partidos', filter=Q(partidos__fase=Partido.FASE_REGULAR) & ~Q(
+            partidos__estado__in=[Partido.ESTADO_FINALIZADO, Partido.ESTADO_CANCELADO]
+        )),
+        n_liguilla=Count('partidos', filter=~Q(partidos__fase=Partido.FASE_REGULAR)),
+    ).order_by('liga__nombre', 'nombre')
+
+    categorias = list(categorias)
+    equipos_por_categoria = dict(
+        Equipo.objects.filter(categoria__in=categorias)
+        .values('categoria').annotate(total=Count('id'))
+        .values_list('categoria', 'total')
+    )
+    for categoria in categorias:
+        categoria.liguilla_iniciada = categoria.n_liguilla > 0
+        # La comprobacion de verdad la vuelve a hacer la vista que la inicia:
+        # esto solo decide si vale la pena mostrar el boton.
+        categoria.puede_iniciar_liguilla = (
+            not categoria.liguilla_iniciada
+            and categoria.n_regulares > 0
+            and categoria.n_pendientes == 0
+            and equipos_por_categoria.get(categoria.id, 0) >= 2
+        )
 
     # Solo las ligas que este usuario puede ver, para no ofrecer filtros vacios.
     ligas = ligas_administradas(user) if puede_administrar else Liga.objects.filter(activa=True)
@@ -70,7 +97,7 @@ def categoria_list(request):
         'puede_administrar': puede_administrar,
         'filtros': filtros,
         'filtros_activos': hay_filtros(filtros),
-        'total_resultados': categorias.count(),
+        'total_resultados': len(categorias),
     })
 
 
@@ -161,6 +188,29 @@ def categoria_reabrir_inscripcion(request, pk):
         categoria.inscripcion_abierta = True
         categoria.save(update_fields=['inscripcion_abierta'])
         messages.success(request, f'Inscripción reabierta para "{categoria.nombre}".')
+    return redirect('categoria-list')
+
+
+@admin_liga_required
+def categoria_iniciar_liguilla(request, pk):
+    """Arranca el cuadro de eliminacion de la categoria.
+
+    Solo cuando el torneo regular termino: la siembra sale de la tabla de
+    posiciones, y con partidos por jugarse esa tabla todavia puede cambiar.
+    """
+    categoria = get_object_or_404(Categoria, pk=pk, liga__in=ligas_administradas(request.user))
+    if request.method == 'POST':
+        motivo = liguilla.motivo_para_no_iniciar(categoria)
+        if motivo:
+            messages.error(request, motivo)
+        else:
+            creados = liguilla.iniciar(categoria)
+            fase = creados[0].get_fase_display().lower()
+            messages.success(
+                request,
+                f'Liguilla iniciada en "{categoria.nombre}": {len(creados)} partido(s) de {fase} '
+                f'con los mejores de la tabla. Ahora asígnales fecha y cancha.',
+            )
     return redirect('categoria-list')
 
 

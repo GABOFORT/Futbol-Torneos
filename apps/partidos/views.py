@@ -2,17 +2,26 @@ from django.contrib import messages
 from django.db.models import Max, Q
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
 from apps.equipos.models import Equipo
 from apps.jugadores.models import Jugador
-from apps.torneos.models import Categoria
+from apps.torneos.models import Categoria, Sede
 from apps.usuarios.filtros import buscar, campo_texto, campo_opciones, campo_oculto
 from apps.usuarios.permissions import admin_liga_required, ligas_administradas, ligas_visibles
 
-from . import actuaciones
+from . import actuaciones, ficha, liguilla
 from .calendario import equipo_que_descansa
-from .forms import PartidoFechaForm, ResultadoForm
+from .forms import PartidoFechaForm, ResultadoForm, SedeForm
 from .models import Partido
+
+# Donde abre el mapa cuando la liga todavia no tiene ninguna cancha marcada.
+# Villahermosa, que es donde juega la liga real del sistema.
+CENTRO_POR_DEFECTO = ('17.989500', '-92.947500')
+
+# El valor de la pastilla que muestra la liguilla. No es un numero porque la
+# liguilla no es una jornada mas: son los cruces de eliminacion.
+VALOR_LIGUILLA = 'liguilla'
 
 
 def partido_list(request):
@@ -45,11 +54,16 @@ def partido_list(request):
         partidos = partidos.filter(
             Q(equipo_local_id=seleccion['equipo']) | Q(equipo_visitante_id=seleccion['equipo'])
         )
-    if jornada.isdigit():
-        partidos = partidos.filter(jornada=int(jornada))
+    if jornada == VALOR_LIGUILLA:
+        partidos = partidos.exclude(fase=Partido.FASE_REGULAR)
+    elif jornada.isdigit():
+        # La liguilla no es una jornada del calendario: tiene su propia pastilla
+        # y no debe colarse entre los partidos del torneo regular.
+        partidos = partidos.filter(jornada=int(jornada), fase=Partido.FASE_REGULAR)
 
     partidos = partidos.select_related(
-        'categoria', 'categoria__liga', 'equipo_local', 'equipo_visitante', 'ganador_penales'
+        'categoria', 'categoria__liga', 'equipo_local', 'equipo_visitante', 'ganador_penales',
+        'sede', 'sede_original',
     ).order_by('categoria__liga__nombre', 'categoria__nombre', 'fecha', 'id')
 
     filtros = []
@@ -82,7 +96,9 @@ def partido_list(request):
         'grupos': grupos,
         'puede_gestionar': puede_gestionar,
         'es_superadmin': user.is_authenticated and user.es_super_admin(),
-        'jornadas': _pastillas_jornada(request, jornada, opciones['total_jornadas']),
+        'jornadas': _pastillas_jornada(
+            request, jornada, opciones['total_jornadas'], opciones['hay_liguilla']
+        ),
         'filtros': filtros,
         'filtros_activos': bool(termino or seleccion['liga'] or seleccion['categoria'] or seleccion['equipo']),
         'total_resultados': partidos.count(),
@@ -126,26 +142,40 @@ def _cascada(user, parametros):
         alcance = alcance.filter(categoria_id=categoria)
     if equipo:
         alcance = alcance.filter(Q(equipo_local_id=equipo) | Q(equipo_visitante_id=equipo))
-    total = alcance.aggregate(maximo=Max('jornada'))['maximo'] or 0
+    # Solo las jornadas del torneo regular: la liguilla tiene jornada 0 y su
+    # propia pastilla, no seria la jornada siguiente a la ultima.
+    total = alcance.filter(fase=Partido.FASE_REGULAR).aggregate(
+        maximo=Max('jornada')
+    )['maximo'] or 0
+    hay_liguilla = alcance.exclude(fase=Partido.FASE_REGULAR).exists()
 
     seleccion = {'liga': liga, 'categoria': categoria, 'equipo': equipo}
     disponibles = {
-        'ligas': ligas, 'categorias': categorias, 'equipos': equipos, 'total_jornadas': total,
+        'ligas': ligas, 'categorias': categorias, 'equipos': equipos,
+        'total_jornadas': total, 'hay_liguilla': hay_liguilla,
     }
     return seleccion, disponibles
 
 
-def _pastillas_jornada(request, actual, total):
-    """Una pastilla por jornada, conservando los demas filtros en el enlace."""
+def _pastillas_jornada(request, actual, total, hay_liguilla=False):
+    """Una pastilla por jornada, conservando los demas filtros en el enlace.
+
+    La liguilla va como una pastilla mas al final, pero solo cuando existe:
+    hasta que no arranca no hay nada que mostrar ahi.
+    """
+    valores = [''] + list(range(1, total + 1))
+    if hay_liguilla:
+        valores.append(VALOR_LIGUILLA)
+
     pastillas = []
-    for numero in [''] + list(range(1, total + 1)):
+    for numero in valores:
         parametros = request.GET.copy()
         if numero == '':
             parametros['jornada'] = ''
         else:
             parametros['jornada'] = str(numero)
         pastillas.append({
-            'etiqueta': 'Todas' if numero == '' else numero,
+            'etiqueta': 'Todas' if numero == '' else ('Liguilla' if numero == VALOR_LIGUILLA else numero),
             'valor': str(numero),
             'activa': str(numero) == (actual or ''),
             'url': f'{request.path}?{parametros.urlencode()}',
@@ -179,20 +209,55 @@ def _bloques_de_descanso(equipos, jornada, propio=False):
 def _agrupar_por_jornada(partidos):
     """Arma un bloque por categoria y jornada, con el equipo que descansa.
 
-    El que descansa no se guarda en la base: es el equipo de la categoria que
-    no aparece en ningun partido de esa jornada.
+    Los partidos de liguilla se agrupan por fase y no por jornada: todos tienen
+    jornada 0, y el bloque tiene que decir 'Semifinal', no 'Jornada 0'. Ahi
+    tampoco hay equipo que descanse, porque no juegan todos.
     """
     bloques = {}
     for partido in partidos:
-        clave = (partido.categoria_id, partido.jornada)
-        bloques.setdefault(clave, {'categoria': partido.categoria, 'jornada': partido.jornada, 'partidos': []})
+        clave = (partido.categoria_id, partido.fase, partido.jornada)
+        bloques.setdefault(clave, {
+            'categoria': partido.categoria,
+            'jornada': partido.jornada,
+            'es_liguilla': partido.es_liguilla,
+            'etiqueta': partido.get_fase_display() if partido.es_liguilla else f'Jornada {partido.jornada}',
+            'partidos': [],
+        })
         bloques[clave]['partidos'].append(partido)
 
     for bloque in bloques.values():
+        if bloque['es_liguilla']:
+            bloque['descansa'] = None
+            continue
         equipos = Equipo.objects.filter(categoria=bloque['categoria'])
         bloque['descansa'] = equipo_que_descansa(equipos, bloque['partidos'])
     return list(bloques.values())
 
+
+
+def partido_detalle(request, pk):
+    """La ficha completa del partido: previa si no se jugo, cronica si ya se jugo.
+
+    De solo lectura y acotada por `ligas_visibles`: el admin de liga llega a las
+    suyas, y el entrenador y el publico a las ligas activas.
+
+    A diferencia del calendario, al entrenador no se lo limita a sus propios
+    partidos. El calendario es su agenda y ahi tiene sentido ver solo lo suyo,
+    pero la ficha es informacion publica: un visitante sin cuenta la abre, y
+    dejar al entrenador afuera lo dejaba viendo menos que cualquiera. Ademas los
+    ultimos cinco del rival se pueden pulsar, y sin esto le fallarian todos.
+    """
+    partido = get_object_or_404(
+        Partido.objects.filter(categoria__liga__in=ligas_visibles(request.user)).select_related(
+            'categoria', 'categoria__liga', 'equipo_local', 'equipo_visitante',
+            'ganador_penales', 'sede', 'sede_original',
+        ),
+        pk=pk,
+    )
+    return render(request, 'partidos/partido_detalle.html', {
+        'partido': partido,
+        **ficha.armar(partido),
+    })
 
 
 @admin_liga_required
@@ -216,11 +281,52 @@ def partido_edit(request, pk):
     else:
         form = PartidoFechaForm(instance=partido)
 
-    titulo = 'Reprogramar' if partido.ya_empezo else 'Fecha y hora'
-    context = {'form': form, 'title': f'{titulo}: {partido.equipo_local} vs {partido.equipo_visitante}'}
+    titulo = 'Reprogramar' if partido.ya_empezo else 'Fecha, hora y lugar'
+    context = {
+        'form': form,
+        'title': f'{titulo}: {partido.equipo_local} vs {partido.equipo_visitante}',
+        'partido': partido,
+        'centro_mapa': _centro_del_mapa(partido),
+    }
     if modal:
         return render(request, 'usuarios/modal_form.html', context)
     return render(request, 'partidos/partido_form.html', context)
+
+
+def _centro_del_mapa(partido):
+    """Donde conviene abrir el mapa para marcar la cancha de este partido.
+
+    Se busca el punto mas cercano a lo que el admin quiere marcar: la cancha que
+    el partido ya tiene, o la ultima que se marco en esa liga. Asi no arranca en
+    medio del oceano y casi siempre queda a unas cuadras del lugar buscado.
+    """
+    if partido.sede_id:
+        return (partido.sede.latitud, partido.sede.longitud)
+    ultima = Sede.objects.filter(liga=partido.categoria.liga).order_by('-id').first()
+    if ultima:
+        return (ultima.latitud, ultima.longitud)
+    return CENTRO_POR_DEFECTO
+
+
+@admin_liga_required
+@require_POST
+def sede_create(request, pk):
+    """Da de alta la cancha marcada en el mapa, sin salir del formulario.
+
+    Cuelga del partido a proposito: de ahi sale la liga a la que pertenece la
+    cancha, y de paso se valida con el mismo criterio que el resto: si el admin
+    no administra esa liga, no llega ni a crearla.
+    """
+    partido = get_object_or_404(Partido, pk=pk, categoria__liga__in=ligas_administradas(request.user))
+    form = SedeForm(partido.categoria.liga, request.POST)
+    if form.is_valid():
+        sede = form.save()
+        return JsonResponse({'success': True, 'id': sede.pk, 'nombre': sede.nombre})
+
+    # Al JS le alcanza con el primer problema: el formulario del mapa tiene tres
+    # campos y mostrar la lista entera no ayuda a corregirlo.
+    primero = next(iter(form.errors.values()))[0]
+    return JsonResponse({'success': False, 'error': primero}, status=400)
 
 
 @admin_liga_required
@@ -255,6 +361,16 @@ def partido_resultado(request, pk):
                 resultado.save()
                 actuaciones.guardar(resultado, filas)
                 messages.success(request, 'Resultado y goleadores registrados.')
+                # Si este resultado cerro una ronda de liguilla, la siguiente
+                # queda armada sola con los ganadores.
+                creados = liguilla.avanzar(resultado)
+                if creados:
+                    nombres = ', '.join(sorted({p.get_fase_display() for p in creados}))
+                    messages.success(
+                        request,
+                        f'Se cerró {resultado.get_fase_display().lower()}: ya quedaron los cruces de '
+                        f'{nombres.lower()}. Solo falta ponerles fecha y cancha.',
+                    )
                 if modal:
                     return JsonResponse({'success': True})
                 return redirect('partido-list')

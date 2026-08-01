@@ -1,6 +1,14 @@
 {% extends 'base.html' %}
+{% load estaticos %}
 
 {% block titulo %}{{ title }} - Partidos{% endblock %}
+
+{% comment %} Leaflet solo aca, para el mapa donde se marca la cancha. {% endcomment %}
+{% block cabecera_extra %}
+    <link rel="stylesheet" href="{% static_v 'vendor/leaflet/leaflet.css' %}">
+    <script src="{% static_v 'vendor/leaflet/leaflet.js' %}"></script>
+    <script defer src="{% static_v 'js/sedes.js' %}"></script>
+{% endblock %}
 
 {% block contenido %}
 <div class="max-w-3xl mx-auto p-6">
@@ -13,13 +21,18 @@
             {% csrf_token %}
             {{ form.non_field_errors }}
             {% for field in form %}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">{{ field.label }}</label>
-                    {{ field }}
-                    {% for error in field.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ error }}</p>
-                    {% endfor %}
-                </div>
+                {% if field.name == 'sede' %}
+                    {# El desplegable de canchas viene con el mapa para marcar una nueva. #}
+                    {% include 'partidos/_selector_sede.html' %}
+                {% else %}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">{{ field.label }}</label>
+                        {{ field }}
+                        {% for error in field.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
             {% endfor %}
             <div class="flex items-center gap-3">
                 <button type="submit" class="inline-flex items-center justify-center rounded-full bg-green-800 px-6 py-3 text-sm font-semibold text-white hover:bg-green-700">Guardar</button>

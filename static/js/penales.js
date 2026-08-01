@@ -5,24 +5,36 @@
 // Los eventos se escuchan en el documento porque el formulario llega despues,
 // inyectado en el modal.
 (function () {
-  var CAMPO_PENALES = '[data-campo="ganador_penales"]';
+  // El ganador de la tanda y cuantos convirtio cada uno: los tres solo tienen
+  // sentido con el partido empatado, asi que se muestran y ocultan juntos.
+  var CAMPOS = [
+    '[data-campo="ganador_penales"]',
+    '[data-campo="penales_local"]',
+    '[data-campo="penales_visitante"]',
+  ];
 
   function actualizar(contenedor) {
-    var bloque = contenedor.querySelector(CAMPO_PENALES);
     var local = contenedor.querySelector('[name="goles_local"]');
     var visitante = contenedor.querySelector('[name="goles_visitante"]');
-    if (!bloque || !local || !visitante) return;
+    if (!local || !visitante) return;
 
     var hayEmpate = local.value !== '' && visitante.value !== '' &&
                     Number(local.value) === Number(visitante.value);
-    bloque.hidden = !hayEmpate;
 
-    // Si dejo de haber empate se limpia la eleccion: si no, quedaria guardado
-    // un ganador de penales en un partido que ya no termino igualado.
-    if (!hayEmpate) {
-      var select = bloque.querySelector('select');
-      if (select) select.value = '';
-    }
+    CAMPOS.forEach(function (selector) {
+      // En las rondas que no admiten penales el campo directamente no existe:
+      // el formulario lo saca y en su lugar deja el aviso de que decide la tabla.
+      var bloque = contenedor.querySelector(selector);
+      if (!bloque) return;
+      bloque.hidden = !hayEmpate;
+
+      // Si dejo de haber empate se limpia lo cargado: si no, quedaria guardada
+      // una tanda en un partido que ya no termino igualado.
+      if (!hayEmpate) {
+        var campo = bloque.querySelector('select, input');
+        if (campo) campo.value = '';
+      }
+    });
   }
 
   document.addEventListener('input', function (evento) {

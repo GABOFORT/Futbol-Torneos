@@ -81,6 +81,56 @@ class Liga(models.Model):
         return (vencimiento - datetime.date.today()).days
 
 
+class Sede(models.Model):
+    """Una cancha donde se juegan partidos.
+
+    Va en tabla aparte y no como texto dentro de Partido porque la misma cancha
+    se repite en muchos partidos: asi las coordenadas se guardan una vez, y
+    corregir un pin mal puesto arregla todos los partidos que juegan ahi.
+
+    Pertenece a una liga, igual que las categorias y los equipos: cada admin ve
+    unicamente las canchas de las ligas que administra.
+    """
+
+    liga = models.ForeignKey(Liga, on_delete=models.CASCADE, related_name='sedes')
+    nombre = models.CharField('Nombre de la cancha', max_length=150)
+    direccion = models.CharField('Dirección', max_length=255, blank=True)
+    # Con 6 decimales se distingue un punto de otro a menos de un metro, de
+    # sobra para ubicar una cancha. Los grados de latitud llegan a 3 enteros
+    # (-180 a 180 en longitud), asi que 9 digitos en total.
+    latitud = models.DecimalField('Latitud', max_digits=9, decimal_places=6)
+    longitud = models.DecimalField('Longitud', max_digits=9, decimal_places=6)
+
+    class Meta:
+        verbose_name = 'Sede'
+        verbose_name_plural = 'Sedes'
+        ordering = ['nombre']
+        # Dos canchas con el mismo nombre en la misma liga serian imposibles de
+        # distinguir en el desplegable al programar un partido.
+        unique_together = ('liga', 'nombre')
+
+    def __str__(self):
+        return self.nombre
+
+    @property
+    def punto(self):
+        """Las coordenadas como las piden Google Maps y las apps de navegacion."""
+        return f'{self.latitud},{self.longitud}'
+
+    @property
+    def url_mapa(self):
+        """Mapa incrustable, el mismo truco que usa la pagina '¿Dónde estamos?'.
+
+        output=embed no necesita llave de API ni cuenta de Google.
+        """
+        return f'https://maps.google.com/maps?q={self.punto}&z=16&output=embed'
+
+    @property
+    def url_como_llegar(self):
+        """Abre la navegacion en el celular o Google Maps en la computadora."""
+        return f'https://www.google.com/maps/search/?api=1&query={self.punto}'
+
+
 class Categoria(models.Model):
     LIMITE_EDAD_CHOICES = [
         ('U5', 'U5'),

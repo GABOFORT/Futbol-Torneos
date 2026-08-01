@@ -13,6 +13,9 @@
         {% for field in form %}
             {% if field.name == 'categorias' %}
                 {% include 'equipos/_categorias_checkboxes.html' %}
+            {% elif field.name == 'sede' %}
+                {# El desplegable de canchas viene acompanado del mapa para marcar una nueva. #}
+                {% include 'partidos/_selector_sede.html' %}
             {% elif field.field.widget.input_type == 'radio' %}
                 {% include '_radios.html' %}
             {% elif field.field.widget.input_type == 'checkbox' %}

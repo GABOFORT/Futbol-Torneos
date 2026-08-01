@@ -15,9 +15,9 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.conf import settings
-from django.conf.urls.static import static
+from django.views.static import serve as servir_estatico
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -29,4 +29,9 @@ urlpatterns = [
     path('partidos/', include('apps.partidos.urls')),
     path('estadisticas/', include('apps.estadisticas.urls')),
     path('informacion/', include('apps.informacion.urls')),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    # django.conf.urls.static.static() no sirve nada si DEBUG=False. Aqui no
+    # hay nginx delante de waitress (solo IIS haciendo proxy de todo), asi que
+    # Django tiene que servir /static/ y /media/ tambien en produccion.
+    re_path(r'^static/(?P<path>.*)$', servir_estatico, {'document_root': settings.STATIC_ROOT}),
+    re_path(r'^media/(?P<path>.*)$', servir_estatico, {'document_root': settings.MEDIA_ROOT}),
+]

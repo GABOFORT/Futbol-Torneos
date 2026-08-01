@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% load estaticos %}
+
+{% block titulo %}Liguilla - {{ categoria.nombre }}{% endblock %}
+
+{% block contenido %}
+<div class="max-w-[100rem] mx-auto p-6">
+    <div class="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div class="flex items-center gap-3">
+            {% include 'usuarios/_logo_liga.html' with liga=categoria.liga clase='logo-liga-lg' %}
+            <div>
+                <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">{{ categoria.liga.nombre }}</p>
+                <h1 class="text-3xl font-bold text-green-900">Liguilla · {{ categoria.nombre }}</h1>
+            </div>
+        </div>
+        <a href="{% url 'estadisticas-categoria' categoria.pk %}" class="text-sm font-semibold text-green-700 hover:text-green-900">← Ver tabla de posiciones</a>
+    </div>
+
+    {% if not cuadro %}
+        <div class="rounded-3xl border border-green-100 bg-white p-10 text-center">
+            <p class="text-gray-500">La liguilla de esta categoría todavía no empezó.</p>
+            <p class="mt-2 text-sm text-gray-400">
+                Se inicia desde Categorías, cuando se hayan jugado todos los partidos del torneo regular.
+            </p>
+        </div>
+    {% else %}
+        {% comment %}
+        El cuadro: mitad de las llaves a la izquierda, mitad a la derecha, y la
+        copa al centro con la final. Las lineas que unen cada par salen del CSS
+        (.par y .llave, en base.html), no de imagenes.
+
+        En telefono todo esto se apila en una sola columna y las lineas se
+        apagan: un cuadro en espejo no entra en 360 pixeles sin dejar los
+        escudos del tamano de una moneda.
+        {% endcomment %}
+        <div class="bracket">
+            <div class="bracket-lado bracket-izq">
+                {% for ronda in cuadro.izquierda %}
+                    <div class="bracket-ronda">
+                        <p class="bracket-fase">{{ ronda.etiqueta }}</p>
+                        {% for par in ronda.pares %}
+                            <div class="par">
+                                {% for cruce in par %}
+                                    {% include 'estadisticas/_llave.html' %}
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="bracket-centro">
+                <img src="{% static_v 'img/copa-transparente.png' %}" alt="Copa de campeón" class="bracket-copa">
+
+                {% if cuadro.campeon %}
+                    {# Con la final jugada, el campeon va pegado a la copa. #}
+                    <div class="bracket-campeon">
+                        <p class="bracket-campeon-titulo">Campeón</p>
+                        <div class="bracket-campeon-fila">
+                            <img src="{{ cuadro.campeon.escudo_url }}" alt="Escudo de {{ cuadro.campeon.nombre }}" class="bracket-campeon-escudo">
+                            <span class="bracket-campeon-nombre">{{ cuadro.campeon.nombre }}</span>
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if cuadro.final %}
+                    <p class="bracket-fase bracket-fase-centro">Final</p>
+                    {% with cruce=cuadro.final %}
+                        {% include 'estadisticas/_llave.html' with destacada=1 %}
+                    {% endwith %}
+                {% else %}
+                    <p class="bracket-espera">La final se define<br>con las semifinales</p>
+                {% endif %}
+            </div>
+
+            <div class="bracket-lado bracket-der">
+                {% for ronda in cuadro.derecha %}
+                    <div class="bracket-ronda">
+                        <p class="bracket-fase">{{ ronda.etiqueta }}</p>
+                        {% for par in ronda.pares %}
+                            <div class="par">
+                                {% for cruce in par %}
+                                    {% include 'estadisticas/_llave.html' %}
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        {% if cuadro.tercero %}
+            <section class="tercer-lugar">
+                <p class="bracket-fase bracket-fase-centro">Tercer lugar</p>
+                {% with cruce=cuadro.tercero %}
+                    {% include 'estadisticas/_llave.html' %}
+                {% endwith %}
+            </section>
+        {% endif %}
+    {% endif %}
+</div>
+
+{% include '_modal.html' %}
+{% endblock %}

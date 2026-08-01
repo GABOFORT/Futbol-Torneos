@@ -23,6 +23,8 @@
     if (cancelar) cancelar.onclick = closeModal;
     // Ojo de contrasena, capitalizacion y obligatorios en rojo: static/js/forms.js
     window.initFormulario(root);
+    // El mapa para marcar la cancha, cuando la pantalla cargo Leaflet.
+    if (window.initSede) window.initSede(root);
 
     const form = document.getElementById('modal-form');
     if (!form) return;
@@ -81,6 +83,28 @@
       event.preventDefault();
       openModal(trigger.dataset.url);
     }
+  });
+
+  // Hay disparadores que no son botones, como la tarjeta del calendario que
+  // abre la ficha del partido. Con el teclado esos no reciben el clic solos, asi
+  // que se les traduce Enter y espacio. A un <button> o un <a> no hay que
+  // traducirles nada: el navegador ya les dispara el clic y se abriria dos veces.
+  document.addEventListener('keydown', function (event) {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    const trigger = event.target.closest('.open-modal');
+    if (!trigger || trigger.tagName === 'BUTTON' || trigger.tagName === 'A') return;
+    event.preventDefault();
+    openModal(trigger.dataset.url);
+  });
+
+  // Cerrar con Escape y con un clic en el fondo: la ficha es larga y el boton de
+  // cerrar puede quedar lejos si el usuario ya scrolleo.
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') closeModal();
+  });
+
+  document.getElementById('modal-root').addEventListener('click', function (event) {
+    if (event.target === this) closeModal();
   });
 })();
 </script>

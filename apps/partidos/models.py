@@ -19,6 +19,28 @@ class Partido(models.Model):
     # para no tener que enumerarlos en cada consulta y olvidarse de uno.
     ESTADOS_POR_JUGARSE = (ESTADO_PROGRAMADO, ESTADO_REPROGRAMADO)
 
+    # Fase de la liguilla. Vacio es el torneo regular, el de todos contra todos.
+    # Los partidos de liguilla no cuentan para la tabla de posiciones ni para
+    # las porterias menos vencidas: esas tablas miden el torneo regular, y si
+    # entraran los de liguilla se moverian solas despues de terminado.
+    FASE_REGULAR = ''
+    FASE_CUARTOS = 'cuartos'
+    FASE_SEMIFINAL = 'semifinal'
+    FASE_TERCERO = 'tercero'
+    FASE_FINAL = 'final'
+
+    FASE_CHOICES = [
+        (FASE_REGULAR, 'Torneo regular'),
+        (FASE_CUARTOS, 'Cuartos de final'),
+        (FASE_SEMIFINAL, 'Semifinal'),
+        (FASE_TERCERO, 'Tercer lugar'),
+        (FASE_FINAL, 'Final'),
+    ]
+
+    # El orden en que se juegan, para saber que ronda alimenta a cual: el tercer
+    # lugar y la final se juegan al final, y en ese orden se muestran.
+    ORDEN_FASES = [FASE_CUARTOS, FASE_SEMIFINAL, FASE_TERCERO, FASE_FINAL]
+
     categoria = models.ForeignKey(
         'torneos.Categoria',
         on_delete=models.CASCADE,
@@ -35,12 +57,45 @@ class Partido(models.Model):
         related_name='partidos_visitante',
     )
     jornada = models.PositiveIntegerField('Jornada', default=1)
+    fase = models.CharField(
+        'Fase', max_length=20, choices=FASE_CHOICES, default=FASE_REGULAR, blank=True,
+        help_text='Vacío es el torneo regular. Las demás son las rondas de la liguilla.',
+    )
+    orden = models.PositiveIntegerField(
+        'Posición en la ronda',
+        default=0,
+        help_text='Qué llave del cuadro ocupa. Define qué cruce alimenta a cuál en la ronda siguiente.',
+    )
+    # En que lugar de la tabla termino cada uno el torneo regular. Se guarda al
+    # armar el cruce y viaja con el equipo a la ronda siguiente: es lo que
+    # resuelve el empate, y en semifinales el local ya no es necesariamente el
+    # mejor sembrado, asi que no alcanza con saber quien juega de local.
+    siembra_local = models.PositiveIntegerField('Siembra del local', null=True, blank=True)
+    siembra_visitante = models.PositiveIntegerField('Siembra del visitante', null=True, blank=True)
     fecha = models.DateTimeField('Fecha y hora', null=True, blank=True)
     fecha_original = models.DateTimeField(
         'Fecha asignada al principio',
         null=True,
         blank=True,
         help_text='Se guarda la primera vez que se programa. Si despues cambia, el partido figura reprogramado.',
+    )
+    sede = models.ForeignKey(
+        'torneos.Sede',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='partidos',
+        verbose_name='Cancha',
+        help_text='Dónde se juega. Se marca en el mapa al programar el partido.',
+    )
+    sede_original = models.ForeignKey(
+        'torneos.Sede',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='partidos_mudados',
+        verbose_name='Cancha asignada al principio',
+        help_text='Se guarda la primera vez que se asigna. Si después cambia, se avisa el cambio de cancha.',
     )
     goles_local = models.PositiveIntegerField('Goles local', default=0)
     goles_visitante = models.PositiveIntegerField('Goles visitante', default=0)
@@ -53,6 +108,11 @@ class Partido(models.Model):
         verbose_name='Ganador de los penales',
         help_text='Solo cuando el partido termina empatado. Suma un punto extra.',
     )
+    # El marcador de la tanda, para poder mostrarla como en television. Se
+    # guarda aparte de los goles porque un penal convertido en la tanda no es un
+    # gol del partido: el marcador sigue siendo el empate.
+    penales_local = models.PositiveIntegerField('Penales del local', null=True, blank=True)
+    penales_visitante = models.PositiveIntegerField('Penales del visitante', null=True, blank=True)
     estado = models.CharField('Estado', max_length=20, choices=ESTADO_CHOICES, default=ESTADO_PROGRAMADO)
 
     class Meta:
@@ -111,6 +171,111 @@ class Partido(models.Model):
             self.fecha is not None
             and self.fecha_original is not None
             and self.fecha != self.fecha_original
+        )
+
+    @property
+    def es_liguilla(self):
+        return self.fase != self.FASE_REGULAR
+
+    @property
+    def ganador(self):
+        """Quien paso de ronda. None si todavia no se jugo o quedo sin resolver.
+
+        Con el marcador empatado pasa el que termino mejor ubicado en la tabla
+        del torneo regular: es la ventaja que se gano durante todo el ano y
+        evita tener que jugar penales en cada cruce.
+
+        Si igual se jugaron penales y se cargo el ganador, eso manda: si de
+        verdad se patearon, el resultado de la cancha vale mas que la tabla.
+        """
+        if not self.jugado:
+            return None
+        if self.goles_local > self.goles_visitante:
+            return self.equipo_local
+        if self.goles_local < self.goles_visitante:
+            return self.equipo_visitante
+
+        # Empatados. En la final se patea: es el ultimo partido del torneo y no
+        # se puede coronar campeon a nadie por una tabla que ya termino.
+        if self.fase == self.FASE_FINAL:
+            return self.ganador_penales
+
+        # En las rondas anteriores decide la tabla, sin penales: es la ventaja
+        # que el equipo se gano durante todo el torneo regular.
+        if self.es_liguilla:
+            if self.siembra_local is not None and self.siembra_visitante is not None:
+                return (
+                    self.equipo_local if self.siembra_local < self.siembra_visitante
+                    else self.equipo_visitante
+                )
+            return None
+
+        # Torneo regular: el empate no tiene ganador, solo el punto extra.
+        return self.ganador_penales
+
+    @property
+    def motivo_del_pase(self):
+        """Por que paso el que paso, para poder decirlo en pantalla.
+
+        Devuelve '' cuando gano en la cancha, que es lo normal y no hace falta
+        explicarlo.
+        """
+        if not self.jugado or self.goles_local != self.goles_visitante:
+            return ''
+        if self.fase == self.FASE_FINAL:
+            return 'Se definió desde el punto penal'
+        if self.es_liguilla and self.siembra_local is not None and self.siembra_visitante is not None:
+            mejor = min(self.siembra_local, self.siembra_visitante)
+            return f'Empataron: pasa el {mejor}º de la tabla'
+        return ''
+
+    @property
+    def hubo_tanda(self):
+        """Si este partido se definio en una tanda de penales con marcador cargado."""
+        return self.penales_local is not None and self.penales_visitante is not None
+
+    @property
+    def tanda(self):
+        """La tanda dibujada como en television: un circulito por penal.
+
+        Solo se guarda cuantos convirtio cada uno, no la secuencia de aciertos y
+        fallos. Con eso alcanza para el verde de los convertidos; el rojo se usa
+        para emparejar al que quedo mas corto, que son penales que si o si erro
+        de mas respecto del que gano.
+        """
+        if not self.hubo_tanda:
+            return None
+        tiros = max(self.penales_local, self.penales_visitante)
+        return {
+            'local': self._circulitos(self.penales_local, tiros),
+            'visitante': self._circulitos(self.penales_visitante, tiros),
+        }
+
+    @staticmethod
+    def _circulitos(convertidos, tiros):
+        return [True] * convertidos + [False] * (tiros - convertidos)
+
+    @property
+    def perdedor(self):
+        """El otro. Sirve para armar el partido por el tercer lugar."""
+        ganador = self.ganador
+        if ganador is None:
+            return None
+        return self.equipo_visitante if ganador.id == self.equipo_local_id else self.equipo_local
+
+    @property
+    def cambio_de_cancha(self):
+        """Si el partido se mudo respecto de la cancha que tenia asignada.
+
+        Va aparte de `estado` por el mismo motivo que `fue_movido`: al cargar el
+        resultado el estado pasa a finalizado, y sin esto se perderia el rastro.
+        Cambiar de cancha no marca el partido como reprogramado, pero igual hay
+        que avisarlo: quien pensaba ir ya tenia anotado el lugar anterior.
+        """
+        return (
+            self.sede_id is not None
+            and self.sede_original_id is not None
+            and self.sede_id != self.sede_original_id
         )
 
     @property

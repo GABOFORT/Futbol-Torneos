@@ -41,6 +41,14 @@ funcionando igual.
                     {% for error in field.errors %}<p class="mt-1 text-sm text-red-600">{{ error }}</p>{% endfor %}
                 </div>
             {% endfor %}
+            {% if form.sin_penales %}
+                {% comment %}
+                En cuartos, semis y tercer lugar el formulario no trae los campos de
+                penales. Sin este aviso, quien carga el resultado no sabria como se
+                resuelve un empate.
+                {% endcomment %}
+                <p class="aviso-sin-penales sm:col-span-2">{{ form.sin_penales }}</p>
+            {% endif %}
         </section>
 
         {% include 'partidos/_seccion_actuaciones.html' with seccion='gol' titulo='Goles' filas=goleadores %}

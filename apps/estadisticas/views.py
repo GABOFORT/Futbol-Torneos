@@ -2,10 +2,13 @@ from django.db.models import Count, Sum
 from django.shortcuts import get_object_or_404, render
 
 from apps.equipos.models import Equipo
+from apps.partidos import liguilla
 from apps.partidos.models import Actuacion, Partido
 from apps.torneos.models import Categoria, Liga
 from apps.usuarios.filtros import buscar, campo_texto, campo_opciones
 from apps.usuarios.permissions import cascada_equipos, ligas_visibles
+
+from . import porteros, tabla
 
 
 def estadisticas_ligas(request):
@@ -20,56 +23,14 @@ def estadisticas_liga_categorias(request, liga_id):
     return render(request, 'estadisticas/estadisticas_liga_categorias.html', {'liga': liga, 'categorias': categorias})
 
 
-def _tabla_vacia(equipo):
-    return {
-        'equipo': equipo,
-        'pj': 0, 'pg': 0, 'pe': 0, 'pp': 0,
-        'gf': 0, 'gc': 0, 'dg': 0, 'pen': 0, 'pts': 0,
-    }
-
-
 def tabla_posiciones(request, categoria_id):
     categoria = get_object_or_404(Categoria.objects.select_related('liga'), pk=categoria_id)
-    tabla = {equipo.id: _tabla_vacia(equipo) for equipo in Equipo.objects.filter(categoria=categoria)}
-
-    partidos = Partido.objects.filter(categoria=categoria, estado=Partido.ESTADO_FINALIZADO).select_related(
-        'equipo_local', 'equipo_visitante'
-    )
-    for partido in partidos:
-        local = tabla.setdefault(partido.equipo_local_id, _tabla_vacia(partido.equipo_local))
-        visitante = tabla.setdefault(partido.equipo_visitante_id, _tabla_vacia(partido.equipo_visitante))
-
-        local['pj'] += 1
-        visitante['pj'] += 1
-        local['gf'] += partido.goles_local
-        local['gc'] += partido.goles_visitante
-        visitante['gf'] += partido.goles_visitante
-        visitante['gc'] += partido.goles_local
-
-        if partido.goles_local > partido.goles_visitante:
-            local['pg'] += 1
-            local['pts'] += 3
-            visitante['pp'] += 1
-        elif partido.goles_local < partido.goles_visitante:
-            visitante['pg'] += 1
-            visitante['pts'] += 3
-            local['pp'] += 1
-        else:
-            local['pe'] += 1
-            visitante['pe'] += 1
-            local['pts'] += 1
-            visitante['pts'] += 1
-            # Empate resuelto por penales: el ganador se lleva un punto extra,
-            # asi que termina con 2 contra 1 del otro.
-            if partido.ganador_penales_id in tabla:
-                tabla[partido.ganador_penales_id]['pts'] += 1
-                tabla[partido.ganador_penales_id]['pen'] += 1
-
-    for fila in tabla.values():
-        fila['dg'] = fila['gf'] - fila['gc']
-
-    posiciones = sorted(tabla.values(), key=lambda fila: (-fila['pts'], -fila['dg'], -fila['gf']))
-    return render(request, 'estadisticas/tabla_posiciones.html', {'categoria': categoria, 'posiciones': posiciones})
+    # El calculo vive en tabla.py: la ficha de partido lo usa para mostrar en
+    # que puesto va cada equipo, y no puede quedar dentro de esta vista.
+    return render(request, 'estadisticas/tabla_posiciones.html', {
+        'categoria': categoria,
+        'posiciones': tabla.calcular(categoria),
+    })
 
 
 def _ranking(request, campo, titulo, etiqueta):
@@ -159,6 +120,67 @@ def _partidos_del_equipo(categoria_id, partidos_de_la_categoria):
     if not equipos:
         return 0
     return round(partidos_de_la_categoria * 2 / equipos)
+
+
+def liguilla_categoria(request, categoria_id):
+    """El cuadro de eliminacion de una categoria.
+
+    Es publico como el resto de las estadisticas. Los botones para poner fecha o
+    cargar el resultado no van aca: cada cruce abre la ficha del partido, y
+    desde el calendario se administran igual que cualquier otro.
+    """
+    categoria = get_object_or_404(Categoria.objects.select_related('liga'), pk=categoria_id)
+    return render(request, 'estadisticas/liguilla.html', {
+        'categoria': categoria,
+        'cuadro': liguilla.cuadro(categoria),
+    })
+
+
+def tabla_porteros(request):
+    """Porterías menos vencidas: los equipos que menos goles reciben.
+
+    Es por equipo y no por portero porque no se registra quien ataja cada
+    partido. El razonamiento completo esta en porteros.py.
+    """
+    user = request.user
+    seleccion, opciones = cascada_equipos(user, request.GET)
+    termino = request.GET.get('q', '')
+
+    equipos = Equipo.objects.filter(liga__in=ligas_visibles(user))
+    # El entrenador ve su propio equipo en el listado, igual que en los rankings.
+    if user.is_authenticated and user.role == user.ROLE_ENTRENADOR and not user.is_superuser:
+        equipos = equipos.filter(entrenador=user)
+
+    if seleccion['liga']:
+        equipos = equipos.filter(liga_id=seleccion['liga'])
+    if seleccion['categoria']:
+        equipos = equipos.filter(categoria_id=seleccion['categoria'])
+    if seleccion['equipo']:
+        equipos = equipos.filter(pk=seleccion['equipo'])
+    equipos = buscar(equipos, termino, [
+        'nombre', 'categoria__nombre', 'liga__nombre',
+        'jugadores__nombre', 'jugadores__apellido',
+    ])
+
+    bloques = porteros.calcular(equipos)
+
+    filtros = [
+        campo_texto('q', 'Buscar', termino, 'Equipo, portero, categoría o liga'),
+        campo_opciones('liga', 'Liga', seleccion['liga'],
+                       opciones['ligas'].values_list('id', 'nombre'), vacio='Todas las ligas'),
+        campo_opciones('categoria', 'Categoría', seleccion['categoria'],
+                       opciones['categorias'].values_list('id', 'nombre'), vacio='Todas'),
+        campo_opciones('equipo', 'Equipo', seleccion['equipo'],
+                       opciones['equipos'].values_list('id', 'nombre'), vacio='Todos'),
+    ]
+    return render(request, 'estadisticas/porteros.html', {
+        'bloques': bloques,
+        'filtros': filtros,
+        'filtros_activos': bool(termino or seleccion['liga'] or seleccion['categoria'] or seleccion['equipo']),
+        # Se cuentan categorias y no equipos: es lo que devuelve cada bloque, y
+        # es la unidad en la que se lee esta pantalla.
+        'total_resultados': len(bloques),
+    })
 
 
 def tabla_goleo(request):
