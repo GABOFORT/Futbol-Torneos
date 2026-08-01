@@ -2,10 +2,16 @@ __pycache__/
 *.pyc
 db.sqlite3
 venv/
+futbol-ligas/
 .env
 tools/tailwindcss.exe
+.vscode/
 # Credenciales generadas: nunca al repositorio
 credenciales-*.csv
 
 # Imagenes que suben los usuarios: van fuera del proyecto (ver MEDIA_ROOT en .env)
 media/
+
+# Generados por collectstatic / por correr el servidor: no van al repositorio
+staticfiles/
+waitress-*.log
