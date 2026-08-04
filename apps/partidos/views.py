@@ -6,6 +6,7 @@ from django.views.decorators.http import require_POST
 
 from apps.equipos.models import Equipo
 from apps.jugadores.models import Jugador
+from apps.torneos import palmares
 from apps.torneos.models import Categoria, Sede
 from apps.usuarios.filtros import buscar, campo_texto, campo_opciones, campo_oculto
 from apps.usuarios.permissions import admin_liga_required, ligas_administradas, ligas_visibles
@@ -215,12 +216,14 @@ def _agrupar_por_jornada(partidos):
     """
     bloques = {}
     for partido in partidos:
-        clave = (partido.categoria_id, partido.fase, partido.jornada)
+        # La ida y la vuelta de una misma ronda van en bloques separados: son
+        # fechas distintas y mezclarlas haria imposible saber cual es cual.
+        clave = (partido.categoria_id, partido.fase, partido.jornada, partido.vuelta)
         bloques.setdefault(clave, {
             'categoria': partido.categoria,
             'jornada': partido.jornada,
             'es_liguilla': partido.es_liguilla,
-            'etiqueta': partido.get_fase_display() if partido.es_liguilla else f'Jornada {partido.jornada}',
+            'etiqueta': partido.etiqueta,
             'partidos': [],
         })
         bloques[clave]['partidos'].append(partido)
@@ -362,14 +365,38 @@ def partido_resultado(request, pk):
                 actuaciones.guardar(resultado, filas)
                 messages.success(request, 'Resultado y goleadores registrados.')
                 # Si este resultado cerro una ronda de liguilla, la siguiente
-                # queda armada sola con los ganadores.
-                creados = liguilla.avanzar(resultado)
-                if creados:
-                    nombres = ', '.join(sorted({p.get_fase_display() for p in creados}))
+                # queda armada sola con los ganadores. Si fue una correccion que
+                # cambio quien paso, la ronda siguiente se rehace.
+                avance = liguilla.avanzar(resultado)
+
+                if avance['rehechas']:
+                    # Al rehacerse se borro la final vieja, si la habia: el
+                    # campeon declarado ya no vale y la categoria vuelve a estar
+                    # en juego.
+                    palmares.reabrir(resultado.categoria)
+                    messages.warning(
+                        request,
+                        f'Cambió quién avanza, así que se rehízo: '
+                        f'{", ".join(avance["rehechas"]).lower()}. Esos partidos perdieron su '
+                        f'fecha, cancha y resultado, y hay que cargarlos de nuevo.',
+                    )
+
+                if avance['creados']:
+                    nombres = ', '.join(sorted({p.get_fase_display() for p in avance['creados']}))
                     messages.success(
                         request,
                         f'Se cerró {resultado.get_fase_display().lower()}: ya quedaron los cruces de '
                         f'{nombres.lower()}. Solo falta ponerles fecha y cancha.',
+                    )
+
+                # Si el que se acaba de cargar fue la final, la categoria queda
+                # terminada y se le graba el palmares.
+                premios = palmares.cerrar_si_termino(resultado)
+                if premios:
+                    messages.success(
+                        request,
+                        f'¡Terminó {premios.categoria_nombre}! Campeón: {premios.campeon}. '
+                        f'La categoría queda concluida y su palmarés ya está guardado.',
                     )
                 if modal:
                     return JsonResponse({'success': True})
@@ -381,8 +408,11 @@ def partido_resultado(request, pk):
     context = {
         'form': form,
         'partido': partido,
+        # La etiqueta aclara si es la ida o la vuelta: en liguilla los dos
+        # partidos de una llave tienen los mismos equipos y el titulo solo no
+        # alcanza para saber cual se esta cargando.
         'title': ('Corregir resultado' if partido.jugado else 'Resultado') +
-                 f': {partido.equipo_local} vs {partido.equipo_visitante}',
+                 f' · {partido.etiqueta}: {partido.equipo_local} vs {partido.equipo_visitante}',
         'plantel_local': [j for j in plantel if j.equipo_id == partido.equipo_local_id],
         'plantel_visitante': [j for j in plantel if j.equipo_id == partido.equipo_visitante_id],
         'goleadores': _cargados(partido, filas, 'goles', 'goles_en_contra'),

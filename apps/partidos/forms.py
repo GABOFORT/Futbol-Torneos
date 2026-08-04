@@ -152,23 +152,38 @@ class ResultadoForm(StyledFormMixin, forms.ModelForm):
             self.fields[campo].label = f'Penales de {equipo.nombre}'
             self.fields[campo].widget.attrs['data-solo-si-empate'] = '1'
 
-        if partido.es_liguilla and partido.fase != Partido.FASE_FINAL:
-            # Antes de la final no se patea: el empate lo resuelve la tabla, que
-            # es la ventaja ganada durante el torneo regular. Los campos de
-            # penales no se ofrecen para que nadie los cargue de mas.
+        # Los penales solo aparecen en la final, que va a partido unico: es el
+        # unico cruce que hay que definir si o si, porque no se puede coronar
+        # campeon con una tabla que ya termino.
+        define_el_titulo = partido.fase == Partido.FASE_FINAL and partido.cierra_la_llave
+
+        if partido.es_liguilla and not define_el_titulo:
+            # En el resto no se patea: el empate lo resuelve la tabla, que es la
+            # ventaja ganada durante el torneo regular. Los campos de penales no
+            # se ofrecen para que nadie los cargue de mas.
             mejor = min(partido.siembra_local or 99, partido.siembra_visitante or 99)
             del self.fields['ganador_penales']
             del self.fields['penales_local']
             del self.fields['penales_visitante']
-            self.sin_penales = (
-                f'Si terminan empatados pasa el {mejor}º de la tabla. En esta ronda no hay penales.'
-                if mejor != 99 else
-                'Si terminan empatados pasa el mejor ubicado en la tabla.'
-            )
-        elif partido.fase == Partido.FASE_FINAL:
+            if partido.fase in Partido.FASES_PARTIDO_UNICO:
+                self.sin_penales = (
+                    f'Se juega a partido único. Si terminan empatados pasa el {mejor}º '
+                    f'de la tabla.' if mejor != 99 else
+                    'Se juega a partido único. Si terminan empatados pasa el mejor de la tabla.'
+                )
+            elif mejor != 99:
+                self.sin_penales = (
+                    f'Se define por el global de los dos partidos. Si terminan igualados '
+                    f'pasa el {mejor}º de la tabla: en esta ronda no hay penales.'
+                )
+            else:
+                self.sin_penales = 'Si el global termina igualado pasa el mejor ubicado en la tabla.'
+        elif define_el_titulo:
             penales.empty_label = 'Todavía sin definir'
             penales.label = '¿Quién ganó la tanda de penales?'
-            penales.help_text = 'Es la final: si terminó empatada, el campeón sale desde el punto penal.'
+            penales.help_text = (
+                'Es la final: si terminó empatada, el campeón sale desde el punto penal.'
+            )
         # El JS lo muestra solo cuando los goles quedan iguales.
         penales.widget.attrs['data-solo-si-empate'] = '1'
 
@@ -176,14 +191,41 @@ class ResultadoForm(StyledFormMixin, forms.ModelForm):
     # plantilla lo explique en vez de mostrar un hueco donde estaba el campo.
     sin_penales = ''
 
+    def _global_empatado(self, locales, visitantes):
+        """Si la serie completa queda igualada con el resultado que se esta cargando.
+
+        Suma el partido de ida al que se esta guardando. Se mira el global y no
+        este marcador porque la liguilla es a ida y vuelta: una vuelta 1-1 con
+        una ida 2-0 no define nada, y una vuelta 2-1 puede estar cerrando una
+        serie empatada.
+        """
+        partido = self.instance
+        propios, ajenos = locales, visitantes
+        ida = Partido.objects.filter(
+            categoria_id=partido.categoria_id, fase=partido.fase,
+            orden=partido.orden, vuelta=False,
+        ).exclude(pk=partido.pk).first()
+
+        if ida and ida.jugado:
+            # La localia se invierte entre la ida y la vuelta, asi que hay que
+            # mirar de que lado jugo cada equipo en cada partido.
+            if ida.equipo_local_id == partido.equipo_local_id:
+                propios += ida.goles_local
+                ajenos += ida.goles_visitante
+            else:
+                propios += ida.goles_visitante
+                ajenos += ida.goles_local
+        return propios == ajenos
+
     def clean(self):
         datos = super().clean()
         locales = datos.get('goles_local')
         visitantes = datos.get('goles_visitante')
         ganador = datos.get('ganador_penales')
-        empate = locales is not None and visitantes is not None and locales == visitantes
+        hay_marcador = locales is not None and visitantes is not None
+        empate = hay_marcador and self._global_empatado(locales, visitantes)
 
-        if self.instance.fase == Partido.FASE_FINAL and empate:
+        if self.instance.fase == Partido.FASE_FINAL and self.instance.cierra_la_llave and empate:
             # Alguien tiene que levantar la copa: sin ganador de la tanda el
             # torneo se quedaria sin campeon.
             if not ganador:
@@ -211,11 +253,11 @@ class ResultadoForm(StyledFormMixin, forms.ModelForm):
                         f'Según la tanda ({uno}-{otro}) el que ganó es {arriba.nombre}.',
                     )
 
-        if ganador and locales is not None and visitantes is not None and locales != visitantes:
+        if ganador and hay_marcador and not empate:
             # Puede pasar si se eligio el ganador y despues se corrigio un gol:
             # el campo quedaria con un valor imposible.
             self.add_error(
                 'ganador_penales',
-                'Los penales solo se juegan cuando el partido termina empatado.',
+                'Los penales solo se patean cuando el global de la serie termina empatado.',
             )
         return datos

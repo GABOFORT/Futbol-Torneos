@@ -18,7 +18,8 @@ bloque completo por equipo desde ficha.py.
                 {% include 'usuarios/_logo_liga.html' with liga=partido.categoria.liga %}
                 <div>
                     <p class="ficha-liga">{{ partido.categoria.liga.nombre }}</p>
-                    <p class="ficha-categoria">{{ partido.categoria.nombre }} · Jornada {{ partido.jornada }}</p>
+                    {# `etiqueta` dice "Jornada 5" o "Semifinal · Ida" según corresponda. #}
+                    <p class="ficha-categoria">{{ partido.categoria.nombre }} · {{ partido.etiqueta }}</p>
                 </div>
             </div>
             <button type="button" id="modal-close" class="ficha-cerrar" aria-label="Cerrar ficha">✕</button>
@@ -26,11 +27,18 @@ bloque completo por equipo desde ficha.py.
 
         <div class="ficha-cruce">
             <div class="ficha-lado">
-                <img src="{{ partido.equipo_local.escudo_url }}" alt="Escudo de {{ partido.equipo_local.nombre }}" class="ficha-escudo">
-                <p class="ficha-equipo">{{ partido.equipo_local.nombre }}</p>
+                {# Abre el perfil del equipo: el modal reemplaza esta ficha por la del equipo. #}
+                <button type="button" class="open-modal equipo-boton"
+                        data-url="{% url 'equipo-perfil' partido.equipo_local.pk %}"
+                        aria-label="Ver el perfil de {{ partido.equipo_local.nombre }}">
+                    <img src="{{ partido.equipo_local.escudo_url }}" alt="Escudo de {{ partido.equipo_local.nombre }}" class="ficha-escudo">
+                    <span class="ficha-equipo">{{ partido.equipo_local.nombre }}</span>
+                </button>
                 <p class="ficha-localia">Local</p>
+                {% include 'torneos/_trofeos.html' with trofeos=lados.0.trofeos tam='md' %}
+                {# En liguilla los penales solo definen quién pasa: no suman punto. #}
                 {% if partido.ganador_penales_id == partido.equipo_local_id %}
-                    <span class="chip-penales">+1 penales</span>
+                    <span class="chip-penales">{% if partido.es_liguilla %}Ganó penales{% else %}+1 penales{% endif %}</span>
                 {% endif %}
             </div>
 
@@ -57,11 +65,16 @@ bloque completo por equipo desde ficha.py.
             </div>
 
             <div class="ficha-lado">
-                <img src="{{ partido.equipo_visitante.escudo_url }}" alt="Escudo de {{ partido.equipo_visitante.nombre }}" class="ficha-escudo">
-                <p class="ficha-equipo">{{ partido.equipo_visitante.nombre }}</p>
+                <button type="button" class="open-modal equipo-boton"
+                        data-url="{% url 'equipo-perfil' partido.equipo_visitante.pk %}"
+                        aria-label="Ver el perfil de {{ partido.equipo_visitante.nombre }}">
+                    <img src="{{ partido.equipo_visitante.escudo_url }}" alt="Escudo de {{ partido.equipo_visitante.nombre }}" class="ficha-escudo">
+                    <span class="ficha-equipo">{{ partido.equipo_visitante.nombre }}</span>
+                </button>
                 <p class="ficha-localia">Visitante</p>
+                {% include 'torneos/_trofeos.html' with trofeos=lados.1.trofeos tam='md' %}
                 {% if partido.ganador_penales_id == partido.equipo_visitante_id %}
-                    <span class="chip-penales">+1 penales</span>
+                    <span class="chip-penales">{% if partido.es_liguilla %}Ganó penales{% else %}+1 penales{% endif %}</span>
                 {% endif %}
             </div>
         </div>
@@ -196,11 +209,11 @@ bloque completo por equipo desde ficha.py.
                                     <li class="ficha-forma-item open-modal"
                                         data-url="{% url 'partido-detalle' juego.partido_id %}"
                                         role="button" tabindex="0"
-                                        aria-label="Ver la ficha del partido contra {{ juego.rival.nombre }}, jornada {{ juego.jornada }}">
+                                        aria-label="Ver la ficha del partido contra {{ juego.rival.nombre }}, {{ juego.etiqueta }}">
                                         <span class="ficha-signo ficha-signo-{{ juego.signo }}">{{ juego.signo }}</span>
                                         <span class="ficha-forma-marcador">{{ juego.propios }}-{{ juego.ajenos }}</span>
                                         <span class="ficha-forma-rival">{% if juego.de_local %}vs{% else %}en{% endif %} {{ juego.rival.nombre }}</span>
-                                        <span class="ficha-forma-jornada">J{{ juego.jornada }}</span>
+                                        <span class="ficha-forma-jornada" title="{{ juego.etiqueta }}">{{ juego.corta }}</span>
                                     </li>
                                 {% endfor %}
                             </ul>
@@ -236,10 +249,10 @@ bloque completo por equipo desde ficha.py.
                         <li class="ficha-cruce-item open-modal"
                             data-url="{% url 'partido-detalle' cruce.partido_id %}"
                             role="button" tabindex="0"
-                            aria-label="Ver la ficha de ese enfrentamiento, jornada {{ cruce.jornada }}">
+                            aria-label="Ver la ficha de ese enfrentamiento, {{ cruce.etiqueta }}">
                             <span class="ficha-cruce-marcador">{{ cruce.goles_uno }} - {{ cruce.goles_otro }}</span>
                             <span class="ficha-cruce-datos">
-                                {{ cruce.categoria.nombre }} · Jornada {{ cruce.jornada }}
+                                {{ cruce.categoria.nombre }} · {{ cruce.etiqueta }}
                                 {% if cruce.fecha %} · {{ cruce.fecha|date:'d/m/Y' }}{% endif %}
                             </span>
                             <span class="ficha-cruce-localia">

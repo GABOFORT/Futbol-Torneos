@@ -1,63 +1,61 @@
 {% comment %}
-Una llave del cuadro: los dos equipos de un cruce, uno arriba del otro.
+Una llave del cuadro: los dos equipos con el global de la serie.
 
-Recibe `cruce` (un Partido) y opcionalmente `destacada` para la final. El clic
-abre la ficha completa de ese partido, igual que las tarjetas del calendario.
+Recibe `cruce`, que es una serie armada por liguilla.series(): trae los dos
+equipos, el global, si está completa y quién pasó. Opcionalmente `destacada`
+para la final.
+
+La liguilla se juega a ida y vuelta, así que el número grande es el GLOBAL de
+los dos partidos, no el marcador de uno. Abajo se detallan los dos resultados,
+que es lo que la gente busca después de ver quién pasó. El tercer lugar es a
+partido único y ahí no hay detalle que mostrar.
 {% endcomment %}
-<article class="llave open-modal {% if destacada %}llave-final{% endif %} {% if cruce.jugado %}llave-jugada{% endif %}"
-         data-url="{% url 'partido-detalle' cruce.pk %}"
-         role="button" tabindex="0"
-         aria-label="Ver la ficha de {{ cruce.equipo_local.nombre }} contra {{ cruce.equipo_visitante.nombre }}">
+<article class="llave {% if destacada %}llave-final{% endif %} {% if cruce.completa %}llave-jugada{% endif %}">
 
-    {% comment %}
-    `ganador` es una propiedad del modelo, no una clave foranea: resuelve el
-    empate mirando la siembra o la tanda, asi que se compara su id.
-    {% endcomment %}
-    <div class="llave-lado {% if cruce.ganador.id == cruce.equipo_local_id %}llave-gana{% endif %}">
-        {% if cruce.siembra_local %}<span class="llave-siembra">{{ cruce.siembra_local }}</span>{% endif %}
-        <img src="{{ cruce.equipo_local.escudo_url }}" alt="Escudo de {{ cruce.equipo_local.nombre }}" class="llave-escudo">
-        <span class="llave-nombre">{{ cruce.equipo_local.nombre }}</span>
-        {% if cruce.jugado %}
-            {% if cruce.tanda %}
-                <span class="tanda">
-                    {% for convertido in cruce.tanda.local %}
-                        <i class="penal {% if convertido %}penal-si{% else %}penal-no{% endif %}"></i>
-                    {% endfor %}
-                </span>
-                <span class="llave-pen">{{ cruce.penales_local }}</span>
-            {% endif %}
-            <span class="llave-goles">{{ cruce.goles_local }}</span>
-        {% endif %}
+    <div class="llave-lado {% if cruce.ganador.id == cruce.uno.id %}llave-gana{% endif %}">
+        {% if cruce.siembra_uno %}<span class="llave-siembra">{{ cruce.siembra_uno }}</span>{% endif %}
+        <img src="{{ cruce.uno.escudo_url }}" alt="Escudo de {{ cruce.uno.nombre }}" class="llave-escudo">
+        <span class="llave-nombre">{{ cruce.uno.nombre }}</span>
+        {% include 'torneos/_trofeos.html' with trofeos=cruce.trofeos_uno tam='md' %}
+        {% if cruce.completa %}<span class="llave-goles">{{ cruce.goles_uno }}</span>{% endif %}
     </div>
 
-    <div class="llave-lado {% if cruce.ganador.id == cruce.equipo_visitante_id %}llave-gana{% endif %}">
-        {% if cruce.siembra_visitante %}<span class="llave-siembra">{{ cruce.siembra_visitante }}</span>{% endif %}
-        <img src="{{ cruce.equipo_visitante.escudo_url }}" alt="Escudo de {{ cruce.equipo_visitante.nombre }}" class="llave-escudo">
-        <span class="llave-nombre">{{ cruce.equipo_visitante.nombre }}</span>
-        {% if cruce.jugado %}
-            {% if cruce.tanda %}
-                <span class="tanda">
-                    {% for convertido in cruce.tanda.visitante %}
-                        <i class="penal {% if convertido %}penal-si{% else %}penal-no{% endif %}"></i>
-                    {% endfor %}
-                </span>
-                <span class="llave-pen">{{ cruce.penales_visitante }}</span>
-            {% endif %}
-            <span class="llave-goles">{{ cruce.goles_visitante }}</span>
-        {% endif %}
+    <div class="llave-lado {% if cruce.ganador.id == cruce.otro.id %}llave-gana{% endif %}">
+        {% if cruce.siembra_otro %}<span class="llave-siembra">{{ cruce.siembra_otro }}</span>{% endif %}
+        <img src="{{ cruce.otro.escudo_url }}" alt="Escudo de {{ cruce.otro.nombre }}" class="llave-escudo">
+        <span class="llave-nombre">{{ cruce.otro.nombre }}</span>
+        {% include 'torneos/_trofeos.html' with trofeos=cruce.trofeos_otro tam='md' %}
+        {% if cruce.completa %}<span class="llave-goles">{{ cruce.goles_otro }}</span>{% endif %}
     </div>
 
-    {% if cruce.motivo_del_pase %}
-        {# Con el marcador igualado hay que decir por que paso uno y no el otro. #}
-        <p class="llave-motivo">{{ cruce.motivo_del_pase }}</p>
+    {% if cruce.motivo %}
+        {# Con el global igualado hay que decir por qué pasó uno y no el otro. #}
+        <p class="llave-motivo">{{ cruce.motivo }}</p>
     {% endif %}
 
-    <p class="llave-pie">
-        {% if cruce.fecha %}
-            {{ cruce.fecha|date:'d/m/Y' }} · {{ cruce.fecha|date:'H:i' }}
-        {% else %}
-            <span class="sin-dato">Sin fecha</span>
-        {% endif %}
-        {% if cruce.sede %} · {{ cruce.sede.nombre }}{% endif %}
-    </p>
+    {% comment %}
+    El detalle de los dos partidos. Cada uno abre su ficha, igual que las
+    tarjetas del calendario.
+    {% endcomment %}
+    <div class="llave-juegos">
+        {% for juego in cruce.partidos %}
+            <button type="button" class="open-modal llave-juego"
+                    data-url="{% url 'partido-detalle' juego.pk %}"
+                    aria-label="Ver la ficha de {{ juego.equipo_local.nombre }} contra {{ juego.equipo_visitante.nombre }}">
+                <span class="llave-juego-etiqueta">
+                    {% if cruce.a_partido_unico %}Único{% elif juego.vuelta %}Vuelta{% else %}Ida{% endif %}
+                </span>
+                {% if juego.jugado %}
+                    <span class="llave-juego-marcador">{{ juego.goles_local }}-{{ juego.goles_visitante }}</span>
+                    {% if juego.tanda %}
+                        <span class="llave-juego-pen">({{ juego.penales_local }}-{{ juego.penales_visitante }} pen)</span>
+                    {% endif %}
+                {% elif juego.fecha %}
+                    <span class="llave-juego-fecha">{{ juego.fecha|date:'d/m H:i' }}</span>
+                {% else %}
+                    <span class="llave-juego-fecha sin-dato">Sin fecha</span>
+                {% endif %}
+            </button>
+        {% endfor %}
+    </div>
 </article>

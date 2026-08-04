@@ -8,6 +8,9 @@ from apps.usuarios.eliminar import vista_eliminar
 from apps.usuarios.filtros import buscar, campo_texto, campo_opciones, hay_filtros
 from apps.usuarios.permissions import admin_liga_required, ligas_administradas, ligas_visibles
 
+from apps.torneos import palmares
+
+from . import perfil
 from .forms import EquipoCreateForm, EquipoForm, EquipoFormacionForm
 from .models import Equipo
 
@@ -16,7 +19,12 @@ def equipo_list(request):
     user = request.user
 
     if user.is_authenticated and user.role == user.ROLE_ENTRENADOR and not user.is_superuser:
-        mis_equipos = Equipo.objects.filter(entrenador=user).select_related('liga', 'categoria').order_by('-fecha_creacion')
+        mis_equipos = list(
+            Equipo.objects.filter(entrenador=user).select_related('liga', 'categoria').order_by('-fecha_creacion')
+        )
+        premios = palmares.trofeos_por_categoria({e.categoria_id for e in mis_equipos})
+        for equipo in mis_equipos:
+            equipo.trofeos = premios.get(equipo.categoria_id, {}).get('equipos', {}).get(equipo.nombre, [])
         return render(request, 'equipos/equipo_list.html', {
             'equipos': Equipo.objects.none(),
             'mis_equipos': mis_equipos,
@@ -42,7 +50,13 @@ def equipo_list(request):
         directorio = directorio.filter(liga_id=int(liga_id))
     if categoria_id.isdigit():
         directorio = directorio.filter(categoria_id=int(categoria_id))
-    directorio = directorio.order_by('liga__nombre', 'categoria__nombre', 'nombre')
+    directorio = list(directorio.order_by('liga__nombre', 'categoria__nombre', 'nombre'))
+
+    # Los premios de las temporadas ya cerradas, colgados de cada equipo. Un solo
+    # lote para todas las categorias del listado, no una consulta por tarjeta.
+    premios = palmares.trofeos_por_categoria({e.categoria_id for e in directorio})
+    for equipo in directorio:
+        equipo.trofeos = premios.get(equipo.categoria_id, {}).get('equipos', {}).get(equipo.nombre, [])
 
     # Las categorias del desplegable se acotan a la liga elegida: con 13
     # categorias repartidas en 7 ligas, ofrecerlas todas juntas confunde.
@@ -64,7 +78,7 @@ def equipo_list(request):
         'puede_filtrar': puede_administrar,
         'filtros': filtros,
         'filtros_activos': hay_filtros(filtros),
-        'total_resultados': directorio.count(),
+        'total_resultados': len(directorio),
     })
 
 
@@ -156,6 +170,26 @@ def equipo_delete(request, pk):
     )
 
 
+def equipo_perfil(request, pk):
+    """El perfil del equipo, para abrirse en el modal desde cualquier pantalla.
+
+    De solo lectura y acotado por `ligas_visibles`, con el mismo criterio que la
+    ficha de partido: el admin de liga llega a las suyas, y el entrenador y el
+    publico a las ligas activas.
+
+    A diferencia de `equipo_detail`, al entrenador no se lo limita a su propio
+    equipo. Se abre pulsando un escudo en el calendario o en la tabla, casi
+    siempre el de un rival, y ademas no muestra nada que la ficha de partido no
+    muestre ya: dejarlo afuera lo dejaba viendo menos que un visitante sin cuenta.
+    """
+    equipo = get_object_or_404(
+        Equipo.objects.select_related('liga', 'categoria', 'entrenador')
+        .filter(liga__in=ligas_visibles(request.user)),
+        pk=pk,
+    )
+    return render(request, 'equipos/_perfil_modal.html', perfil.armar(equipo))
+
+
 def equipo_detail(request, pk):
     equipo = get_object_or_404(
         Equipo.objects.select_related('liga', 'categoria', 'entrenador').prefetch_related('jugadores'), pk=pk
@@ -170,8 +204,18 @@ def equipo_detail(request, pk):
     if user.is_authenticated and user.role == user.ROLE_ENTRENADOR and not user.is_superuser and not es_dueno:
         return HttpResponseForbidden('No puedes ver equipos de otras ligas.')
 
+    # Los premios de la temporada, si la categoria ya termino: los del club van
+    # en el encabezado y los individuales al lado de quien los gano.
+    premios = palmares.trofeos_por_categoria([equipo.categoria_id]).get(equipo.categoria_id, {})
+    de_jugadores = premios.get('jugadores', {})
+    jugadores = list(equipo.jugadores.all())
+    for jugador in jugadores:
+        jugador.trofeos = de_jugadores.get(f'{jugador.nombre} {jugador.apellido}', [])
+
     return render(request, 'equipos/equipo_detail.html', {
         'equipo': equipo,
+        'jugadores': jugadores,
+        'trofeos_equipo': premios.get('equipos', {}).get(equipo.nombre, []),
         'puede_editar': es_dueno or puede_administrar,
         # Eliminar es solo para admin de liga y superadmin: el entrenador dueño
         # puede editar su equipo pero no borrarlo.

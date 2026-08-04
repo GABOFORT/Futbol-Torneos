@@ -4,6 +4,43 @@
 
 {% block contenido %}
 <div class="max-w-7xl mx-auto px-4 py-8">
+
+    {% comment %}
+    Lo primero que ve al entrar, si su categoría terminó y su equipo ganó algo.
+    Va arriba de todo y no como un aviso al costado: es el momento del año que
+    justifica toda la temporada, y merece la pantalla.
+    {% endcomment %}
+    {% for festejo in festejos %}
+        <section class="festejo">
+            <div class="festejo-copas">
+                {% for trofeo in festejo.trofeos %}
+                    <img src="{{ trofeo.imagen }}" alt="{{ trofeo.etiqueta }}" title="{{ trofeo.etiqueta }}" class="festejo-copa">
+                {% endfor %}
+            </div>
+            <p class="festejo-titulo">¡Felicitaciones!</p>
+            <p class="festejo-equipo">{{ festejo.equipo.nombre }}</p>
+            <p class="festejo-logro">
+                {% for trofeo in festejo.trofeos %}{{ trofeo.etiqueta }}{% if not forloop.last %} · {% endif %}{% endfor %}
+            </p>
+            <p class="festejo-torneo">{{ festejo.equipo.liga.nombre }} · {{ festejo.equipo.categoria.nombre }}</p>
+
+            {% if festejo.jugadores %}
+                <div class="festejo-jugadores">
+                    {% for premiado in festejo.jugadores %}
+                        <div class="festejo-jugador">
+                            {% for trofeo in premiado.trofeos %}
+                                <img src="{{ trofeo.imagen }}" alt="{{ trofeo.etiqueta }}" class="festejo-jugador-icono">
+                            {% endfor %}
+                            <span><strong>{{ premiado.jugador }}</strong> — {% for t in premiado.trofeos %}{{ t.etiqueta }}{% if not forloop.last %}, {% endif %}{% endfor %}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <a href="{% url 'vitrina' %}" class="festejo-enlace">Ver el palmarés completo →</a>
+        </section>
+    {% endfor %}
+
     <div class="rounded-[2rem] bg-white border border-green-100 p-8 shadow-lg">
         <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div>

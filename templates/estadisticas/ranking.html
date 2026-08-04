@@ -33,10 +33,22 @@
                     <tr {% if forloop.counter <= 3 %}class="bg-green-50/40"{% endif %}>
                         <td class="col-numero px-4 py-4 text-sm {% if forloop.counter <= 3 %}font-bold text-green-800{% else %}text-gray-400{% endif %}">{{ forloop.counter }}</td>
                         <td class="px-4 py-4 text-sm font-semibold text-gray-900">
-                            {{ fila.jugador }}
-                            {% if fila.numero %}<span class="etiqueta-tabla">{{ fila.numero }}</span>{% endif %}
+                            <div class="celda-equipo">
+                                <span>{{ fila.jugador }}</span>
+                                {% if fila.numero %}<span class="etiqueta-tabla">{{ fila.numero }}</span>{% endif %}
+                                {# Bota de oro o trofeo de asistencias, si ganó alguno. #}
+                                {% include 'torneos/_trofeos.html' with trofeos=fila.trofeos %}
+                            </div>
                         </td>
-                        <td class="px-4 py-4 text-sm text-gray-800">{{ fila.equipo }}</td>
+                        <td class="px-4 py-4 text-sm text-gray-800">
+                            {# El nombre del equipo abre su perfil en el modal. #}
+                            <div class="celda-equipo">
+                                <button type="button" class="open-modal equipo-enlace"
+                                        data-url="{% url 'equipo-perfil' fila.equipo_id %}"
+                                        aria-label="Ver el perfil de {{ fila.equipo }}">{{ fila.equipo }}</button>
+                                {% include 'torneos/_trofeos.html' with trofeos=fila.trofeos_equipo %}
+                            </div>
+                        </td>
                         <td class="px-4 py-4 text-sm text-gray-800">{{ fila.categoria }}</td>
                         <td class="px-4 py-4 text-sm text-gray-800">{{ fila.liga }}</td>
                         <td class="px-4 py-4 text-center text-sm text-gray-500">{{ fila.pj }}</td>
@@ -55,4 +67,7 @@
         </table>
     </div>
 </div>
+
+{# Hace falta para que cada equipo pueda abrir su perfil. #}
+{% include '_modal.html' %}
 {% endblock %}
