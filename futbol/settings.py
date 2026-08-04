@@ -32,6 +32,14 @@ ALLOWED_HOSTS = config(
     cast=Csv(),
 )
 
+# IIS termina el TLS y reenvia por HTTP simple a Waitress (ver web.config,
+# ReverseProxyInboundRule1). Sin esto Django cree que toda peticion es HTTP,
+# lo que rompe la verificacion de CSRF cuando se entra por HTTPS (el Origin
+# que manda el navegador es https:// pero Django arma http:// para comparar).
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='', cast=Csv())
+
 
 # Application definition
 
