@@ -1,0 +1,287 @@
+{% comment %}
+Perfil de un equipo, pensado para abrirse dentro del modal desde cualquier
+pantalla donde aparezca un escudo.
+
+Es de solo lectura y no lleva <form>, asi que el JS del modal solo le engancha el
+boton de cerrar.
+
+Todo lo que se muestra sale de los marcadores y de las actuaciones cargadas. No
+hay posesion, tiros, tarjetas ni minutos jugados: esos datos no se capturan en
+ningun lado del sistema (ver el docstring de apps/equipos/perfil.py).
+{% endcomment %}
+<div class="perfil-modal">
+
+    {% comment %} Cabecera fija: el escudo y el nombre siguen a la vista al bajar. {% endcomment %}
+    <header class="perfil-cabecera">
+        <div class="perfil-cabecera-fila">
+            <div class="perfil-identidad">
+                <img src="{{ equipo.escudo_url }}" alt="Escudo de {{ equipo.nombre }}" class="perfil-escudo">
+                <div class="perfil-titulos">
+                    <p class="perfil-liga">{{ equipo.liga.nombre }} · {{ equipo.categoria.nombre }}</p>
+                    <h2 class="perfil-nombre">
+                        {{ equipo.nombre }}
+                        {# Los premios de la temporada, si la categoría ya terminó. #}
+                        {% include 'torneos/_trofeos.html' with trofeos=trofeos tam='lg' %}
+                    </h2>
+                    <p class="perfil-entrenador">
+                        {% if equipo.entrenador %}
+                            <span class="perfil-etiqueta-dt">DT</span> {{ equipo.entrenador.nombre_visible }}
+                        {% else %}
+                            <span class="sin-dato">Sin entrenador asignado</span>
+                        {% endif %}
+                        {% if equipo.formacion %} · {{ equipo.formacion }}{% endif %}
+                    </p>
+                </div>
+            </div>
+            <button type="button" id="modal-close" class="perfil-cerrar" aria-label="Cerrar perfil">✕</button>
+        </div>
+
+        {% if puesto and not sin_jugar %}
+            {% comment %}
+            La tira de numeros duros. Va en la cabecera porque es lo primero que
+            se busca al abrir un equipo: en que lugar va y cuanto lleva.
+            {% endcomment %}
+            <div class="perfil-tira">
+                <div class="perfil-dato perfil-dato-fuerte">
+                    <span class="perfil-dato-valor">{{ puesto.puesto }}º</span>
+                    <span class="perfil-dato-nombre">de {{ puesto.de }}</span>
+                </div>
+                <div class="perfil-dato">
+                    <span class="perfil-dato-valor">{{ puesto.pts }}</span>
+                    <span class="perfil-dato-nombre">Puntos</span>
+                </div>
+                <div class="perfil-dato">
+                    <span class="perfil-dato-valor">{{ puesto.pj }}</span>
+                    <span class="perfil-dato-nombre">Jugados</span>
+                </div>
+                <div class="perfil-dato">
+                    <span class="perfil-dato-valor">{{ puesto.gf }}</span>
+                    <span class="perfil-dato-nombre">A favor</span>
+                </div>
+                <div class="perfil-dato">
+                    <span class="perfil-dato-valor">{{ puesto.gc }}</span>
+                    <span class="perfil-dato-nombre">En contra</span>
+                </div>
+                <div class="perfil-dato">
+                    <span class="perfil-dato-valor">{% if puesto.dg > 0 %}+{% endif %}{{ puesto.dg }}</span>
+                    <span class="perfil-dato-nombre">Diferencia</span>
+                </div>
+            </div>
+
+            {% if racha %}
+                <div class="perfil-racha">
+                    <span class="perfil-racha-titulo">Forma reciente</span>
+                    {% for signo in racha %}
+                        <span class="racha-bola racha-{{ signo }}" title="{% if signo == 'G' %}Ganado{% elif signo == 'E' %}Empatado{% else %}Perdido{% endif %}">{{ signo }}</span>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endif %}
+    </header>
+
+    {% if sin_jugar %}
+        {% comment %}
+        La mayoria de los equipos cargados todavia no jugaron. El vacio se
+        explica una sola vez y no se dibujan secciones huecas debajo.
+        {% endcomment %}
+        <div class="perfil-vacio">
+            <p class="perfil-vacio-titulo">Todavía no jugó partidos</p>
+            <p class="perfil-vacio-texto">
+                Cuando se carguen resultados aparecerán aquí su posición, su calendario,
+                sus goleadores y la comparación con el resto de la categoría.
+            </p>
+            {% if calendario %}
+                <p class="perfil-vacio-texto">Tiene {{ calendario|length }} partido{{ calendario|length|pluralize:"s" }} programado{{ calendario|length|pluralize:"s" }}.</p>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <div class="perfil-cuerpo">
+
+        {% comment %} ---- Columna izquierda: el calendario ---- {% endcomment %}
+        <section class="perfil-columna perfil-columna-calendario">
+            <h3 class="perfil-titulo">Calendario</h3>
+            {% if calendario %}
+                <ol class="perfil-calendario">
+                    {% for fila in calendario %}
+                        {% comment %}
+                        Cada renglon abre la ficha de ese partido. El modal
+                        reemplaza su contenido, asi que se pasa del equipo al
+                        partido sin abrir una ventana encima de la otra.
+                        {% endcomment %}
+                        <li class="perfil-juego open-modal {% if fila.jugado %}perfil-juego-{{ fila.signo }}{% endif %}"
+                            data-url="{% url 'partido-detalle' fila.partido_id %}"
+                            role="button" tabindex="0"
+                            aria-label="Ver la ficha del partido contra {{ fila.rival.nombre }}">
+
+                            {% comment %}
+                            El circulo de la izquierda es el resultado: G ganado,
+                            E empatado, P perdido. Es lo que se busca al recorrer
+                            un calendario de un vistazo, asi que va primero y con
+                            color. Los que todavia no se jugaron llevan un guion
+                            en gris, para que la columna no quede desalineada.
+                            {% endcomment %}
+                            {% if fila.jugado %}
+                                <span class="perfil-juego-signo signo-{{ fila.signo }}"
+                                      title="{% if fila.signo == 'G' %}Ganado{% elif fila.signo == 'E' %}Empatado{% else %}Perdido{% endif %}">{{ fila.signo }}</span>
+                            {% else %}
+                                <span class="perfil-juego-signo signo-pendiente" title="Todavía no se juega">–</span>
+                            {% endif %}
+
+                            <img src="{{ fila.rival.escudo_url }}" alt="Escudo de {{ fila.rival.nombre }}" class="perfil-juego-escudo">
+
+                            <span class="perfil-juego-datos">
+                                <span class="perfil-juego-rival">{{ fila.rival.nombre }}</span>
+                                {% comment %}
+                                La localia baja aca: es un dato de contexto, no
+                                lo que se busca al recorrer la lista.
+                                {% endcomment %}
+                                <span class="perfil-juego-pie">
+                                    {% if fila.de_local %}Local{% else %}Visitante{% endif %}
+                                    · {{ fila.etiqueta }}
+                                    {% if fila.fecha %} · {{ fila.fecha|date:'d/m/Y' }}{% endif %}
+                                </span>
+                            </span>
+
+                            <span class="perfil-juego-cierre">
+                                {% if fila.jugado %}
+                                    <span class="perfil-juego-marcador">{{ fila.propios }}<span>-</span>{{ fila.ajenos }}</span>
+                                {% elif fila.fecha %}
+                                    <span class="perfil-juego-hora">{{ fila.fecha|date:'H:i' }}</span>
+                                {% else %}
+                                    <span class="sin-dato perfil-juego-hora">Sin fecha</span>
+                                {% endif %}
+                            </span>
+                        </li>
+                    {% endfor %}
+                </ol>
+            {% else %}
+                <p class="perfil-aviso">Todavía no tiene partidos generados.</p>
+            {% endif %}
+        </section>
+
+        {% comment %} ---- Columna derecha: como viene ---- {% endcomment %}
+        <div class="perfil-columna perfil-columna-datos">
+
+            {% if distribucion %}
+                <section class="perfil-bloque">
+                    <h3 class="perfil-titulo">Balance de resultados</h3>
+                    {% comment %}
+                    Barra apilada: los tres anchos vienen sumando 100 desde
+                    perfil.py, porque redondear cada uno por separado en el
+                    template dejaria una ranura o desbordaria la barra.
+
+                    Se aplican con las clases .ancho-N de base.html y no con un
+                    style inline, igual que en la ficha de partido.
+                    {% endcomment %}
+                    <div class="perfil-barra-apilada" role="img"
+                         aria-label="{% for t in distribucion.tramos %}{{ t.cantidad }} {{ t.etiqueta|lower }}{% if not forloop.last %}, {% endif %}{% endfor %} de {{ distribucion.total }} partidos">
+                        {% for tramo in distribucion.tramos %}
+                            <span class="tramo tramo-{{ tramo.clave }} ancho-{{ tramo.ancho }}"></span>
+                        {% endfor %}
+                    </div>
+                    <ul class="perfil-leyenda">
+                        {% for tramo in distribucion.tramos %}
+                            <li><i class="punto punto-{{ tramo.clave }}"></i>{{ tramo.etiqueta }} <b>{{ tramo.cantidad }}</b></li>
+                        {% endfor %}
+                    </ul>
+                </section>
+            {% endif %}
+
+            {% if radar %}
+                <section class="perfil-bloque">
+                    <h3 class="perfil-titulo">Análisis comparativo</h3>
+                    <p class="perfil-nota">
+                        Cada indicador se compara contra los {{ radar.comparados }} equipos de
+                        {{ equipo.categoria.nombre }} que ya jugaron. 100 es el mejor de la categoría.
+                    </p>
+
+                    {% comment %}
+                    Las coordenadas del pentagono se calculan en perfil.py: las
+                    plantillas de Django no hacen trigonometria. El SVG escala
+                    solo con el ancho de la columna.
+                    {% endcomment %}
+                    <svg class="perfil-radar" viewBox="0 0 {{ radar.geometria.ancho }} {{ radar.geometria.alto }}" role="img"
+                         aria-label="{% for eje in radar.ejes %}{{ eje.etiqueta }} {{ eje.puntaje }} de 100{% if not forloop.last %}. {% endif %}{% endfor %}">
+                        {% for anillo in radar.geometria.anillos %}
+                            <polygon points="{{ anillo }}" class="radar-anillo"></polygon>
+                        {% endfor %}
+                        {% for punto in radar.geometria.radios %}
+                            <line x1="{{ radar.geometria.centro_x }}" y1="{{ radar.geometria.centro_y }}"
+                                  x2="{{ punto.0 }}" y2="{{ punto.1 }}" class="radar-radio"></line>
+                        {% endfor %}
+                        <polygon points="{{ radar.geometria.area }}" class="radar-area"></polygon>
+                        {% for etiqueta in radar.geometria.etiquetas %}
+                            <text x="{{ etiqueta.x }}" y="{{ etiqueta.y }}" text-anchor="{{ etiqueta.anclaje }}" class="radar-etiqueta">{{ etiqueta.texto }}</text>
+                        {% endfor %}
+                    </svg>
+
+                    <ul class="perfil-ejes">
+                        {% for eje in radar.ejes %}
+                            <li class="perfil-eje" title="{{ eje.ayuda }}">
+                                <span class="perfil-eje-nombre">{{ eje.etiqueta }}</span>
+                                {# El numero es el puntaje exacto; la barra usa el paso de 5 de .ancho-N. #}
+                                <span class="perfil-eje-barra"><span class="ancho-{{ eje.ancho }}"></span></span>
+                                <span class="perfil-eje-puntaje">{{ eje.puntaje }}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <p class="perfil-nota perfil-nota-pie">
+                        Se calcula con los marcadores y las asistencias cargadas. El sistema no
+                        registra posesión, tiros ni tarjetas.
+                    </p>
+                </section>
+            {% elif not sin_jugar %}
+                <section class="perfil-bloque">
+                    <h3 class="perfil-titulo">Análisis comparativo</h3>
+                    <p class="perfil-aviso">
+                        Se necesitan al menos {{ minimo_radar }} partidos jugados para comparar
+                        al equipo con el resto de su categoría.
+                    </p>
+                </section>
+            {% endif %}
+
+            {% if goleadores or asistidores %}
+                <section class="perfil-bloque">
+                    <h3 class="perfil-titulo">Jugadores destacados</h3>
+                    <div class="perfil-figuras">
+                        {% if goleadores %}
+                            <div class="perfil-podio">
+                                <p class="perfil-podio-titulo">Goleadores</p>
+                                {% for jugador in goleadores %}
+                                    <div class="perfil-figura">
+                                        <span class="perfil-figura-puesto">{{ forloop.counter }}</span>
+                                        {% include 'jugadores/_avatar.html' with jugador=jugador %}
+                                        <span class="perfil-figura-nombre">{{ jugador.nombre }} {{ jugador.apellido }}</span>
+                                        <span class="perfil-figura-total">{{ jugador.total }}</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        {% if asistidores %}
+                            <div class="perfil-podio">
+                                <p class="perfil-podio-titulo">Asistencias</p>
+                                {% for jugador in asistidores %}
+                                    <div class="perfil-figura">
+                                        <span class="perfil-figura-puesto">{{ forloop.counter }}</span>
+                                        {% include 'jugadores/_avatar.html' with jugador=jugador %}
+                                        <span class="perfil-figura-nombre">{{ jugador.nombre }} {{ jugador.apellido }}</span>
+                                        <span class="perfil-figura-total">{{ jugador.total }}</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </section>
+            {% endif %}
+
+            <section class="perfil-bloque">
+                <div class="perfil-pie">
+                    <span>{{ plantel_total }} jugador{{ plantel_total|pluralize:"es" }} en la plantilla</span>
+                    <a href="{% url 'equipo-detail' equipo.pk %}" class="perfil-enlace">Ver equipo completo →</a>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>

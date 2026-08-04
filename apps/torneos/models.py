@@ -2,6 +2,7 @@ import datetime
 
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 from apps.usuarios.imagenes import achicar_imagen
 
@@ -25,6 +26,12 @@ class Liga(models.Model):
 
     fecha_pago = models.DateField('Fecha del último pago', null=True, blank=True)
     dias_gracia = models.PositiveIntegerField('Días de gracia', default=3)
+
+    # `cerrada` no es lo mismo que `activa`: activa=False la esconde del publico,
+    # y una liga terminada es justo lo que hay que mostrar. Se cierra sola cuando
+    # todas sus categorias terminaron su final.
+    cerrada = models.BooleanField('Liga concluida', default=False)
+    fecha_cierre = models.DateTimeField('Concluida el', null=True, blank=True)
 
     class Meta:
         verbose_name = 'Liga'
@@ -79,6 +86,27 @@ class Liga(models.Model):
         if not vencimiento:
             return None
         return (vencimiento - datetime.date.today()).days
+
+    # Cuanto queda visible una liga concluida antes de que el superadmin pueda
+    # eliminarla. Es para que la gente alcance a ver como termino: si se borrara
+    # al cerrar, no quedaria nada que mostrar.
+    DIAS_EN_VITRINA = 30
+
+    @property
+    def dias_en_vitrina(self):
+        """Dias que le quedan de exhibicion. 0 cuando ya se puede eliminar.
+
+        None si la liga no esta cerrada, que es lo mismo que decir que no aplica.
+        """
+        if not self.cerrada or not self.fecha_cierre:
+            return None
+        transcurridos = (timezone.now() - self.fecha_cierre).days
+        return max(0, self.DIAS_EN_VITRINA - transcurridos)
+
+    @property
+    def lista_para_eliminar(self):
+        """Si ya cumplio su mes en vitrina y el superadmin puede borrarla."""
+        return self.dias_en_vitrina == 0
 
 
 class Sede(models.Model):
@@ -155,6 +183,11 @@ class Categoria(models.Model):
     inscripcion_abierta = models.BooleanField('Inscripción abierta', default=True)
     activa = models.BooleanField('Categoría activa', default=True)
 
+    # Se cierra sola al cargar el resultado de la final. Igual que en Liga, no
+    # se reutiliza `activa`: una categoria terminada tiene que seguir visible.
+    cerrada = models.BooleanField('Categoría concluida', default=False)
+    fecha_cierre = models.DateTimeField('Concluida el', null=True, blank=True)
+
     class Meta:
         verbose_name = 'Categoría'
         verbose_name_plural = 'Categorías'
@@ -216,3 +249,71 @@ class Categoria(models.Model):
         if not self.limite_edad or not fecha_nacimiento:
             return True
         return self.edad_en_temporada(fecha_nacimiento) <= self.edad_maxima
+
+
+class Palmares(models.Model):
+    """Lo que quedo de una categoria terminada: el podio y los premiados.
+
+    Se llena una sola vez, al cargar el resultado de la final. La logica del
+    calculo esta en apps/torneos/palmares.py, junto con el razonamiento de por
+    que se congela en vez de calcularse al vuelo.
+
+    Casi todo va como texto y no como clave foranea a proposito: pasado el mes
+    de exhibicion, el superadmin elimina la liga con sus equipos, jugadores y
+    partidos, y esta fila tiene que poder seguir contando quien gano.
+    """
+
+    liga_nombre = models.CharField('Liga', max_length=150)
+    categoria_nombre = models.CharField('Categoría', max_length=120)
+
+    # La referencia sirve para enlazar a las pantallas de la categoria mientras
+    # exista. Al borrar la liga queda en null y sobreviven los nombres.
+    categoria = models.ForeignKey(
+        'torneos.Categoria',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='palmares',
+    )
+
+    fecha_cierre = models.DateTimeField('Concluida el', auto_now_add=True)
+
+    campeon = models.CharField('Campeón', max_length=140, blank=True)
+    subcampeon = models.CharField('Subcampeón', max_length=140, blank=True)
+    tercero = models.CharField('Tercer lugar', max_length=140, blank=True)
+
+    # Los premios compartidos se guardan separados por ' / ': puede haber mas de
+    # un ganador y el empate no se rompe con un criterio inventado.
+    goleadores = models.CharField('Bota de oro', max_length=400, blank=True)
+    goles_del_goleador = models.PositiveIntegerField('Goles', default=0)
+
+    asistidores = models.CharField('Trofeo de asistencias', max_length=400, blank=True)
+    asistencias_del_asistidor = models.PositiveIntegerField('Asistencias', default=0)
+
+    vallas = models.CharField('Guante de oro', max_length=400, blank=True)
+    goles_recibidos = models.PositiveIntegerField('Goles recibidos', default=0)
+
+    # La tabla final completa, para mostrar quienes participaron y en que puesto
+    # termino cada uno cuando ya no queden ni los equipos. Va como JSON y no como
+    # tabla aparte porque no se filtra ni se ordena: se muestra entera o nada.
+    tabla_final = models.JSONField('Tabla final', default=list, blank=True)
+
+    class Meta:
+        verbose_name = 'Palmarés'
+        verbose_name_plural = 'Palmarés'
+        ordering = ['-fecha_cierre']
+
+    def __str__(self):
+        return f'{self.liga_nombre} - {self.categoria_nombre}: {self.campeon or "sin campeón"}'
+
+    @property
+    def lista_goleadores(self):
+        return [n for n in self.goleadores.split(' / ') if n]
+
+    @property
+    def lista_asistidores(self):
+        return [n for n in self.asistidores.split(' / ') if n]
+
+    @property
+    def lista_vallas(self):
+        return [n for n in self.vallas.split(' / ') if n]

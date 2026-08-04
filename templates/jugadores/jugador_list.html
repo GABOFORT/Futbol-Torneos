@@ -7,7 +7,11 @@
     <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
         <div>
             <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">Plantilla</p>
-            <h1 class="text-3xl font-bold text-green-900">{{ equipo.nombre }}</h1>
+            <h1 class="text-3xl font-bold text-green-900 flex flex-wrap items-center gap-2">
+                {{ equipo.nombre }}
+                {# Los premios del club, si la categoría ya terminó. #}
+                {% include 'torneos/_trofeos.html' with trofeos=trofeos_equipo tam='lg' %}
+            </h1>
             <p class="text-gray-600 mt-2">{{ equipo.liga.nombre }} · {{ equipo.categoria.nombre }}</p>
         </div>
         {% if puede_gestionar %}
@@ -35,6 +39,8 @@
                             <div class="flex items-center gap-3">
                                 {% include 'jugadores/_avatar.html' %}
                                 <span>{{ jugador.nombre }} {{ jugador.apellido }}</span>
+                                {# Bota de oro o trofeo de asistencias, si lo ganó. #}
+                                {% include 'torneos/_trofeos.html' with trofeos=jugador.trofeos tam='md' %}
                             </div>
                         </td>
                         <td class="px-6 py-4 text-sm text-gray-800">{{ jugador.get_posicion_display }}</td>

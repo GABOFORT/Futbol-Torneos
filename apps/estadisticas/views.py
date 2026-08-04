@@ -4,6 +4,7 @@ from django.shortcuts import get_object_or_404, render
 from apps.equipos.models import Equipo
 from apps.partidos import liguilla
 from apps.partidos.models import Actuacion, Partido
+from apps.torneos import palmares
 from apps.torneos.models import Categoria, Liga
 from apps.usuarios.filtros import buscar, campo_texto, campo_opciones
 from apps.usuarios.permissions import cascada_equipos, ligas_visibles
@@ -27,9 +28,19 @@ def tabla_posiciones(request, categoria_id):
     categoria = get_object_or_404(Categoria.objects.select_related('liga'), pk=categoria_id)
     # El calculo vive en tabla.py: la ficha de partido lo usa para mostrar en
     # que puesto va cada equipo, y no puede quedar dentro de esta vista.
+    posiciones = tabla.calcular(categoria)
+
+    # Los trofeos se cuelgan de cada fila en la vista y no se buscan desde el
+    # template: las plantillas de Django no saben indexar un diccionario con una
+    # clave variable, y hacerlo con un filtro propio seria una consulta por fila.
+    premios = palmares.trofeos_por_categoria([categoria.id])
+    de_equipos = premios.get(categoria.id, {}).get('equipos', {})
+    for fila in posiciones:
+        fila['trofeos'] = de_equipos.get(fila['equipo'].nombre, [])
+
     return render(request, 'estadisticas/tabla_posiciones.html', {
         'categoria': categoria,
-        'posiciones': tabla.calcular(categoria),
+        'posiciones': posiciones,
     })
 
 
@@ -68,10 +79,20 @@ def _ranking(request, campo, titulo, etiqueta):
         .values('categoria_id').annotate(total=Count('id'))
     }
 
+    # Un solo lote de premios para todas las categorias que aparezcan en la
+    # tabla, en vez de una consulta por renglon.
+    premios = palmares.trofeos_por_categoria(
+        set(actuaciones.values_list('jugador__equipo__categoria_id', flat=True))
+    )
+
     filas = []
     for datos in (
         actuaciones.values(
             'jugador_id', 'jugador__nombre', 'jugador__apellido', 'jugador__numero',
+            # El id del equipo va porque su nombre abre el perfil en el modal.
+            # No cambia el agrupamiento: ya se agrupa por jugador, que es mas
+            # fino que el equipo.
+            'jugador__equipo_id',
             'jugador__equipo__nombre', 'jugador__equipo__categoria__nombre',
             'jugador__equipo__categoria_id', 'jugador__equipo__liga__nombre',
         ).annotate(total=Sum(campo)).filter(total__gt=0).order_by('-total')
@@ -80,10 +101,15 @@ def _ranking(request, campo, titulo, etiqueta):
         # uno participan dos equipos.
         de_la_categoria = jugados.get(datos['jugador__equipo__categoria_id'], 0)
         pj = _partidos_del_equipo(datos['jugador__equipo__categoria_id'], de_la_categoria)
+        nombre = f"{datos['jugador__nombre']} {datos['jugador__apellido']}"
+        de_la_cat = premios.get(datos['jugador__equipo__categoria_id'], {})
         filas.append({
-            'jugador': f"{datos['jugador__nombre']} {datos['jugador__apellido']}",
+            'jugador': nombre,
+            'trofeos': de_la_cat.get('jugadores', {}).get(nombre, []),
+            'trofeos_equipo': de_la_cat.get('equipos', {}).get(datos['jugador__equipo__nombre'], []),
             'numero': datos['jugador__numero'],
             'equipo': datos['jugador__equipo__nombre'],
+            'equipo_id': datos['jugador__equipo_id'],
             'categoria': datos['jugador__equipo__categoria__nombre'],
             'liga': datos['jugador__equipo__liga__nombre'],
             'pj': pj,
@@ -164,6 +190,14 @@ def tabla_porteros(request):
 
     bloques = porteros.calcular(equipos)
 
+    # El guante de oro va al lado del equipo que lo gano. Un solo lote para
+    # todas las categorias que se esten mostrando.
+    premios = palmares.trofeos_por_categoria([b['categoria'].id for b in bloques])
+    for bloque in bloques:
+        de_equipos = premios.get(bloque['categoria'].id, {}).get('equipos', {})
+        for fila in bloque['filas']:
+            fila['trofeos'] = de_equipos.get(fila['equipo'].nombre, [])
+
     filtros = [
         campo_texto('q', 'Buscar', termino, 'Equipo, portero, categoría o liga'),
         campo_opciones('liga', 'Liga', seleccion['liga'],
@@ -180,6 +214,34 @@ def tabla_porteros(request):
         # Se cuentan categorias y no equipos: es lo que devuelve cada bloque, y
         # es la unidad en la que se lee esta pantalla.
         'total_resultados': len(bloques),
+    })
+
+
+def vitrina(request):
+    """Las temporadas que ya terminaron, con su palmares.
+
+    Es publica y es el motivo de que una liga concluida no se borre al instante:
+    despues de la final la gente todavia quiere ver quien salio campeon, quien
+    fue el goleador y como quedo la tabla.
+
+    Se muestran todas las que existan. Las ligas concluidas viven 30 dias y
+    despues el superadmin las elimina; el palmares sobrevive a ese borrado,
+    porque no guarda claves foraneas sino los nombres.
+    """
+    from apps.torneos.models import Palmares
+    from apps.usuarios.estaticos import url_estatico
+
+    registros = list(Palmares.objects.select_related('categoria', 'categoria__liga'))
+
+    # Las imagenes del podio se resuelven aca y no en el template: la ruta de
+    # cada trofeo vive en palmares.py, que es el unico lugar donde se declara.
+    podios = {clave: url_estatico(imagen) for clave, _, imagen in palmares.TROFEOS_EQUIPO}
+
+    return render(request, 'estadisticas/vitrina.html', {
+        'registros': registros,
+        'podios': podios,
+        'imagen_bota': url_estatico(palmares.TROFEO_GOLEADOR[1]),
+        'imagen_asistidor': url_estatico(palmares.TROFEO_ASISTIDOR[1]),
     })
 
 

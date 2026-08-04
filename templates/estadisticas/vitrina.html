@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Palmarés{% endblock %}
+
+{% comment %}
+La vitrina: las temporadas que ya terminaron.
+
+Es la razon de que una liga concluida no se borre al instante. Despues de la
+final la gente todavia quiere ver quien salio campeon y como quedo la tabla, y
+el palmares sobrevive incluso al borrado de la liga porque guarda nombres y no
+claves foraneas.
+{% endcomment %}
+
+{% block contenido %}
+<div class="max-w-6xl mx-auto p-6">
+    <div class="mb-8">
+        <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">Palmarés</p>
+        <h1 class="text-3xl font-bold text-green-900">Temporadas concluidas</h1>
+        <p class="text-gray-600 mt-2">
+            El registro de cada categoría que terminó: su campeón, sus premios individuales
+            y la tabla final con todos los que participaron.
+        </p>
+    </div>
+
+    {% for registro in registros %}
+        <article class="vitrina-tarjeta">
+            <header class="vitrina-cabecera">
+                <div>
+                    <p class="vitrina-liga">{{ registro.liga_nombre }}</p>
+                    <h2 class="vitrina-categoria">{{ registro.categoria_nombre }}</h2>
+                </div>
+                <span class="vitrina-fecha">Concluida el {{ registro.fecha_cierre|date:'d/m/Y' }}</span>
+            </header>
+
+            {% comment %} ---- El podio ---- {% endcomment %}
+            {% if registro.campeon %}
+                <div class="podio">
+                    <div class="podio-lugar podio-primero">
+                        <img src="{{ podios.campeon }}" alt="Copa de campeón" class="podio-copa">
+                        <p class="podio-puesto">Campeón</p>
+                        <p class="podio-equipo">{{ registro.campeon }}</p>
+                    </div>
+                    {% if registro.subcampeon %}
+                        <div class="podio-lugar">
+                            <img src="{{ podios.subcampeon }}" alt="Copa de subcampeón" class="podio-copa">
+                            <p class="podio-puesto">Subcampeón</p>
+                            <p class="podio-equipo">{{ registro.subcampeon }}</p>
+                        </div>
+                    {% endif %}
+                    {% if registro.tercero %}
+                        <div class="podio-lugar">
+                            <img src="{{ podios.tercero }}" alt="Copa de tercer lugar" class="podio-copa">
+                            <p class="podio-puesto">Tercer lugar</p>
+                            <p class="podio-equipo">{{ registro.tercero }}</p>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            {% comment %}
+            ---- Los premios ----
+            La bota y el trofeo son individuales: los gana el mejor de la
+            categoría aunque su equipo no haya salido campeón. El guante es el
+            único de equipo. Los empates se premian compartidos en los tres.
+            {% endcomment %}
+            <div class="premios">
+                {% if registro.lista_goleadores %}
+                    <div class="premio">
+                        <img src="{{ imagen_bota }}" alt="Bota de oro" class="premio-icono">
+                        <div>
+                            <p class="premio-nombre">Bota de oro · {{ registro.goles_del_goleador }} gol{{ registro.goles_del_goleador|pluralize:"es" }}</p>
+                            {% for quien in registro.lista_goleadores %}
+                                <p class="premio-quien">{{ quien }}</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if registro.lista_asistidores %}
+                    <div class="premio">
+                        <img src="{{ imagen_asistidor }}" alt="Trofeo de asistencias" class="premio-icono">
+                        <div>
+                            <p class="premio-nombre">Asistencias · {{ registro.asistencias_del_asistidor }}</p>
+                            {% for quien in registro.lista_asistidores %}
+                                <p class="premio-quien">{{ quien }}</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if registro.lista_vallas %}
+                    <div class="premio">
+                        <img src="{{ podios.valla }}" alt="Guante de oro" class="premio-icono">
+                        <div>
+                            <p class="premio-nombre">Guante de oro · {{ registro.goles_recibidos }} recibido{{ registro.goles_recibidos|pluralize:"s" }}</p>
+                            {% for quien in registro.lista_vallas %}
+                                <p class="premio-quien">{{ quien }}</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            {% comment %}
+            ---- La tabla final ----
+            Va plegada: lo que se busca al entrar es el campeón, y una tabla de
+            19 equipos abierta empujaría la siguiente temporada fuera de pantalla.
+            {% endcomment %}
+            {% if registro.tabla_final %}
+                <details class="vitrina-tabla">
+                    <summary>Ver la tabla final · {{ registro.tabla_final|length }} equipos</summary>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-sm">
+                            <thead>
+                                <tr class="text-left text-xs uppercase tracking-wider text-gray-500">
+                                    <th class="px-3 py-2">#</th>
+                                    <th class="px-3 py-2">Equipo</th>
+                                    <th class="px-3 py-2 text-center">PJ</th>
+                                    <th class="px-3 py-2 text-center">G</th>
+                                    <th class="px-3 py-2 text-center">E</th>
+                                    <th class="px-3 py-2 text-center">P</th>
+                                    <th class="px-3 py-2 text-center">GF</th>
+                                    <th class="px-3 py-2 text-center">GC</th>
+                                    <th class="px-3 py-2 text-center">DG</th>
+                                    <th class="px-3 py-2 text-center">Pts</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                {% for fila in registro.tabla_final %}
+                                    <tr>
+                                        <td class="px-3 py-2 text-gray-400">{{ fila.puesto }}</td>
+                                        <td class="px-3 py-2 font-medium text-gray-900">{{ fila.equipo }}</td>
+                                        <td class="px-3 py-2 text-center">{{ fila.pj }}</td>
+                                        <td class="px-3 py-2 text-center">{{ fila.pg }}</td>
+                                        <td class="px-3 py-2 text-center">{{ fila.pe }}</td>
+                                        <td class="px-3 py-2 text-center">{{ fila.pp }}</td>
+                                        <td class="px-3 py-2 text-center">{{ fila.gf }}</td>
+                                        <td class="px-3 py-2 text-center">{{ fila.gc }}</td>
+                                        <td class="px-3 py-2 text-center">{{ fila.dg }}</td>
+                                        <td class="px-3 py-2 text-center font-bold text-green-800">{{ fila.pts }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </details>
+            {% endif %}
+        </article>
+    {% empty %}
+        <div class="rounded-3xl border border-green-100 bg-white p-10 text-center">
+            <p class="text-gray-500">Todavía no terminó ninguna temporada.</p>
+            <p class="mt-2 text-sm text-gray-400">
+                Cuando se cargue el resultado de la final de una categoría, su palmarés aparecerá aquí.
+            </p>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

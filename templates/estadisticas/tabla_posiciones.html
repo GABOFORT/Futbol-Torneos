@@ -30,7 +30,15 @@
                 {% for fila in posiciones %}
                     <tr>
                         <td class="px-4 py-3 text-sm text-gray-500">{{ forloop.counter }}</td>
-                        <td class="px-4 py-3 text-sm font-semibold text-gray-900">{{ fila.equipo.nombre }}</td>
+                        <td class="px-4 py-3 text-sm font-semibold text-gray-900">
+                            {# El nombre abre el perfil del equipo en el modal. #}
+                            <div class="celda-equipo">
+                                <button type="button" class="open-modal equipo-enlace"
+                                        data-url="{% url 'equipo-perfil' fila.equipo.pk %}"
+                                        aria-label="Ver el perfil de {{ fila.equipo.nombre }}">{{ fila.equipo.nombre }}</button>
+                                {% include 'torneos/_trofeos.html' with trofeos=fila.trofeos %}
+                            </div>
+                        </td>
                         <td class="px-4 py-3 text-center text-sm text-gray-800">{{ fila.pj }}</td>
                         <td class="px-4 py-3 text-center text-sm text-gray-800">{{ fila.pg }}</td>
                         <td class="px-4 py-3 text-center text-sm text-gray-800">{{ fila.pe }}</td>
@@ -53,8 +61,11 @@
     <div class="mt-6 flex flex-wrap items-center gap-3">
         <a href="{% url 'estadisticas-liga-categorias' categoria.liga_id %}" class="text-sm font-semibold text-green-700 hover:text-green-900">← Volver a {{ categoria.liga.nombre }}</a>
         <span class="text-gray-300">|</span>
-        <a href="{% url 'estadisticas-goleo' %}?liga={{ categoria.liga_id }}&categoria={{ categoria.pk }}" class="btn-accion">⚽ Goleo de esta categoría</a>
-        <a href="{% url 'estadisticas-asistencias' %}?liga={{ categoria.liga_id }}&categoria={{ categoria.pk }}" class="btn-accion">🅰 Asistencias</a>
+        <a href="{% url 'estadisticas-goleo' %}?liga={{ categoria.liga_id }}&categoria={{ categoria.pk }}" class="btn-accion">Goleo de esta categoría</a>
+        <a href="{% url 'estadisticas-asistencias' %}?liga={{ categoria.liga_id }}&categoria={{ categoria.pk }}" class="btn-accion">Asistencias</a>
     </div>
 </div>
+
+{# Hace falta para que el nombre de cada equipo pueda abrir su perfil. #}
+{% include '_modal.html' %}
 {% endblock %}

@@ -20,6 +20,7 @@ from .permissions import superadmin_required, admin_liga_required, ligas_adminis
 from apps.equipos.models import Equipo
 from apps.jugadores.models import Jugador
 from apps.partidos.models import Partido
+from apps.torneos import palmares
 from apps.torneos.models import Liga
 
 MENSAJE_CUENTA_BLOQUEADA = 'Tu cuenta está bloqueada por falta de pago. Contacta al Administrador General.'
@@ -94,7 +95,12 @@ def dashboard(request):
                 aviso_pago = liga
                 break
         return render(request, 'usuarios/dashboard_adminliga.html', {'aviso_pago': aviso_pago})
-    return render(request, 'usuarios/dashboard_entrenador.html')
+
+    # Si alguna de sus categorias termino y su equipo subio al podio, lo primero
+    # que ve al entrar es la felicitacion con el trofeo.
+    return render(request, 'usuarios/dashboard_entrenador.html', {
+        'festejos': palmares.premios_del_entrenador(user),
+    })
 
 
 @superadmin_required
@@ -250,7 +256,7 @@ def ligas_list(request):
     termino = request.GET.get('q', '')
     activa = request.GET.get('activa', '')
 
-    ligas = ligas_administradas(request.user).order_by('nombre')
+    ligas = ligas_administradas(request.user).order_by('cerrada', 'nombre')
     ligas = buscar(ligas, termino, ['nombre', 'descripcion'])
     if activa in ('1', '0'):
         ligas = ligas.filter(activa=(activa == '1'))
@@ -274,8 +280,11 @@ def ligas_list(request):
 def liga_create(request):
     user = request.user
     modal = request.GET.get('modal') == '1'
-    if not user.is_superuser and ligas_administradas(user).count() >= user.limite_ligas:
-        messages.error(request, f'Alcanzaste el límite de {user.limite_ligas} liga(s) que puedes crear. Contacta al Administrador General.')
+    # Las ligas concluidas no ocupan lugar: la temporada termino y el admin
+    # tiene que poder arrancar la siguiente sin esperar a que se borre la vieja.
+    en_curso = ligas_administradas(user).filter(cerrada=False).count()
+    if not user.is_superuser and en_curso >= user.limite_ligas:
+        messages.error(request, f'Alcanzaste el límite de {user.limite_ligas} liga(s) en curso que puedes tener. Contacta al Administrador General.')
         if modal:
             # Un redirect aca devolveria la pagina entera y el modal la inyectaria
             # sobre si misma. Se le pide recargar para que solo salga el mensaje.
@@ -359,6 +368,17 @@ def liga_delete(request, pk):
     # Eliminar ligas es solo del superadmin. El admin de liga administra la suya
     # y puede borrar sus categorias y equipos, pero no la liga en si.
     liga = get_object_or_404(Liga, pk=pk)
+
+    # Una liga concluida se exhibe un mes antes de poder borrarse: es el tiempo
+    # que la gente tiene para ver como termino. El palmares no se va con ella,
+    # asi que el campeon queda registrado igual.
+    if liga.cerrada and not liga.lista_para_eliminar:
+        messages.error(
+            request,
+            f'"{liga.nombre}" concluyó hace poco y sigue en exhibición. '
+            f'Podrás eliminarla en {liga.dias_en_vitrina} día(s).',
+        )
+        return redirect('ligas-list')
 
     equipos = Equipo.objects.filter(liga=liga)
     arrastra = []

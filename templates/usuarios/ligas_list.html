@@ -42,7 +42,25 @@
                         </td>
                         <td class="px-6 py-4 text-sm text-gray-800">{{ liga.fecha_inicio|default:'-' }}</td>
                         <td class="px-6 py-4 text-sm text-gray-800">{{ liga.fecha_final|default:'-' }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-800">{{ liga.activa|yesno:'Activa,Inactiva' }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-800">
+                            {% comment %}
+                            Concluida no es lo mismo que inactiva: la liga terminó
+                            su temporada pero sigue exhibiéndose. El contador dice
+                            cuánto le queda antes de poder eliminarse.
+                            {% endcomment %}
+                            {% if liga.cerrada %}
+                                <span class="insignia insignia-concluida">Concluida</span>
+                                <span class="cuenta-vitrina">
+                                    {% if liga.lista_para_eliminar %}
+                                        Ya se puede eliminar
+                                    {% else %}
+                                        Quedan {{ liga.dias_en_vitrina }} día{{ liga.dias_en_vitrina|pluralize:"s" }} en vitrina
+                                    {% endif %}
+                                </span>
+                            {% else %}
+                                {{ liga.activa|yesno:'Activa,Inactiva' }}
+                            {% endif %}
+                        </td>
                         {% if es_superadmin %}
                             <td class="px-6 py-4 text-sm">
                                 {% if not liga.fecha_pago %}

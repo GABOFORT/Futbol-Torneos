@@ -5,7 +5,7 @@ actuaciones de los jugadores. No hay posesion, disparos, atajadas ni goles
 esperados porque esos datos nunca se capturan; la ficha muestra unicamente lo
 que la base puede respaldar.
 """
-from django.db.models import Q, Sum
+from django.db.models import F, Q, Sum
 
 from apps.estadisticas import tabla
 from apps.jugadores.models import Jugador
@@ -32,17 +32,24 @@ def armar(partido):
     template recorre esa lista una vez por seccion en vez de repetir el mismo
     marcado cambiandole el sufijo local/visitante.
     """
+    from apps.torneos import palmares
+
     posiciones = tabla.calcular(partido.categoria)
     lo_ocurrido = sucesos(partido) if partido.jugado else {'local': None, 'visitante': None}
+    # Una sola consulta para los dos equipos: si la categoria ya termino, cada
+    # escudo lleva al lado lo que gano.
+    premios = palmares.trofeos_por_categoria([partido.categoria_id])
+    de_equipos = premios.get(partido.categoria_id, {}).get('equipos', {})
 
     lados = []
     for donde, equipo in (('local', partido.equipo_local), ('visitante', partido.equipo_visitante)):
-        juegos = _juegos(equipo)
+        partidos_del_equipo = juegos(equipo)
         lados.append({
             'donde': donde,
             'equipo': equipo,
-            'rendimiento': rendimiento(juegos),
-            'ultimos': ultimos(juegos),
+            'trofeos': de_equipos.get(equipo.nombre, []),
+            'rendimiento': rendimiento(partidos_del_equipo),
+            'ultimos': ultimos(partidos_del_equipo),
             'puesto': tabla.puesto_de(posiciones, equipo.id),
             'figuras': figuras(equipo),
             'plantel': plantel(equipo),
@@ -60,34 +67,47 @@ def armar(partido):
     }
 
 
-def _juegos(equipo):
+def juegos(equipo):
     """Los partidos ya jugados del equipo, vistos desde su lado.
 
     Se resuelve aca de que lado jugo cada uno para que el resto del modulo no
     tenga que preguntarse en cada cuenta si era local o visitante.
+
+    Es publica porque tambien la usa el perfil de equipo
+    (`apps/equipos/perfil.py`): el rendimiento de un equipo se calcula igual se
+    lo mire desde la ficha de un partido o desde su propio modal.
     """
+    # Se ordena por fecha y no por jornada: los partidos de liguilla llevan
+    # jornada 0 y ordenando por ese campo quedaban ANTES que el torneo regular,
+    # asi que "los ultimos cinco" de un equipo que ya jugo la liguilla mostraban
+    # sus ultimas cinco fechas del regular y escondian la eliminacion directa.
     partidos = Partido.objects.filter(
         Q(equipo_local=equipo) | Q(equipo_visitante=equipo),
         estado=Partido.ESTADO_FINALIZADO,
-    ).select_related('equipo_local', 'equipo_visitante').order_by('jornada', 'fecha', 'id')
+    ).select_related('equipo_local', 'equipo_visitante').order_by(
+        F('fecha').asc(nulls_first=True), 'jornada', 'id'
+    )
 
-    juegos = []
+    jugados = []
     for partido in partidos:
         de_local = partido.equipo_local_id == equipo.id
         propios = partido.goles_local if de_local else partido.goles_visitante
         ajenos = partido.goles_visitante if de_local else partido.goles_local
-        juegos.append({
+        jugados.append({
             # El id va porque cada renglon de los ultimos cinco se puede pulsar
             # para abrir la ficha de ese partido.
             'partido_id': partido.pk,
-            'jornada': partido.jornada,
+            # Las dos etiquetas salen del modelo para que digan lo mismo en toda
+            # la aplicacion: 'Jornada 5' o 'Liguilla · Semifinal · Ida'.
+            'etiqueta': partido.etiqueta,
+            'corta': partido.etiqueta_corta,
             'rival': partido.equipo_visitante if de_local else partido.equipo_local,
             'de_local': de_local,
             'propios': propios,
             'ajenos': ajenos,
             'signo': 'G' if propios > ajenos else ('E' if propios == ajenos else 'P'),
         })
-    return juegos
+    return jugados
 
 
 def rendimiento(juegos):
@@ -226,7 +246,7 @@ def historial(partido):
             # abrir la ficha de aquel partido.
             'partido_id': previo.pk,
             'categoria': previo.categoria,
-            'jornada': previo.jornada,
+            'etiqueta': previo.etiqueta,
             'fecha': previo.fecha,
             'goles_uno': goles_uno,
             'goles_otro': goles_otro,
@@ -251,24 +271,30 @@ def figuras(equipo):
     """
     destacados = []
     for rol, campo in (('Goleador', 'goles'), ('Asistencias', 'asistencias')):
-        lider = _lider(equipo, campo)
-        if lider:
-            destacados.append({'rol': rol, **lider})
+        for jugador in lideres(equipo, campo, 1):
+            destacados.append({'rol': rol, 'jugador': jugador, 'total': jugador.total})
     return destacados
 
 
-def _lider(equipo, campo):
-    """Quien mas suma en ese campo. None si nadie sumo todavia."""
-    fila = (
+def lideres(equipo, campo, cuantos=1):
+    """Los jugadores del equipo que mas suman en ese campo, de mayor a menor.
+
+    Devuelve los propios Jugador con `.total` anotado. Lista vacia si nadie
+    sumo todavia.
+
+    `cuantos` existe para el perfil de equipo, que muestra un podio de tres; la
+    ficha de partido pide uno solo porque ahi solo hay lugar para el nombre mas
+    destacado.
+
+    El desempate por apellido y nombre no es cosmetico: sin un criterio estable,
+    dos jugadores con los mismos goles se turnan al azar entre una carga y otra.
+    """
+    return list(
         Jugador.objects.filter(equipo=equipo)
         .annotate(total=Sum(f'actuaciones__{campo}'))
         .filter(total__gt=0)
-        .order_by('-total')
-        .first()
+        .order_by('-total', 'apellido', 'nombre')[:cuantos]
     )
-    if fila is None:
-        return None
-    return {'jugador': fila, 'total': fila.total}
 
 
 def plantel(equipo):

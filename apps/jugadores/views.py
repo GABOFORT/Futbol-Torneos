@@ -4,6 +4,7 @@ from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.equipos.models import Equipo
+from apps.torneos import palmares
 from apps.usuarios.permissions import ligas_administradas
 
 from .forms import JugadorForm
@@ -32,11 +33,21 @@ def jugador_list(request, equipo_id):
     if user.is_authenticated and user.role == user.ROLE_ENTRENADOR and not user.is_superuser and not puede_gestionar:
         return HttpResponseForbidden('No puedes ver la plantilla de otro equipo.')
 
-    jugadores = equipo.jugadores.order_by('apellido', 'nombre')
+    jugadores = list(equipo.jugadores.order_by('apellido', 'nombre'))
+
+    # Los premios de la temporada, si la categoria ya termino: los del club van
+    # en el encabezado y los individuales al lado de quien los gano. Una sola
+    # consulta para toda la plantilla.
+    premios = palmares.trofeos_por_categoria([equipo.categoria_id]).get(equipo.categoria_id, {})
+    de_jugadores = premios.get('jugadores', {})
+    for jugador in jugadores:
+        jugador.trofeos = de_jugadores.get(f'{jugador.nombre} {jugador.apellido}', [])
+
     return render(request, 'jugadores/jugador_list.html', {
         'equipo': equipo,
         'jugadores': jugadores,
         'puede_gestionar': puede_gestionar,
+        'trofeos_equipo': premios.get('equipos', {}).get(equipo.nombre, []),
     })
 
 

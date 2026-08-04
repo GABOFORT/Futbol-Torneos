@@ -698,6 +698,8 @@
             flex-direction: column;
             gap: 0.875rem;
             padding: 1.25rem;
+            /* Referencia para el chip de Ida/Vuelta, que va en la esquina. */
+            position: relative;
             border: 1px solid #dcfce7;
             border-radius: 1.5rem;
             background-color: #fff;
@@ -1737,6 +1739,938 @@
             .ficha-sede { grid-template-columns: 2fr 1fr; }
             .ficha-sede-mapa { height: 100%; min-height: 16rem; }
             .sede-datos { grid-template-columns: 1fr 1fr; }
+        }
+
+        /* Ida o vuelta, en la esquina de la tarjeta del calendario. */
+        .chip-tramo {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            padding: 0.125rem 0.5rem;
+            border-radius: 9999px;
+            background-color: #14532d;
+            color: #bbf7d0;
+            font-size: 0.625rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        /* ---- Detalle de los dos partidos de una llave ----
+           La liguilla es a ida y vuelta: el numero grande de la llave es el
+           global, y aca abajo van los dos marcadores que lo componen. */
+        .llave-juegos {
+            display: flex;
+            gap: 0.25rem;
+            margin-top: 0.375rem;
+            padding-top: 0.375rem;
+            border-top: 1px solid rgba(134, 239, 172, 0.2);
+        }
+
+        /* Fondo oscuro solido y texto claro: sobre el verde del cuadro, el
+           blanco translucido anterior dejaba las etiquetas casi ilegibles. */
+        .llave-juego {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.3125rem;
+            padding: 0.25rem 0.375rem;
+            border: 1px solid rgba(134, 239, 172, 0.28);
+            border-radius: 0.5rem;
+            background-color: rgba(2, 26, 12, 0.55);
+            color: #fff;
+            font-size: 0.6875rem;
+            cursor: pointer;
+        }
+
+        .llave-juego:hover {
+            background-color: rgba(2, 26, 12, 0.85);
+            border-color: rgba(134, 239, 172, 0.6);
+        }
+
+        .llave-juego:focus-visible { outline: 2px solid #86efac; outline-offset: 1px; }
+
+        .llave-juego-etiqueta {
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 700;
+            color: #86efac;
+        }
+
+        .llave-juego-marcador { font-weight: 700; color: #fff; }
+        .llave-juego-pen { color: #fde68a; }
+        .llave-juego-fecha { color: #e5e7eb; }
+
+        /* ---- Trofeos ----
+           Los premios de la temporada, al lado del nombre del equipo o del
+           jugador que los gano. Van chicos porque aparecen dentro de tablas
+           densas: lo que tiene que leerse es el nombre, el trofeo acompana. */
+        .trofeos {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.1875rem;
+            margin-left: 0.375rem;
+            vertical-align: middle;
+        }
+
+        /* La celda de una tabla donde el equipo o el jugador va con sus trofeos.
+           Hace falta porque el boton que abre el perfil es flex —y por lo tanto
+           de bloque—, asi que sin este contenedor los trofeos caian al renglon
+           de abajo en vez de quedar a la derecha del nombre. */
+        .celda-equipo {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            min-width: 0;
+        }
+
+        .celda-equipo .trofeos { margin-left: 0.125rem; flex-shrink: 0; }
+
+        .trofeo {
+            height: 1.125rem;
+            width: auto;
+            /* Los PNG tienen fondo transparente; la sombra les da relieve sobre
+               el blanco de las tablas, donde el dorado se pierde. */
+            filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2));
+        }
+
+        /* Tres tamanos segun el peso de la pantalla: chico en tablas densas,
+           medio en tarjetas y listas, grande en encabezados. */
+        .trofeos-md { gap: 0.3125rem; }
+        .trofeos-md .trofeo { height: 1.75rem; }
+
+        .trofeos-lg { gap: 0.5rem; margin-left: 0; }
+        .trofeos-lg .trofeo { height: 2.75rem; }
+
+        /* Al tamano del escudo (.escudo-grande, 5rem). Solo en el detalle del
+           equipo, que es la pantalla donde el club es el protagonista y los
+           trofeos tienen que pesar lo mismo que su escudo.
+           En telefono arrancan mas chicos: dos trofeos de 5rem mas el escudo no
+           entran en 360 px y empujarian el nombre fuera de la pantalla. */
+        /* Aire a los dos lados: a la izquierda para despegarlos del nombre del
+           equipo, y a la derecha de los botones de accion. Solo aplica a esta
+           cabecera, que es el unico lugar donde se usa el tamano xl. */
+        .trofeos-xl {
+            gap: 0.75rem;
+            margin-left: 1rem;
+            margin-right: 1.5rem;
+        }
+
+        .trofeos-xl .trofeo { height: 3.25rem; }
+
+        @media (min-width: 40rem) {
+            .trofeos-xl .trofeo { height: 5rem; }
+        }
+
+        /* ---- Felicitación al entrenador campeón ----
+           El bloque que abre su tablero cuando su equipo subió al podio. Fondo
+           oscuro con brillo dorado: es el unico lugar del sistema que celebra
+           algo, y tiene que verse distinto a un aviso mas. */
+        .festejo {
+            margin-bottom: 1.5rem;
+            padding: 2rem 1.5rem;
+            border-radius: 2rem;
+            text-align: center;
+            color: #fff;
+            background-image:
+                radial-gradient(circle at 50% 0%, rgba(250, 204, 21, 0.22), transparent 60%),
+                linear-gradient(160deg, #052e16, #14532d 55%, #052e16);
+            box-shadow: 0 20px 40px -20px rgba(5, 46, 22, 0.8);
+        }
+
+        .festejo-copas {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .festejo-copa {
+            height: 7rem;
+            width: auto;
+            filter: drop-shadow(0 0 1.5rem rgba(250, 204, 21, 0.45));
+        }
+
+        .festejo-titulo {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.28em;
+            color: #fde68a;
+        }
+
+        .festejo-equipo {
+            margin-top: 0.375rem;
+            font-size: 1.875rem;
+            font-weight: 700;
+            line-height: 1.15;
+        }
+
+        .festejo-logro {
+            /* Con varios premios el renglon se hace largo: se acota y se centra
+               para que corte parejo en pantallas angostas. */
+            max-width: 34rem;
+            margin: 0.25rem auto 0;
+            font-size: 1rem;
+            font-weight: 600;
+            line-height: 1.4;
+            color: #fde68a;
+        }
+
+        .festejo-torneo {
+            margin-top: 0.125rem;
+            font-size: 0.8125rem;
+            color: #bbf7d0;
+        }
+
+        /* Bloque propio y centrado. Antes era inline-flex y quedaba en la
+           misma linea que el enlace de abajo, desalineado contra el resto. */
+        .festejo-jugadores {
+            display: flex;
+            flex-direction: column;
+            gap: 0.375rem;
+            width: fit-content;
+            max-width: 100%;
+            margin: 1.25rem auto 0;
+            padding: 0.75rem 1.25rem;
+            border-radius: 1rem;
+            background-color: rgba(255, 255, 255, 0.08);
+            text-align: left;
+        }
+
+        .festejo-jugador {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8125rem;
+            color: #dcfce7;
+        }
+
+        .festejo-jugador-icono { height: 1.5rem; width: auto; }
+
+        .festejo-enlace {
+            /* En su propia linea: es la ultima accion del bloque. */
+            display: block;
+            margin-top: 1.25rem;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: #86efac;
+        }
+
+        .festejo-enlace:hover { color: #fde68a; }
+
+        @media (min-width: 48rem) {
+            .festejo-copa { height: 9rem; }
+            .festejo-equipo { font-size: 2.25rem; }
+        }
+
+        /* ---- Vitrina de temporadas concluidas ---- */
+        .vitrina-tarjeta {
+            margin-bottom: 1.5rem;
+            padding: 1.5rem;
+            border-radius: 1.75rem;
+            background-color: #fff;
+            border: 1px solid #dcfce7;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+        }
+
+        .vitrina-cabecera {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .vitrina-liga {
+            font-size: 0.6875rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            color: #15803d;
+        }
+
+        .vitrina-categoria { font-size: 1.375rem; font-weight: 700; color: #14532d; }
+
+        .vitrina-fecha { font-size: 0.75rem; color: #9ca3af; }
+
+        /* El podio: campeon al centro y mas grande, como en una premiacion. */
+        .podio {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 1.5rem;
+            padding: 1.5rem 0;
+        }
+
+        .podio-lugar { text-align: center; min-width: 6rem; }
+
+        .podio-copa {
+            height: 4.5rem;
+            width: auto;
+            margin: 0 auto 0.5rem;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.18));
+        }
+
+        /* El campeon va primero en el marcado por accesibilidad, y se lo
+           adelanta visualmente con el orden de flex. */
+        .podio-primero { order: 2; }
+        .podio-primero .podio-copa { height: 6.5rem; }
+        .podio-primero .podio-equipo { font-size: 1.0625rem; color: #14532d; }
+        .podio-lugar:nth-child(2) { order: 1; }
+        .podio-lugar:nth-child(3) { order: 3; }
+
+        .podio-puesto {
+            font-size: 0.625rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: #6b7280;
+        }
+
+        .podio-equipo {
+            margin-top: 0.125rem;
+            font-size: 0.9375rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        /* Los premios se centran y cada uno ocupa lo que necesita, en vez de
+           tres columnas fijas: asi queda equilibrado con uno, dos o tres, y si
+           hay empate y son varios nombres el bloque crece sin romperse. */
+        .premios {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1.5rem 2.5rem;
+            padding: 1.5rem 0;
+            border-top: 1px solid #f3f4f6;
+        }
+
+        .premio {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 0.5rem;
+            max-width: 16rem;
+        }
+
+        .premio-icono {
+            height: 4rem;
+            width: auto;
+            flex-shrink: 0;
+            filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.18));
+        }
+
+        .premio-nombre {
+            font-size: 0.6875rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #15803d;
+        }
+
+        .premio-quien { font-size: 0.875rem; color: #1f2937; line-height: 1.35; }
+
+        .vitrina-tabla { border-top: 1px solid #f3f4f6; padding-top: 0.875rem; }
+
+        .vitrina-tabla summary {
+            cursor: pointer;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: #15803d;
+            list-style: none;
+        }
+
+        .vitrina-tabla summary::-webkit-details-marker { display: none; }
+        .vitrina-tabla summary::before { content: '▸ '; }
+        .vitrina-tabla[open] summary::before { content: '▾ '; }
+        .vitrina-tabla summary:hover { color: #14532d; }
+        .vitrina-tabla > div { margin-top: 0.75rem; }
+
+        /* ---- Estado de una liga o categoria concluida ---- */
+        .insignia-concluida {
+            background-color: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fde68a;
+        }
+
+        .cuenta-vitrina {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.6875rem;
+            color: #92400e;
+        }
+
+
+
+        /* ---- Equipo pulsable ----
+           Envuelve el escudo y el nombre donde sea que aparezcan, para abrir el
+           perfil del equipo en el modal.
+
+           Es un <button> y no un <div>: asi responde a Enter y al lector de
+           pantalla sin JS extra (el manejador de teclado del modal saltea a
+           proposito los BUTTON y los A, porque el navegador ya les dispara el
+           clic solo). Se le resetean los estilos propios del boton para que el
+           bloque se siga viendo exactamente igual que antes de ser pulsable.
+
+           Dentro de la tarjeta del calendario queda un .open-modal adentro de
+           otro: el manejador toma el mas cercano al clic, asi que al pulsar el
+           equipo gana el equipo y al pulsar el resto de la tarjeta gana el
+           partido. Es el mismo mecanismo que ya usan los botones de accion. */
+        .equipo-boton {
+            display: block;
+            width: 100%;
+            text-align: inherit;
+            background: none;
+            border: 0;
+            padding: 0;
+            font: inherit;
+            color: inherit;
+            cursor: pointer;
+        }
+
+        /* Los nombres son <span> dentro del boton (un <p> adentro de un
+           <button> no es HTML valido), asi que necesitan el display. */
+        .nombre-cruce, .ficha-equipo { display: block; }
+
+        .escudo-cruce, .ficha-escudo { transition: transform 0.12s ease; }
+
+        .equipo-boton:hover .escudo-cruce,
+        .equipo-boton:hover .ficha-escudo { transform: scale(1.06); }
+
+        .equipo-boton:hover .nombre-cruce,
+        .equipo-boton:hover .ficha-equipo {
+            color: #15803d;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+
+        .equipo-boton:focus-visible {
+            outline: 2px solid #16a34a;
+            outline-offset: 2px;
+            border-radius: 0.75rem;
+        }
+
+        /* Variante en linea, para las tablas donde el equipo es texto en una celda. */
+        .equipo-enlace {
+            background: none;
+            border: 0;
+            padding: 0;
+            font: inherit;
+            color: inherit;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .equipo-enlace:hover {
+            color: #15803d;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+
+        .equipo-enlace:focus-visible {
+            outline: 2px solid #16a34a;
+            outline-offset: 2px;
+            border-radius: 0.25rem;
+        }
+
+        /* ---- Perfil de equipo ----
+           El modal que se abre al pulsar cualquier escudo. Dos columnas: el
+           calendario a la izquierda y los numeros a la derecha, como en las
+           fichas de equipo de los sitios deportivos. En telefono se apila. */
+        .perfil-modal {
+            width: 100%;
+            max-width: 60rem;
+            /* El contenedor del modal aporta su propio padding: pedir el alto
+               completo lo sacaria de la pantalla. */
+            max-height: calc(100vh - 2rem);
+            overflow-y: auto;
+            border-radius: 1.75rem;
+            background-color: #fff;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+        }
+
+        .perfil-cabecera {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            padding: 1.125rem 1.25rem 1rem;
+            background-image: linear-gradient(160deg, #f0fdf4, #fff 60%);
+            border-bottom: 1px solid #dcfce7;
+            border-radius: 1.75rem 1.75rem 0 0;
+        }
+
+        .perfil-cabecera-fila {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.75rem;
+        }
+
+        .perfil-identidad { display: flex; align-items: center; gap: 0.875rem; min-width: 0; }
+
+        .perfil-escudo {
+            width: 3.5rem;
+            height: 3.5rem;
+            flex-shrink: 0;
+            object-fit: contain;
+            border-radius: 0.75rem;
+            background-color: #fff;
+            padding: 0.125rem;
+            border: 1px solid #dcfce7;
+        }
+
+        .perfil-titulos { min-width: 0; }
+
+        .perfil-liga {
+            font-size: 0.6875rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            color: #15803d;
+        }
+
+        .perfil-nombre {
+            font-size: 1.375rem;
+            font-weight: 700;
+            color: #14532d;
+            line-height: 1.2;
+        }
+
+        .perfil-entrenador {
+            margin-top: 0.125rem;
+            font-size: 0.8125rem;
+            color: #4b5563;
+        }
+
+        .perfil-etiqueta-dt {
+            display: inline-block;
+            padding: 0 0.3125rem;
+            border-radius: 0.25rem;
+            background-color: #dcfce7;
+            color: #166534;
+            font-size: 0.625rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            vertical-align: 0.05rem;
+        }
+
+        .perfil-cerrar {
+            flex-shrink: 0;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 1rem;
+            line-height: 1;
+            color: #9ca3af;
+            cursor: pointer;
+        }
+
+        .perfil-cerrar:hover { background-color: #dcfce7; color: #166534; }
+
+        /* La tira de numeros duros. Se hace scroll horizontal en pantallas
+           angostas en vez de apretar seis columnas hasta que no se lean. */
+        .perfil-tira {
+            display: flex;
+            gap: 0.375rem;
+            margin-top: 0.875rem;
+            overflow-x: auto;
+            padding-bottom: 0.125rem;
+            scrollbar-width: none;
+        }
+
+        .perfil-tira::-webkit-scrollbar { display: none; }
+
+        .perfil-dato {
+            flex: 1 0 auto;
+            min-width: 3.75rem;
+            padding: 0.5rem 0.375rem;
+            border-radius: 0.75rem;
+            background-color: #fff;
+            border: 1px solid #dcfce7;
+            text-align: center;
+        }
+
+        .perfil-dato-fuerte { background-color: #166534; border-color: #166534; }
+        .perfil-dato-fuerte .perfil-dato-valor { color: #fff; }
+        .perfil-dato-fuerte .perfil-dato-nombre { color: #bbf7d0; }
+
+        .perfil-dato-valor {
+            display: block;
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #14532d;
+            line-height: 1.1;
+        }
+
+        .perfil-dato-nombre {
+            display: block;
+            margin-top: 0.125rem;
+            font-size: 0.625rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #6b7280;
+        }
+
+        .perfil-racha {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            margin-top: 0.625rem;
+        }
+
+        .perfil-racha-titulo {
+            margin-right: 0.25rem;
+            font-size: 0.625rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: #6b7280;
+        }
+
+        .racha-bola {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.25rem;
+            height: 1.25rem;
+            border-radius: 9999px;
+            font-size: 0.625rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .racha-G { background-color: #16a34a; }
+        .racha-E { background-color: #9ca3af; }
+        .racha-P { background-color: #dc2626; }
+
+        .perfil-vacio {
+            margin: 1.25rem;
+            padding: 1.5rem;
+            border-radius: 1.25rem;
+            background-color: #f9fafb;
+            border: 1px dashed #d1d5db;
+            text-align: center;
+        }
+
+        .perfil-vacio-titulo { font-weight: 600; color: #374151; }
+
+        .perfil-vacio-texto {
+            margin-top: 0.375rem;
+            font-size: 0.8125rem;
+            color: #6b7280;
+        }
+
+        .perfil-cuerpo {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.25rem;
+            padding: 1.25rem;
+        }
+
+        .perfil-titulo {
+            font-size: 0.6875rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            color: #15803d;
+            margin-bottom: 0.625rem;
+        }
+
+        .perfil-bloque + .perfil-bloque {
+            margin-top: 1.25rem;
+            padding-top: 1.25rem;
+            border-top: 1px solid #f3f4f6;
+        }
+
+        .perfil-aviso, .perfil-nota {
+            font-size: 0.75rem;
+            color: #6b7280;
+            line-height: 1.45;
+        }
+
+        .perfil-nota { margin-bottom: 0.625rem; }
+        .perfil-nota-pie { margin: 0.625rem 0 0; font-size: 0.6875rem; color: #9ca3af; }
+
+        /* ---- Calendario del equipo ---- */
+        .perfil-calendario {
+            /* Alto acotado con scroll propio: un torneo entero son 18 partidos y
+               si crecieran hacia abajo, la columna de la derecha quedaria a la
+               altura del ultimo. */
+            max-height: 26rem;
+            overflow-y: auto;
+            border-radius: 1rem;
+            border: 1px solid #f3f4f6;
+        }
+
+        .perfil-juego {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0.625rem;
+            cursor: pointer;
+            /* La franja de color del resultado entra por el borde izquierdo. */
+            border-left: 3px solid transparent;
+        }
+
+        .perfil-juego + .perfil-juego { border-top: 1px solid #f3f4f6; }
+        .perfil-juego:hover { background-color: #f0fdf4; }
+        .perfil-juego:focus-visible { outline: 2px solid #16a34a; outline-offset: -2px; }
+
+        .perfil-juego-G { border-left-color: #16a34a; }
+        .perfil-juego-E { border-left-color: #9ca3af; }
+        .perfil-juego-P { border-left-color: #dc2626; }
+
+        .perfil-juego-escudo {
+            width: 1.75rem;
+            height: 1.75rem;
+            flex-shrink: 0;
+            object-fit: contain;
+        }
+
+        .perfil-juego-datos { min-width: 0; flex: 1; }
+
+        .perfil-juego-rival {
+            display: block;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: #1f2937;
+            /* Un nombre largo no puede empujar al marcador fuera de la fila. */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .perfil-juego-pie {
+            display: block;
+            font-size: 0.6875rem;
+            color: #9ca3af;
+        }
+
+        .perfil-juego-cierre {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+        }
+
+        .perfil-juego-marcador {
+            font-size: 0.9375rem;
+            font-weight: 700;
+            color: #14532d;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .perfil-juego-marcador span { color: #d1d5db; margin: 0 0.0625rem; }
+
+        .perfil-juego-hora { font-size: 0.75rem; color: #6b7280; }
+
+        /* El resultado abre cada renglon del calendario: G ganado, E empatado,
+           P perdido. Va a la izquierda porque es lo que se busca al recorrer la
+           lista de un vistazo. */
+        .perfil-juego-signo {
+            display: inline-flex;
+            flex-shrink: 0;
+            align-items: center;
+            justify-content: center;
+            width: 1.25rem;
+            height: 1.25rem;
+            border-radius: 9999px;
+            font-size: 0.625rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .signo-G { background-color: #16a34a; }
+        .signo-E { background-color: #9ca3af; }
+        .signo-P { background-color: #dc2626; }
+
+        /* Los partidos que todavia no se jugaron ocupan el mismo lugar, en gris
+           y hueco: sin esto la columna de la izquierda se desalinea al llegar a
+           los que faltan. */
+        .signo-pendiente {
+            background-color: transparent;
+            border: 1px dashed #d1d5db;
+            color: #9ca3af;
+        }
+
+        /* ---- Barra apilada de ganados / empatados / perdidos ---- */
+        .perfil-barra-apilada {
+            display: flex;
+            height: 0.625rem;
+            border-radius: 9999px;
+            overflow: hidden;
+            background-color: #f3f4f6;
+        }
+
+        /* Los tres anchos ya suman 100 desde perfil.py; sin flex-shrink: 0 el
+           navegador podria encogerlos igual y dejar una ranura al final. */
+        .perfil-barra-apilada .tramo { display: block; height: 100%; flex-shrink: 0; }
+
+        .tramo-pg { background-color: #16a34a; }
+        .tramo-pe { background-color: #d1d5db; }
+        .tramo-pp { background-color: #f87171; }
+
+        .perfil-leyenda {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.875rem;
+            margin-top: 0.625rem;
+            font-size: 0.75rem;
+            color: #4b5563;
+        }
+
+        .perfil-leyenda li { display: flex; align-items: center; gap: 0.3125rem; }
+        .perfil-leyenda b { color: #14532d; }
+
+        .punto {
+            display: inline-block;
+            width: 0.5rem;
+            height: 0.5rem;
+            border-radius: 9999px;
+        }
+
+        .punto-pg { background-color: #16a34a; }
+        .punto-pe { background-color: #d1d5db; }
+        .punto-pp { background-color: #f87171; }
+
+        /* ---- Radar ---- */
+        .perfil-radar {
+            display: block;
+            width: 100%;
+            /* El lienzo es apaisado (280x200) para dar lugar a las etiquetas de
+               los vertices laterales, asi que el ancho maximo acompana esa
+               proporcion. */
+            max-width: 22rem;
+            margin: 0 auto;
+        }
+
+        .radar-anillo { fill: none; stroke: #e5e7eb; stroke-width: 1; }
+        .radar-radio { stroke: #e5e7eb; stroke-width: 1; }
+
+        .radar-area {
+            fill: rgba(22, 163, 74, 0.25);
+            stroke: #16a34a;
+            stroke-width: 2;
+            stroke-linejoin: round;
+        }
+
+        .radar-etiqueta {
+            font-size: 9px;
+            font-weight: 600;
+            fill: #4b5563;
+            /* El texto se ancla en el vertice; esto lo baja al centro optico. */
+            dominant-baseline: middle;
+        }
+
+        .perfil-ejes { margin-top: 0.75rem; display: grid; gap: 0.375rem; }
+
+        .perfil-eje {
+            display: grid;
+            grid-template-columns: 6.5rem 1fr 1.75rem;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+        }
+
+        .perfil-eje-nombre { color: #4b5563; }
+
+        .perfil-eje-barra {
+            height: 0.4375rem;
+            border-radius: 9999px;
+            background-color: #f3f4f6;
+            overflow: hidden;
+        }
+
+        .perfil-eje-barra span {
+            display: block;
+            height: 100%;
+            border-radius: 9999px;
+            background-image: linear-gradient(90deg, #4ade80, #15803d);
+        }
+
+        .perfil-eje-puntaje {
+            text-align: right;
+            font-weight: 700;
+            color: #14532d;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ---- Figuras ---- */
+        .perfil-figuras { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+
+        .perfil-podio-titulo {
+            font-size: 0.6875rem;
+            font-weight: 700;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 0.375rem;
+        }
+
+        .perfil-figura {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.3125rem 0;
+        }
+
+        .perfil-figura-puesto {
+            flex-shrink: 0;
+            width: 1rem;
+            font-size: 0.6875rem;
+            font-weight: 700;
+            color: #9ca3af;
+        }
+
+        .perfil-figura-nombre {
+            flex: 1;
+            min-width: 0;
+            font-size: 0.8125rem;
+            color: #1f2937;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .perfil-figura-total {
+            flex-shrink: 0;
+            min-width: 1.5rem;
+            padding: 0.0625rem 0.375rem;
+            border-radius: 9999px;
+            background-color: #dcfce7;
+            color: #166534;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .perfil-pie {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+
+        .perfil-enlace { font-weight: 600; color: #15803d; }
+        .perfil-enlace:hover { color: #14532d; }
+
+        @media (min-width: 48rem) {
+            /* El calendario ocupa algo menos que los numeros: son renglones
+               cortos y no necesitan tanto ancho como el radar y las figuras. */
+            .perfil-cuerpo { grid-template-columns: 1fr 1.15fr; align-items: start; }
+            .perfil-figuras { grid-template-columns: 1fr 1fr; }
+            .perfil-nombre { font-size: 1.5rem; }
         }
 
         /* ---- Liguilla ----

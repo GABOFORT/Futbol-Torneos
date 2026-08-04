@@ -84,10 +84,29 @@ exista cuando se abre.
                              aria-label="Ver ficha de {{ partido.equipo_local.nombre }} contra {{ partido.equipo_visitante.nombre }}">
                         <div class="cruce">
                             <div class="lado-equipo">
-                                <img src="{{ partido.equipo_local.escudo_url }}" alt="Escudo de {{ partido.equipo_local.nombre }}" class="escudo-cruce">
-                                <p class="nombre-cruce">{{ partido.equipo_local.nombre }}</p>
+                                {% comment %}
+                                El escudo y el nombre abren el perfil del equipo.
+                                Van dentro de la tarjeta, que abre el partido: el
+                                manejador toma el .open-modal mas cercano al clic,
+                                asi que aca gana el equipo.
+                                {% endcomment %}
+                                <button type="button" class="open-modal equipo-boton"
+                                        data-url="{% url 'equipo-perfil' partido.equipo_local.pk %}"
+                                        aria-label="Ver el perfil de {{ partido.equipo_local.nombre }}">
+                                    <img src="{{ partido.equipo_local.escudo_url }}" alt="Escudo de {{ partido.equipo_local.nombre }}" class="escudo-cruce">
+                                    <span class="nombre-cruce">{{ partido.equipo_local.nombre }}</span>
+                                </button>
+                                {% comment %}
+                                En el torneo regular ganar los penales suma un punto;
+                                en la liguilla no suma nada, solo define quién pasa.
+                                Decir "+1" ahí sería mentir.
+                                {% endcomment %}
                                 {% if partido.ganador_penales_id == partido.equipo_local_id %}
-                                    <span class="chip-penales" title="Ganó los penales: +1 punto">+1 penales</span>
+                                    {% if partido.es_liguilla %}
+                                        <span class="chip-penales" title="Ganó la tanda de penales">Ganó penales</span>
+                                    {% else %}
+                                        <span class="chip-penales" title="Ganó los penales: +1 punto">+1 penales</span>
+                                    {% endif %}
                                 {% endif %}
                             </div>
 
@@ -103,13 +122,29 @@ exista cuando se abre.
                             </div>
 
                             <div class="lado-equipo">
-                                <img src="{{ partido.equipo_visitante.escudo_url }}" alt="Escudo de {{ partido.equipo_visitante.nombre }}" class="escudo-cruce">
-                                <p class="nombre-cruce">{{ partido.equipo_visitante.nombre }}</p>
+                                <button type="button" class="open-modal equipo-boton"
+                                        data-url="{% url 'equipo-perfil' partido.equipo_visitante.pk %}"
+                                        aria-label="Ver el perfil de {{ partido.equipo_visitante.nombre }}">
+                                    <img src="{{ partido.equipo_visitante.escudo_url }}" alt="Escudo de {{ partido.equipo_visitante.nombre }}" class="escudo-cruce">
+                                    <span class="nombre-cruce">{{ partido.equipo_visitante.nombre }}</span>
+                                </button>
                                 {% if partido.ganador_penales_id == partido.equipo_visitante_id %}
-                                    <span class="chip-penales" title="Ganó los penales: +1 punto">+1 penales</span>
+                                    {% if partido.es_liguilla %}
+                                        <span class="chip-penales" title="Ganó la tanda de penales">Ganó penales</span>
+                                    {% else %}
+                                        <span class="chip-penales" title="Ganó los penales: +1 punto">+1 penales</span>
+                                    {% endif %}
                                 {% endif %}
                             </div>
                         </div>
+
+                        {% comment %}
+                        En liguilla los dos partidos de una llave cruzan a los
+                        mismos equipos: sin decir cuál es, no se distinguen.
+                        {% endcomment %}
+                        {% if partido.tramo %}
+                            <span class="chip-tramo">{{ partido.tramo }}</span>
+                        {% endif %}
 
                         <div class="pie-partido">
                             <span class="fecha-partido">

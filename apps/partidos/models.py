@@ -41,6 +41,11 @@ class Partido(models.Model):
     # lugar y la final se juegan al final, y en ese orden se muestran.
     ORDEN_FASES = [FASE_CUARTOS, FASE_SEMIFINAL, FASE_TERCERO, FASE_FINAL]
 
+    # Las rondas de eliminacion van a ida y vuelta; la final y el tercer lugar
+    # se definen en un solo encuentro. Son los dos partidos que cierran el
+    # torneo y se juegan como una definicion, no como una serie.
+    FASES_PARTIDO_UNICO = (FASE_TERCERO, FASE_FINAL)
+
     categoria = models.ForeignKey(
         'torneos.Categoria',
         on_delete=models.CASCADE,
@@ -65,6 +70,15 @@ class Partido(models.Model):
         'Posición en la ronda',
         default=0,
         help_text='Qué llave del cuadro ocupa. Define qué cruce alimenta a cuál en la ronda siguiente.',
+    )
+    # La liguilla se juega a doble partido: cada llave son dos encuentros y pasa
+    # el que suma mas goles entre los dos. `fase` + `orden` identifican la llave,
+    # y este campo distingue cual de los dos partidos es.
+    # El tercer lugar es la excepcion: va a partido unico y siempre es ida.
+    vuelta = models.BooleanField(
+        'Partido de vuelta',
+        default=False,
+        help_text='La llave se juega ida y vuelta. La vuelta la recibe el mejor ubicado en la tabla.',
     )
     # En que lugar de la tabla termino cada uno el torneo regular. Se guarda al
     # armar el cruce y viaja con el equipo a la ronda siguiente: es lo que
@@ -176,6 +190,69 @@ class Partido(models.Model):
     @property
     def es_liguilla(self):
         return self.fase != self.FASE_REGULAR
+
+    @property
+    def tramo(self):
+        """'Ida' o 'Vuelta'. Vacio en el torneo regular y en el tercer lugar.
+
+        Sin esto un partido de liguilla no se distingue de su gemelo: los dos
+        cruzan a los mismos equipos y solo cambia quien juega de local, que no
+        alcanza para saber cual se esta mirando.
+        """
+        if not self.es_liguilla or self.fase in self.FASES_PARTIDO_UNICO:
+            return ''
+        return 'Vuelta' if self.vuelta else 'Ida'
+
+    @property
+    def cierra_la_llave(self):
+        """Si con este partido se termina de definir su llave.
+
+        En una serie de ida y vuelta es la vuelta; en las fases a partido unico
+        es el unico encuentro. Lo usa el formulario para saber cuando ofrecer
+        los penales: solo se patean cuando ya no queda otro partido por jugarse.
+        """
+        if not self.es_liguilla:
+            return False
+        return self.vuelta or self.fase in self.FASES_PARTIDO_UNICO
+
+    @property
+    def etiqueta(self):
+        """Como se nombra este partido en pantalla.
+
+            Torneo regular  ->  'Jornada 5'
+            Liguilla        ->  'Liguilla · Semifinal · Ida'
+            Tercer lugar    ->  'Liguilla · Tercer lugar'   (va a partido unico)
+
+        Se nombra la liguilla y no solo la ronda porque 'Semifinal' sola no dice
+        que ya se esta en la eliminacion directa, y quien mira el calendario
+        necesita ubicarse.
+
+        Se resuelve en el modelo porque lo usan el calendario, la ficha, el
+        perfil de equipo y el formulario de resultado, y tienen que decir lo mismo.
+        """
+        if not self.es_liguilla:
+            return f'Jornada {self.jornada}'
+        partes = ['Liguilla', self.get_fase_display()]
+        if self.tramo:
+            partes.append(self.tramo)
+        return ' · '.join(partes)
+
+    # Version abreviada de cada fase, para los lugares donde solo entran unos
+    # pocos caracteres: la rachita de los ultimos cinco, las listas apretadas.
+    FASE_CORTA = {
+        FASE_CUARTOS: '4tos',
+        FASE_SEMIFINAL: 'Semi',
+        FASE_TERCERO: '3er',
+        FASE_FINAL: 'Final',
+    }
+
+    @property
+    def etiqueta_corta(self):
+        """'J5' o '4tos I'. Para cuando no hay lugar para el nombre completo."""
+        if not self.es_liguilla:
+            return f'J{self.jornada}'
+        corta = self.FASE_CORTA.get(self.fase, self.get_fase_display())
+        return f'{corta} {self.tramo[:1]}' if self.tramo else corta
 
     @property
     def ganador(self):
