@@ -2,28 +2,108 @@
 
 {% block titulo %}Estadísticas{% endblock %}
 
+{% comment %}
+El listado de ligas.
+
+Antes cada fila decía solo "2 categoría(s)", que no ayuda a elegir: todas se
+veían iguales. Ahora la tarjeta muestra en qué momento está la liga, cuánto lleva
+jugado y sus cuatro cifras, para poder entrar sabiendo a qué.
+
+El avance va como anillo y no como barra: acompaña al logo en la misma columna y
+se lee de un vistazo aunque las tarjetas estén en dos columnas.
+{% endcomment %}
+
 {% block contenido %}
-<div class="max-w-4xl mx-auto p-6">
+<div class="max-w-[100rem] mx-auto p-6">
     <div class="mb-8">
         <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">Estadísticas</p>
         <h1 class="text-3xl font-bold text-green-900">Elige una liga</h1>
-        <p class="text-gray-600 mt-2">Selecciona una liga para ver sus torneos y tablas de posiciones.</p>
+        <p class="text-gray-600 mt-2">Cómo va cada liga: equipos, calendario y goles.</p>
     </div>
 
-    <div class="grid gap-4">
-        {% for liga in ligas %}
-            <a href="{% url 'estadisticas-liga-categorias' liga.pk %}" class="rounded-2xl bg-white border border-green-100 p-5 shadow-sm hover:border-green-300 transition flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    {% include 'usuarios/_logo_liga.html' %}
-                    <div>
-                        <p class="text-lg font-bold text-gray-900">{{ liga.nombre }}</p>
-                        <p class="text-sm text-gray-500">{{ liga.categorias.count }} categoría(s)</p>
+    <div class="rejilla-ligas">
+        {% for ficha in fichas %}
+            <a href="{% url 'estadisticas-liga-categorias' ficha.liga.pk %}" class="tarjeta-liga">
+                <header class="tarjeta-liga-cabecera">
+                    {% include 'usuarios/_logo_liga.html' with liga=ficha.liga clase='logo-liga-md' %}
+                    <div class="tarjeta-liga-titulo">
+                        <h2 class="tarjeta-liga-nombre">{{ ficha.liga.nombre }}</h2>
+                        <p class="tarjeta-liga-meta">
+                            {{ ficha.categorias }} categoría{{ ficha.categorias|pluralize:"s" }}
+                        </p>
                     </div>
+                    <span class="estado-categoria estado-{{ ficha.estado.clave }}">{{ ficha.estado.texto }}</span>
+                </header>
+
+                <div class="tarjeta-liga-cuerpo">
+                    {% comment %}
+                    El anillo del calendario. Se dibuja con dos círculos y el
+                    recorte del trazo ya viene calculado desde la vista.
+                    {% endcomment %}
+                    <div class="anillo" role="img" aria-label="{{ ficha.avance }}% del calendario jugado">
+                        <svg viewBox="0 0 64 64" class="anillo-svg" aria-hidden="true">
+                            <circle class="anillo-fondo" cx="32" cy="32" r="{{ ficha.anillo.radio }}"></circle>
+                            <circle class="anillo-trazo" cx="32" cy="32" r="{{ ficha.anillo.radio }}"
+                                    stroke-dasharray="{{ ficha.anillo.vuelta }}"
+                                    stroke-dashoffset="{{ ficha.anillo.corte }}"></circle>
+                        </svg>
+                        <span class="anillo-cifra">{{ ficha.avance }}<small>%</small></span>
+                    </div>
+
+                    <dl class="tarjeta-liga-datos">
+                        <div>
+                            <dt>Equipos</dt>
+                            <dd>{{ ficha.equipos }}{% if ficha.cupo %}<span>/{{ ficha.cupo }}</span>{% endif %}</dd>
+                        </div>
+                        <div>
+                            <dt>Jugadores</dt>
+                            <dd>{{ ficha.jugadores }}</dd>
+                        </div>
+                        <div>
+                            <dt>Partidos</dt>
+                            <dd>{{ ficha.jugados }}<span>/{{ ficha.partidos }}</span></dd>
+                        </div>
+                        <div>
+                            <dt>Goles</dt>
+                            <dd>{{ ficha.goles }}{% if ficha.goles_por_partido %}<span>· {{ ficha.goles_por_partido }}/pj</span>{% endif %}</dd>
+                        </div>
+                    </dl>
                 </div>
-                <span class="text-green-700 font-semibold">Ver categorías →</span>
+
+                {% comment %}
+                En una liga terminada el avance ya no dice nada: lo que importa
+                es quién la ganó. En una que recién arranca, qué falta hacer.
+                {% endcomment %}
+                {% if ficha.campeones %}
+                    <footer class="tarjeta-liga-pie tarjeta-liga-pie-campeones">
+                        {% comment %}
+                        Sin la palabra "campeón" el nombre no se explica solo: se
+                        leía como un equipo cualquiera al lado de una copa.
+                        {% endcomment %}
+                        <p class="campeones-titulo">Campeones</p>
+                        {% for premio in ficha.campeones %}
+                            <span class="campeon-chip">
+                                <span class="campeon-categoria">{{ premio.categoria }}</span>
+                                <b>{{ premio.campeon }}</b>
+                            </span>
+                        {% endfor %}
+                    </footer>
+                {% elif ficha.pendiente %}
+                    <footer class="tarjeta-liga-pie">
+                        <span class="tarjeta-liga-pendiente">{{ ficha.pendiente }}</span>
+                    </footer>
+                {% elif ficha.sin_fecha %}
+                    <footer class="tarjeta-liga-pie">
+                        <span class="tarjeta-liga-pendiente">
+                            {{ ficha.sin_fecha }} partido{{ ficha.sin_fecha|pluralize:"s" }} sin fecha asignada
+                        </span>
+                    </footer>
+                {% endif %}
             </a>
         {% empty %}
-            <p class="text-gray-500">Todavía no hay ligas registradas.</p>
+            <div class="rounded-3xl border border-green-100 bg-white p-10 text-center">
+                <p class="text-gray-500">Todavía no hay ligas registradas.</p>
+            </div>
         {% endfor %}
     </div>
 </div>

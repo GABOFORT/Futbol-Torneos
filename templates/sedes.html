@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% load estaticos %}
+
+{% block titulo %}Canchas{% endblock %}
+
+{% block descripcion %}Dónde se juega cada partido, con mapa y cómo llegar.{% endblock %}
+{% block og_titulo %}Canchas · BUHO Sports League{% endblock %}
+{% block og_descripcion %}Dónde se juega cada partido, con mapa y cómo llegar.{% endblock %}
+
+{% comment %}
+El mapa de canchas.
+
+Las coordenadas ya estaban cargadas y el mapa construido para elegir la cancha
+de un partido, pero no existía ninguna pantalla que las mostrara todas juntas:
+quien viene a ver dónde juega su hijo el sábado no tenía a dónde ir.
+
+Leaflet se carga sólo en esta página, no en base.html: son 150 KB que no tienen
+por qué viajar en el resto del sitio.
+{% endcomment %}
+
+{% block cabecera_extra %}
+    <link rel="stylesheet" href="{% static_v 'vendor/leaflet/leaflet.css' %}">
+    <script src="{% static_v 'vendor/leaflet/leaflet.js' %}"></script>
+{% endblock %}
+
+{% block contenido %}
+<div class="ancho-pagina ancho-pagina-arriba">
+    <div class="mb-6">
+        <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">Dónde se juega</p>
+        <h1 class="text-3xl font-bold text-green-900">Canchas</h1>
+        <p class="text-gray-600 mt-2">
+            Todas las canchas donde se juegan los partidos. Tocá una para ver cómo llegar.
+        </p>
+    </div>
+
+    {% if sedes %}
+        {% comment %}
+        Los datos de cada pin viajan en atributos del listado y no en un JSON
+        aparte: así la página funciona sin JS —la lista es la misma información,
+        con su enlace a Google Maps— y el mapa se arma leyendo el DOM.
+        {% endcomment %}
+        <div id="mapa-sedes" class="mapa-sedes"
+             data-centro-lat="{{ centro.lat|stringformat:'.6f' }}"
+             data-centro-lon="{{ centro.lon|stringformat:'.6f' }}"></div>
+
+        <div class="sedes-lista">
+            {% for sede in sedes %}
+                <article class="sede" data-lat="{{ sede.latitud }}" data-lon="{{ sede.longitud }}"
+                         data-nombre="{{ sede.nombre }}" data-liga="{{ sede.liga.nombre }}">
+                    <div class="sede-cabecera">
+                        {% include 'usuarios/_logo_liga.html' with liga=sede.liga clase='logo-liga-sm' %}
+                        <div class="sede-identidad">
+                            <p class="sede-liga">{{ sede.liga.nombre }}</p>
+                            <h2 class="sede-nombre">{{ sede.nombre }}</h2>
+                        </div>
+                    </div>
+                    {% if sede.direccion %}
+                        <p class="sede-direccion">{{ sede.direccion }}</p>
+                    {% endif %}
+                    <p class="sede-partidos">
+                        {{ sede.n_partidos }} partido{{ sede.n_partidos|pluralize:"s" }} programado{{ sede.n_partidos|pluralize:"s" }}
+                    </p>
+                    <a href="{{ sede.url_como_llegar }}" target="_blank" rel="noopener" class="sede-ir">
+                        Cómo llegar
+                    </a>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="vacio">
+            <p class="vacio-titulo">Todavía no hay canchas cargadas</p>
+            <p class="vacio-texto">
+                Las canchas se dan de alta al programar un partido, marcándolas en el mapa.
+            </p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+    <script defer src="{% static_v 'js/mapa-sedes.js' %}"></script>
+{% endblock %}

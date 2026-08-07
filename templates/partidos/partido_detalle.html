@@ -1,376 +1,87 @@
+{% extends 'base.html' %}
+
+{% block titulo %}{{ partido.equipo_local.nombre }} vs {{ partido.equipo_visitante.nombre }}{% endblock %}
+
 {% comment %}
-Ficha del partido, pensada para abrirse dentro del modal del calendario.
-
-Es de solo lectura y no lleva <form>, asi que el JS del modal solo le engancha
-el boton de cerrar. Sirve de previa y de cronica a la vez: antes del partido
-muestra con que llega cada equipo, y despues suma quien anoto.
-
-Las secciones que comparan a los dos equipos recorren `lados`, que trae un
-bloque completo por equipo desde ficha.py.
+Lo que se ve al compartir el enlace del partido por WhatsApp o redes: el cruce,
+el torneo y el marcador si ya se jugó. Antes salía la dirección pelada.
 {% endcomment %}
-<div class="ficha-modal">
+{% block og_titulo %}{{ partido.equipo_local.nombre }} vs {{ partido.equipo_visitante.nombre }}{% endblock %}
+{% block descripcion %}{{ partido.categoria.liga.nombre }} · {{ partido.categoria.nombre }} · {{ partido.etiqueta }}{% if partido.jugado %} · Final {{ partido.goles_local }}-{{ partido.goles_visitante }}{% elif partido.fecha %} · {{ partido.fecha|date:'d/m/Y H:i' }}{% endif %}{% endblock %}
+{% block og_descripcion %}{{ partido.categoria.liga.nombre }} · {{ partido.categoria.nombre }} · {{ partido.etiqueta }}{% if partido.jugado %} · Final {{ partido.goles_local }}-{{ partido.goles_visitante }}{% elif partido.fecha %} · {{ partido.fecha|date:'d/m/Y H:i' }}{% endif %}{% endblock %}
 
-    {% comment %} La cabecera queda fija arriba: en una ficha larga el marcador
-    y el boton de cerrar tienen que seguir a la vista al bajar. {% endcomment %}
-    <header class="ficha-cabecera">
-        <div class="ficha-cabecera-fila">
-            <div class="ficha-torneo">
-                {% include 'usuarios/_logo_liga.html' with liga=partido.categoria.liga %}
-                <div>
-                    <p class="ficha-liga">{{ partido.categoria.liga.nombre }}</p>
-                    {# `etiqueta` dice "Jornada 5" o "Semifinal · Ida" según corresponda. #}
-                    <p class="ficha-categoria">{{ partido.categoria.nombre }} · {{ partido.etiqueta }}</p>
-                </div>
-            </div>
-            <button type="button" id="modal-close" class="ficha-cerrar" aria-label="Cerrar ficha">✕</button>
-        </div>
+{% comment %}
+La ficha del partido como **página completa**.
 
-        <div class="ficha-cruce">
-            <div class="ficha-lado">
-                {# Abre el perfil del equipo: el modal reemplaza esta ficha por la del equipo. #}
-                <button type="button" class="open-modal equipo-boton"
-                        data-url="{% url 'equipo-perfil' partido.equipo_local.pk %}"
-                        aria-label="Ver el perfil de {{ partido.equipo_local.nombre }}">
-                    <img src="{{ partido.equipo_local.escudo_url }}" alt="Escudo de {{ partido.equipo_local.nombre }}" class="ficha-escudo">
-                    <span class="ficha-equipo">{{ partido.equipo_local.nombre }}</span>
-                </button>
-                <p class="ficha-localia">Local</p>
-                {% include 'torneos/_trofeos.html' with trofeos=lados.0.trofeos tam='md' %}
-                {# En liguilla los penales solo definen quién pasa: no suman punto. #}
-                {% if partido.ganador_penales_id == partido.equipo_local_id %}
-                    <span class="chip-penales">{% if partido.es_liguilla %}Ganó penales{% else %}+1 penales{% endif %}</span>
-                {% endif %}
-            </div>
+La misma ficha se abre de dos maneras: dentro del modal del calendario, y como
+página propia cuando se llega por un enlace —desde la portada, el calendario
+mensual o un enlace compartido—. El contenido es el mismo fragmento
+(`_ficha_partido.html`); lo único que cambia es el marco.
 
-            <div class="ficha-marcador">
-                {% if partido.jugado %}
-                    <p class="ficha-cifras">{{ partido.goles_local }} <span>-</span> {{ partido.goles_visitante }}</p>
-                    {% if partido.tanda %}
-                        {% comment %} La tanda va debajo del marcador: no son goles del partido. {% endcomment %}
-                        <p class="ficha-tanda">{{ partido.penales_local }} <span>-</span> {{ partido.penales_visitante }} en penales</p>
-                    {% endif %}
-                    <span class="insignia insignia-final">Finalizado</span>
-                {% else %}
-                    <p class="ficha-vs">VS</p>
-                    {% if partido.ya_empezo %}
-                        <span class="insignia insignia-pendiente">Esperando resultado</span>
-                    {% elif partido.reprogramado %}
-                        <span class="insignia insignia-reprogramado">Reprogramado</span>
-                    {% elif partido.fecha %}
-                        <span class="insignia insignia-programado">Programado</span>
-                    {% else %}
-                        <span class="insignia insignia-sinfecha">Sin programar</span>
-                    {% endif %}
-                {% endif %}
-            </div>
+Antes esto no existía: la ficha era solo el fragmento, así que entrar por un
+enlace normal devolvía el HTML crudo, sin barra, sin estilos y sin pie.
 
-            <div class="ficha-lado">
-                <button type="button" class="open-modal equipo-boton"
-                        data-url="{% url 'equipo-perfil' partido.equipo_visitante.pk %}"
-                        aria-label="Ver el perfil de {{ partido.equipo_visitante.nombre }}">
-                    <img src="{{ partido.equipo_visitante.escudo_url }}" alt="Escudo de {{ partido.equipo_visitante.nombre }}" class="ficha-escudo">
-                    <span class="ficha-equipo">{{ partido.equipo_visitante.nombre }}</span>
-                </button>
-                <p class="ficha-localia">Visitante</p>
-                {% include 'torneos/_trofeos.html' with trofeos=lados.1.trofeos tam='md' %}
-                {% if partido.ganador_penales_id == partido.equipo_visitante_id %}
-                    <span class="chip-penales">{% if partido.es_liguilla %}Ganó penales{% else %}+1 penales{% endif %}</span>
-                {% endif %}
-            </div>
-        </div>
+Se incluye `_modal.html` porque la ficha tiene botones que abren el perfil de un
+equipo o la ficha de otro partido: en la página completa esos también abren en
+modal, igual que en el calendario.
+{% endcomment %}
 
-        <p class="ficha-fecha">
-            {% if partido.fecha %}
-                {{ partido.fecha|date:'j \d\e F \d\e Y' }} · {{ partido.fecha|date:'H:i' }}
-                {% if partido.fue_movido %}
-                    <span class="fecha-anterior">antes: {{ partido.fecha_original|date:'d/m/Y H:i' }}</span>
-                {% endif %}
-            {% else %}
-                Todavía no tiene fecha asignada
-            {% endif %}
-        </p>
-    </header>
+{% block contenido %}
+<div class="ficha-pagina">
+    <div class="ancho-pagina ficha-migas">
+        <a href="{% url 'partido-calendario' %}" class="ficha-volver">← Calendario</a>
+        <span class="ficha-ruta">
+            <a href="{% url 'estadisticas-liga-categorias' partido.categoria.liga.pk %}">{{ partido.categoria.liga.nombre }}</a>
+            <span class="ficha-ruta-sep">/</span>
+            <a href="{% url 'estadisticas-categoria' partido.categoria.pk %}">{{ partido.categoria.nombre }}</a>
+            <span class="ficha-ruta-sep">/</span>
+            <span>{{ partido.etiqueta }}</span>
+        </span>
+    </div>
 
-    <div class="ficha-cuerpo">
+    <div class="ancho-pagina">
+        {% include 'partidos/_ficha_partido.html' %}
+    </div>
 
-        {% comment %} ---- Donde se juega ----
-        El mapa es un iframe de Google con output=embed, el mismo recurso que usa
-        la pagina '¿Donde estamos?': no necesita llave de API ni cuenta. Va
-        primero porque para quien tiene que llevar al nino es el dato mas urgente
-        de toda la ficha. {% endcomment %}
-        <section class="ficha-seccion">
-            <h3 class="ficha-titulo">Dónde se juega</h3>
-            {% if partido.sede %}
-                <div class="ficha-sede">
-                    <div class="ficha-sede-mapa">
-                        <iframe src="{{ partido.sede.url_mapa }}" loading="lazy" title="Mapa de {{ partido.sede.nombre }}"
-                                allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe>
-                    </div>
-                    <div class="ficha-sede-datos">
-                        <p class="ficha-sede-nombre">📌 {{ partido.sede.nombre }}</p>
-                        {% if partido.sede.direccion %}
-                            <p class="ficha-sede-direccion">{{ partido.sede.direccion }}</p>
-                        {% endif %}
-                        {% if partido.cambio_de_cancha %}
-                            <p class="ficha-sede-mudanza">
-                                El partido antes estaba en <strong>{{ partido.sede_original.nombre }}</strong>.
-                            </p>
-                        {% endif %}
-                        <a href="{{ partido.sede.url_como_llegar }}" target="_blank" rel="noopener"
-                           class="ficha-sede-boton">🗺️ Cómo llegar</a>
-                    </div>
-                </div>
-            {% else %}
-                <p class="ficha-aviso">Todavía no se definió la cancha. El administrador de la liga la asigna junto con la fecha.</p>
-            {% endif %}
-        </section>
-
-        {% comment %} ---- Posicion en la tabla ---- {% endcomment %}
-        {% if hay_puestos %}
-            <section class="ficha-seccion">
-                <h3 class="ficha-titulo">En la tabla de posiciones</h3>
-                <div class="ficha-duo">
-                    {% for lado in lados %}
-                        <div class="ficha-puesto">
-                            {% if lado.puesto %}
-                                <span class="ficha-puesto-numero">{{ lado.puesto.puesto }}º</span>
-                                <div>
-                                    <p class="ficha-puesto-equipo">{{ lado.equipo.nombre }}</p>
-                                    <p class="ficha-puesto-dato">
-                                        {{ lado.puesto.pts }} pt{{ lado.puesto.pts|pluralize:"s" }} ·
-                                        {{ lado.puesto.pg }}G {{ lado.puesto.pe }}E {{ lado.puesto.pp }}P ·
-                                        de {{ lado.puesto.de }} equipos
-                                    </p>
-                                </div>
-                            {% else %}
-                                <div>
-                                    <p class="ficha-puesto-equipo">{{ lado.equipo.nombre }}</p>
-                                    <p class="ficha-puesto-dato">Sin lugar en la tabla</p>
-                                </div>
-                            {% endif %}
-                        </div>
-                    {% endfor %}
-                </div>
-            </section>
+    {% comment %}
+    Los atajos de abajo son propios de la página: dentro del modal no hacen
+    falta porque quien lo abrió ya venía de una de estas pantallas.
+    {% endcomment %}
+    <div class="ancho-pagina ficha-atajos">
+        <a href="{% url 'estadisticas-categoria' partido.categoria.pk %}" class="ficha-atajo">
+            <span>
+                <strong>Tabla de posiciones</strong>
+                <small>{{ partido.categoria.nombre }}</small>
+            </span>
+        </a>
+        <a href="{% url 'jugador-list' partido.equipo_local.pk %}" class="ficha-atajo">
+            <span class="ficha-atajo-icono">
+                <img src="{{ partido.equipo_local.escudo_url }}" alt="">
+            </span>
+            <span>
+                <strong>Plantilla</strong>
+                <small>{{ partido.equipo_local.nombre }}</small>
+            </span>
+        </a>
+        <a href="{% url 'jugador-list' partido.equipo_visitante.pk %}" class="ficha-atajo">
+            <span class="ficha-atajo-icono">
+                <img src="{{ partido.equipo_visitante.escudo_url }}" alt="">
+            </span>
+            <span>
+                <strong>Plantilla</strong>
+                <small>{{ partido.equipo_visitante.nombre }}</small>
+            </span>
+        </a>
+        {% if partido.sede %}
+            <a href="{{ partido.sede.url_como_llegar }}" target="_blank" rel="noopener" class="ficha-atajo">
+                <span>
+                    <strong>Cómo llegar</strong>
+                    <small>{{ partido.sede.nombre }}</small>
+                </span>
+            </a>
         {% endif %}
-
-        {% comment %} ---- Comparativa de rendimiento ---- {% endcomment %}
-        <section class="ficha-seccion">
-            <h3 class="ficha-titulo">Estadísticas del equipo general</h3>
-            {% if sin_rendimiento %}
-                <p class="ficha-aviso">Ninguno de los dos equipos ha jugado todavía. Las estadísticas aparecerán con el primer resultado cargado.</p>
-            {% else %}
-                <div class="ficha-metricas">
-                    {% for fila in comparativa %}
-                        <div class="ficha-metrica">
-                            <div class="ficha-metrica-fila">
-                                <span class="ficha-metrica-valor {% if fila.gana_uno %}ficha-metrica-gana{% endif %}">{{ fila.valor_uno }}</span>
-                                <span class="ficha-metrica-nombre">{{ fila.etiqueta }}</span>
-                                <span class="ficha-metrica-valor {% if fila.gana_otro %}ficha-metrica-gana{% endif %}">{{ fila.valor_otro }}</span>
-                            </div>
-                            {% comment %} Las dos barras crecen desde el centro hacia
-                            afuera, para que la comparacion se lea de un vistazo.
-
-                            El ancho va como clase (.ancho-45) y no como style inline:
-                            un style con una etiqueta de Django adentro hace que el
-                            editor lo lea como CSS roto y marque un error que no existe.
-                            Las clases estan en el bloque de estilos de base.html. {% endcomment %}
-                            <div class="ficha-barras">
-                                <div class="ficha-barra ficha-barra-izq">
-                                    <span class="ancho-{{ fila.ancho_uno }}"></span>
-                                </div>
-                                <div class="ficha-barra ficha-barra-der">
-                                    <span class="ancho-{{ fila.ancho_otro }}"></span>
-                                </div>
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-                <p class="ficha-nota">Promedios sobre los partidos ya finalizados del torneo.</p>
-            {% endif %}
-        </section>
-
-        {% comment %} ---- Ultimos cinco partidos ---- {% endcomment %}
-        <section class="ficha-seccion">
-            <h3 class="ficha-titulo">Últimos cinco partidos</h3>
-            <div class="ficha-duo">
-                {% for lado in lados %}
-                    <div class="ficha-columna">
-                        <p class="ficha-columna-titulo">{{ lado.equipo.nombre }}</p>
-                        {% if lado.ultimos %}
-                            <ul class="ficha-forma">
-                                {% comment %}
-                                Cada renglon abre la ficha de ese partido. No hace falta
-                                JS nuevo: el listener de _modal.html es global y funciona
-                                sobre el HTML que se inyecta, asi que el clic reemplaza
-                                esta ficha por la del partido elegido.
-                                {% endcomment %}
-                                {% for juego in lado.ultimos %}
-                                    <li class="ficha-forma-item open-modal"
-                                        data-url="{% url 'partido-detalle' juego.partido_id %}"
-                                        role="button" tabindex="0"
-                                        aria-label="Ver la ficha del partido contra {{ juego.rival.nombre }}, {{ juego.etiqueta }}">
-                                        <span class="ficha-signo ficha-signo-{{ juego.signo }}">{{ juego.signo }}</span>
-                                        <span class="ficha-forma-marcador">{{ juego.propios }}-{{ juego.ajenos }}</span>
-                                        <span class="ficha-forma-rival">{% if juego.de_local %}vs{% else %}en{% endif %} {{ juego.rival.nombre }}</span>
-                                        <span class="ficha-forma-jornada" title="{{ juego.etiqueta }}">{{ juego.corta }}</span>
-                                    </li>
-                                {% endfor %}
-                            </ul>
-                        {% else %}
-                            <p class="ficha-aviso">Aún no ha jugado ningún partido.</p>
-                        {% endif %}
-                    </div>
-                {% endfor %}
-            </div>
-        </section>
-
-        {% comment %} ---- Cara a cara ---- {% endcomment %}
-        <section class="ficha-seccion">
-            <h3 class="ficha-titulo">Cara a cara</h3>
-            {% if historial.total %}
-                <div class="ficha-balance">
-                    <div class="ficha-balance-lado">
-                        <span class="ficha-balance-numero">{{ historial.gano_local }}</span>
-                        <span class="ficha-balance-texto">{{ partido.equipo_local.nombre }}</span>
-                    </div>
-                    <div class="ficha-balance-lado ficha-balance-centro">
-                        <span class="ficha-balance-numero">{{ historial.empates }}</span>
-                        <span class="ficha-balance-texto">Empates</span>
-                    </div>
-                    <div class="ficha-balance-lado">
-                        <span class="ficha-balance-numero">{{ historial.gano_visitante }}</span>
-                        <span class="ficha-balance-texto">{{ partido.equipo_visitante.nombre }}</span>
-                    </div>
-                </div>
-                <ul class="ficha-cruces">
-                    {% for cruce in historial.cruces %}
-                        {# Igual que los ultimos cinco: el cruce abre la ficha de aquel partido. #}
-                        <li class="ficha-cruce-item open-modal"
-                            data-url="{% url 'partido-detalle' cruce.partido_id %}"
-                            role="button" tabindex="0"
-                            aria-label="Ver la ficha de ese enfrentamiento, {{ cruce.etiqueta }}">
-                            <span class="ficha-cruce-marcador">{{ cruce.goles_uno }} - {{ cruce.goles_otro }}</span>
-                            <span class="ficha-cruce-datos">
-                                {{ cruce.categoria.nombre }} · {{ cruce.etiqueta }}
-                                {% if cruce.fecha %} · {{ cruce.fecha|date:'d/m/Y' }}{% endif %}
-                            </span>
-                            <span class="ficha-cruce-localia">
-                                {% if cruce.uno_de_local %}{{ partido.equipo_local.nombre }}{% else %}{{ partido.equipo_visitante.nombre }}{% endif %} de local
-                            </span>
-                        </li>
-                    {% endfor %}
-                </ul>
-                <p class="ficha-nota">Se cuentan los enfrentamientos entre ambos clubes en todas las categorías de {{ partido.categoria.liga.nombre }}.</p>
-            {% else %}
-                <p class="ficha-aviso">Es la primera vez que estos dos equipos se enfrentan en {{ partido.categoria.liga.nombre }}.</p>
-            {% endif %}
-        </section>
-
-        {% comment %} ---- Lo que paso en este partido ---- {% endcomment %}
-        {% if hay_sucesos %}
-            <section class="ficha-seccion">
-                <h3 class="ficha-titulo">Lo que pasó en el partido</h3>
-                <div class="ficha-duo">
-                    {% for lado in lados %}
-                        <div class="ficha-columna">
-                            <p class="ficha-columna-titulo">{{ lado.equipo.nombre }}</p>
-                            {% if lado.sucesos.goles %}
-                                <p class="ficha-subtitulo">Goles</p>
-                                <ul class="ficha-lista">
-                                    {% for gol in lado.sucesos.goles %}
-                                        <li class="ficha-renglon {% if gol.en_contra %}ficha-renglon-contra{% endif %}">
-                                            <span class="ficha-renglon-nombre">
-                                                {{ gol.jugador.nombre }} {{ gol.jugador.apellido }}
-                                                {% if gol.en_contra %}<span class="ficha-etiqueta-contra">en contra</span>{% endif %}
-                                            </span>
-                                            <span class="ficha-renglon-total">{{ gol.cantidad }}</span>
-                                        </li>
-                                    {% endfor %}
-                                </ul>
-                            {% endif %}
-                            {% if lado.sucesos.asistencias %}
-                                <p class="ficha-subtitulo">Asistencias</p>
-                                <ul class="ficha-lista">
-                                    {% for pase in lado.sucesos.asistencias %}
-                                        <li class="ficha-renglon">
-                                            <span class="ficha-renglon-nombre">{{ pase.jugador.nombre }} {{ pase.jugador.apellido }}</span>
-                                            <span class="ficha-renglon-total">{{ pase.cantidad }}</span>
-                                        </li>
-                                    {% endfor %}
-                                </ul>
-                            {% endif %}
-                            {% if not lado.sucesos.goles and not lado.sucesos.asistencias %}
-                                <p class="ficha-aviso">Sin goles ni asistencias registradas.</p>
-                            {% endif %}
-                        </div>
-                    {% endfor %}
-                </div>
-            </section>
-        {% endif %}
-
-        {% comment %} ---- Figuras del torneo ---- {% endcomment %}
-        {% if hay_figuras %}
-            <section class="ficha-seccion">
-                <h3 class="ficha-titulo">Figuras del torneo</h3>
-                <div class="ficha-duo">
-                    {% for lado in lados %}
-                        <div class="ficha-columna">
-                            <p class="ficha-columna-titulo">{{ lado.equipo.nombre }}</p>
-                            {% for figura in lado.figuras %}
-                                <div class="ficha-figura">
-                                    {% include 'jugadores/_avatar.html' with jugador=figura.jugador %}
-                                    <div class="ficha-figura-datos">
-                                        <p class="ficha-figura-rol">{{ figura.rol }}</p>
-                                        <p class="ficha-figura-nombre">{{ figura.jugador.nombre }} {{ figura.jugador.apellido }}</p>
-                                    </div>
-                                    <span class="ficha-figura-total">{{ figura.total }}</span>
-                                </div>
-                            {% empty %}
-                                <p class="ficha-aviso">Todavía no hay goles ni asistencias de este equipo.</p>
-                            {% endfor %}
-                        </div>
-                    {% endfor %}
-                </div>
-            </section>
-        {% endif %}
-
-        {% comment %} ---- Plantel sobre la cancha ---- {% endcomment %}
-        <section class="ficha-seccion">
-            <h3 class="ficha-titulo">Plantel por posición</h3>
-            <p class="ficha-nota ficha-nota-arriba">
-                Así está armado cada equipo según la posición de sus jugadores. No es la alineación
-                del partido: el sistema no registra quiénes salieron a la cancha.
-            </p>
-            <div class="ficha-duo">
-                {% for lado in lados %}
-                    <div class="ficha-columna">
-                        <p class="ficha-columna-titulo">{{ lado.equipo.nombre }}</p>
-                        {% if lado.plantel %}
-                            <div class="ficha-cancha">
-                                {% for linea in lado.plantel %}
-                                    <div class="ficha-linea-cancha">
-                                        <p class="ficha-linea-etiqueta">{{ linea.etiqueta }}</p>
-                                        <div class="ficha-linea-jugadores">
-                                            {% for jugador in linea.jugadores %}
-                                                <div class="ficha-jugador" title="{{ jugador.nombre }} {{ jugador.apellido }}">
-                                                    {% include 'jugadores/_avatar.html' with jugador=jugador %}
-                                                    <p class="ficha-jugador-nombre">{{ jugador.apellido|default:jugador.nombre }}</p>
-                                                    {% if jugador.estado != 'activo' %}
-                                                        <span class="ficha-jugador-estado">{{ jugador.get_estado_display }}</span>
-                                                    {% endif %}
-                                                </div>
-                                            {% endfor %}
-                                        </div>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            <p class="ficha-aviso">Este equipo todavía no tiene jugadores cargados.</p>
-                        {% endif %}
-                    </div>
-                {% endfor %}
-            </div>
-        </section>
     </div>
 </div>
+
+{% include '_modal.html' %}
+{% endblock %}

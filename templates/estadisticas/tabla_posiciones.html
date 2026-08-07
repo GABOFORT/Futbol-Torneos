@@ -3,12 +3,23 @@
 {% block titulo %}Tabla de posiciones - {{ categoria.nombre }}{% endblock %}
 
 {% block contenido %}
-<div class="max-w-5xl mx-auto p-6">
-    <div class="mb-8">
-        <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">{{ categoria.liga.nombre }}</p>
-        <h1 class="text-3xl font-bold text-green-900">{{ categoria.nombre }}</h1>
+<div class="max-w-[100rem] mx-auto p-6">
+    {# Con el logo, igual que en el listado de ligas y en la vitrina. #}
+    <div class="mb-8 flex items-center gap-4">
+        {% include 'usuarios/_logo_liga.html' with liga=categoria.liga clase='logo-liga-lg' %}
+        <div>
+            <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">{{ categoria.liga.nombre }}</p>
+            <h1 class="text-3xl font-bold text-green-900">{{ categoria.nombre }}</h1>
+        </div>
     </div>
 
+    {% comment %}
+    La tabla y los rankings van juntos. Antes había que salir a otra pantalla
+    para ver quién metía los goles y volver; y como al llegar acá la liga y la
+    categoría ya están elegidas, las tablitas muestran solo jugador y número:
+    repetirlas en cada renglón sería ruido.
+    {% endcomment %}
+    <div class="tablero-categoria">
     <div class="overflow-x-auto rounded-3xl bg-white border border-green-100 shadow-sm">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-green-50">
@@ -58,11 +69,68 @@
         </table>
     </div>
 
+        <aside class="rankings">
+            {% comment %}
+            Tres tablitas de dos columnas. El icono del premio hace de título:
+            se reconocen sin leer, y son los mismos que se entregan al cerrar la
+            temporada, así que la pantalla habla el mismo idioma todo el año.
+            {% endcomment %}
+            <section class="ranking">
+                <header class="ranking-cabecera">
+                    <img src="{{ icono_goleador }}" alt="" class="ranking-icono">
+                    <h2>Goleadores</h2>
+                </header>
+                {% for fila in rankings.goleadores %}
+                    <div class="ranking-fila">
+                        <span class="ranking-puesto">{{ forloop.counter }}</span>
+                        <span class="ranking-nombre" title="{{ fila.equipo }}">{{ fila.nombre }}</span>
+                        <span class="ranking-cifra">{{ fila.total }}</span>
+                    </div>
+                {% empty %}
+                    <p class="ranking-vacio">Todavía no hay goles cargados.</p>
+                {% endfor %}
+            </section>
+
+            <section class="ranking">
+                <header class="ranking-cabecera">
+                    <img src="{{ icono_asistidor }}" alt="" class="ranking-icono">
+                    <h2>Asistencias</h2>
+                </header>
+                {% for fila in rankings.asistidores %}
+                    <div class="ranking-fila">
+                        <span class="ranking-puesto">{{ forloop.counter }}</span>
+                        <span class="ranking-nombre" title="{{ fila.equipo }}">{{ fila.nombre }}</span>
+                        <span class="ranking-cifra">{{ fila.total }}</span>
+                    </div>
+                {% empty %}
+                    <p class="ranking-vacio">Todavía no hay asistencias cargadas.</p>
+                {% endfor %}
+            </section>
+
+            <section class="ranking">
+                <header class="ranking-cabecera">
+                    <img src="{{ icono_valla }}" alt="" class="ranking-icono">
+                    <h2>Menos goles recibidos</h2>
+                </header>
+                {% comment %}
+                Va por equipo y no por portero: el sistema no registra quién ataja
+                cada partido, y repartir los goles recibidos sería inventarlo.
+                {% endcomment %}
+                {% for fila in rankings.vallas %}
+                    <div class="ranking-fila">
+                        <span class="ranking-puesto">{{ forloop.counter }}</span>
+                        <span class="ranking-nombre">{{ fila.equipo.nombre }}</span>
+                        <span class="ranking-cifra">{{ fila.recibidos }}</span>
+                    </div>
+                {% empty %}
+                    <p class="ranking-vacio">Todavía no se juega ningún partido.</p>
+                {% endfor %}
+            </section>
+        </aside>
+    </div>
+
     <div class="mt-6 flex flex-wrap items-center gap-3">
         <a href="{% url 'estadisticas-liga-categorias' categoria.liga_id %}" class="text-sm font-semibold text-green-700 hover:text-green-900">← Volver a {{ categoria.liga.nombre }}</a>
-        <span class="text-gray-300">|</span>
-        <a href="{% url 'estadisticas-goleo' %}?liga={{ categoria.liga_id }}&categoria={{ categoria.pk }}" class="btn-accion">Goleo de esta categoría</a>
-        <a href="{% url 'estadisticas-asistencias' %}?liga={{ categoria.liga_id }}&categoria={{ categoria.pk }}" class="btn-accion">Asistencias</a>
     </div>
 </div>
 

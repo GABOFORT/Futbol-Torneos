@@ -18,7 +18,7 @@ def leer(datos, jugadores_validos):
     sin eso se podria cargar un goleador de otro equipo pasando su id a mano.
     """
     permitidos = {j.id for j in jugadores_validos}
-    filas = defaultdict(lambda: {'goles': 0, 'goles_en_contra': 0, 'asistencias': 0})
+    filas = defaultdict(lambda: {'goles': 0, 'goles_en_contra': 0, 'goles_de_penal': 0, 'asistencias': 0})
 
     def numero(valor):
         try:
@@ -29,14 +29,25 @@ def leer(datos, jugadores_validos):
     goleadores = datos.getlist('gol_jugador')
     cantidades = datos.getlist('gol_cantidad')
     en_contra = datos.getlist('gol_en_contra')
+    # Va como input numerico y no como casilla porque una misma fila puede tener
+    # 3 goles y solo 1 de penal. Al viajar siempre (aunque sea 0) queda alineado
+    # por indice con las otras listas, sin el truco que necesita la casilla.
+    de_penal = datos.getlist('gol_de_penal')
     for indice, jugador_id in enumerate(goleadores):
         if not jugador_id.isdigit() or int(jugador_id) not in permitidos:
             continue
         cantidad = numero(cantidades[indice] if indice < len(cantidades) else 0)
         if not cantidad:
             continue
-        campo = 'goles_en_contra' if _marcado(en_contra, indice) else 'goles'
-        filas[int(jugador_id)][campo] += cantidad
+        if _marcado(en_contra, indice):
+            # Un gol en contra no puede ser de penal: al penal lo patea el rival,
+            # y si entra es gol suyo, no en contra de nadie. Se ignora sin avisar
+            # porque el formulario ya deshabilita el campo al marcar la casilla.
+            filas[int(jugador_id)]['goles_en_contra'] += cantidad
+            continue
+        filas[int(jugador_id)]['goles'] += cantidad
+        penales = numero(de_penal[indice] if indice < len(de_penal) else 0)
+        filas[int(jugador_id)]['goles_de_penal'] += min(penales, cantidad)
 
     asistentes = datos.getlist('asistencia_jugador')
     cantidades = datos.getlist('asistencia_cantidad')
@@ -70,18 +81,27 @@ def errores(filas, partido, goles_local, goles_visitante):
             problemas.append(
                 f'{etiqueta}: marcaste {marcador} gol(es) pero asignaste {asignados}.'
             )
-        # No hay asistencia sin gol que asistir.
-        if propios['asistencias'] > marcador:
-            problemas.append(
-                f'{etiqueta}: {propios["asistencias"]} asistencia(s) para {marcador} gol(es).'
-            )
+        # No hay asistencia sin gol que asistir, y un penal no se asiste: lo
+        # patea un jugador solo, sin nadie que le pase la pelota.
+        penales = propios['goles_de_penal']
+        asistibles = marcador - penales
+        if propios['asistencias'] > asistibles:
+            if penales:
+                problemas.append(
+                    f'{etiqueta}: {propios["asistencias"]} asistencia(s) para {asistibles} gol(es) '
+                    f'de jugada ({penales} de los {marcador} fue(ron) de penal, y un penal no se asiste).'
+                )
+            else:
+                problemas.append(
+                    f'{etiqueta}: {propios["asistencias"]} asistencia(s) para {marcador} gol(es).'
+                )
     return problemas
 
 
 def _por_equipo(filas, partido):
     totales = {
-        'local': {'goles': 0, 'goles_en_contra': 0, 'asistencias': 0},
-        'visitante': {'goles': 0, 'goles_en_contra': 0, 'asistencias': 0},
+        'local': {'goles': 0, 'goles_en_contra': 0, 'goles_de_penal': 0, 'asistencias': 0},
+        'visitante': {'goles': 0, 'goles_en_contra': 0, 'goles_de_penal': 0, 'asistencias': 0},
     }
     jugadores = Jugador.objects.filter(pk__in=filas).values('id', 'equipo_id')
     equipo_de = {j['id']: j['equipo_id'] for j in jugadores}

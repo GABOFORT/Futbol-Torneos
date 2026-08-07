@@ -1,7 +1,11 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+
+from apps.partidos.models import Partido
 
 from apps.torneos.models import Categoria, Liga
 from apps.usuarios.eliminar import vista_eliminar
@@ -75,7 +79,8 @@ def equipo_list(request):
         'mis_equipos': Equipo.objects.none(),
         'puede_crear': puede_administrar,
         'solo_mis_equipos': False,
-        'puede_filtrar': puede_administrar,
+        # Los filtros son para todos: el visitante entra a buscar su equipo.
+        'puede_filtrar': True,
         'filtros': filtros,
         'filtros_activos': hay_filtros(filtros),
         'total_resultados': len(directorio),
@@ -212,8 +217,21 @@ def equipo_detail(request, pk):
     for jugador in jugadores:
         jugador.trofeos = de_jugadores.get(f'{jugador.nombre} {jugador.apellido}', [])
 
+    # Los partidos del equipo: es lo que viene a buscar quien entra a la pagina
+    # de un club. Estaban solo dentro del perfil en modal, que hay que saber que
+    # existe para abrirlo.
+    de_este = Partido.objects.filter(
+        Q(equipo_local=equipo) | Q(equipo_visitante=equipo)
+    ).select_related('categoria', 'equipo_local', 'equipo_visitante', 'sede')
+
     return render(request, 'equipos/equipo_detail.html', {
         'equipo': equipo,
+        'proximos': de_este.filter(
+            estado__in=Partido.ESTADOS_POR_JUGARSE, fecha__gte=timezone.now()
+        ).order_by('fecha')[:5],
+        'ultimos': de_este.filter(
+            estado=Partido.ESTADO_FINALIZADO
+        ).order_by('-fecha')[:5],
         'jugadores': jugadores,
         'trofeos_equipo': premios.get('equipos', {}).get(equipo.nombre, []),
         'puede_editar': es_dueno or puede_administrar,

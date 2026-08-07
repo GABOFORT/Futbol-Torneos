@@ -1,0 +1,112 @@
+{% comment %}
+Formulario de resultado con goleadores y asistencias. **Es un fragmento**: no
+extiende base.html.
+
+Se abre dentro del modal del calendario, que lo pide con `?modal=1`; y también
+como página completa desde `resultado_form_pagina.html`, para que entrar por la
+dirección directa no devuelva HTML crudo.
+
+No usa modal_form.html porque necesita dos secciones de filas que se agregan y
+quitan, con contadores que verifican contra el marcador. Mantiene los mismos
+ganchos (#modal-form, #modal-close, #modal-cancel) para que el modal siga
+funcionando igual; `en_modal` decide si se dibujan los que solo tienen sentido
+adentro del modal.
+{% endcomment %}
+<div class="rounded-[2rem] bg-white p-5 sm:p-8 shadow-2xl w-full max-w-lg sm:max-w-3xl max-h-[85vh] overflow-y-auto">
+    <div class="flex items-start justify-between border-b border-green-100 pb-4 mb-6">
+        <div>
+            <p class="text-xs sm:text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">{{ partido.etiqueta }}</p>
+            <h2 class="mt-1 text-xl sm:text-2xl font-bold text-green-900">{{ title }}</h2>
+            <p class="mt-2 text-sm text-gray-500">Carga el marcador y después quién anotó y quién asistió.</p>
+        </div>
+        {% if en_modal %}
+            <button type="button" id="modal-close" class="shrink-0 text-gray-400 hover:text-gray-700" aria-label="Cerrar">✕</button>
+        {% endif %}
+    </div>
+
+    {% if problemas %}
+        <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4">
+            <p class="text-sm font-semibold text-red-800">Revisá lo siguiente:</p>
+            <ul class="mt-2 space-y-1">
+                {% for problema in problemas %}
+                    <li class="text-sm text-red-700">• {{ problema }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    <form id="modal-form" method="post" novalidate class="space-y-6"
+          data-local="{{ partido.equipo_local_id }}" data-visitante="{{ partido.equipo_visitante_id }}">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+
+        <section class="grid gap-4 sm:grid-cols-2">
+            {% comment %}
+            'no_se_presento' y 'ganador_penales' ocupan la fila entera: son
+            preguntas de sí o no sobre todo el partido, no el dato de un equipo.
+            Compartiendo fila con "Goles de X" el texto de ayuda empujaba la
+            grilla y los dos marcadores quedaban en renglones distintos.
+            {% endcomment %}
+            {% for field in form %}
+                <div data-campo="{{ field.name }}" {% if field.name == 'ganador_penales' or field.name == 'no_se_presento' %}class="sm:col-span-2"{% endif %}>
+                    <label class="block text-sm font-medium text-gray-700">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}<p class="mt-2 text-sm text-gray-500">{{ field.help_text }}</p>{% endif %}
+                    {% for error in field.errors %}<p class="mt-1 text-sm text-red-600">{{ error }}</p>{% endfor %}
+                </div>
+            {% endfor %}
+            {% comment %}
+            El aviso del default vive aca y no lo crea el JS: crear y borrar nodos
+            desde el script despertaba al observador del DOM y la pagina se
+            trababa al usar el desplegable. Asi el JS solo lo muestra o lo esconde.
+            {% endcomment %}
+            <p class="aviso-default" data-aviso-default hidden></p>
+            {% if form.sin_penales %}
+                {% comment %}
+                En cuartos, semis y tercer lugar el formulario no trae los campos de
+                penales. Sin este aviso, quien carga el resultado no sabria como se
+                resuelve un empate.
+                {% endcomment %}
+                <p class="aviso-sin-penales sm:col-span-2">{{ form.sin_penales }}</p>
+            {% endif %}
+        </section>
+
+        {% include 'partidos/_seccion_actuaciones.html' with seccion='gol' titulo='Goles' filas=goleadores %}
+        {% include 'partidos/_seccion_actuaciones.html' with seccion='asistencia' titulo='Asistencias' filas=asistentes %}
+
+        <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4 border-t border-green-100">
+            {% if en_modal %}
+                <button type="button" id="modal-cancel" class="rounded-full border border-gray-300 bg-white px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50">Cancelar</button>
+            {% else %}
+                <a href="{% url 'partido-detalle' partido.pk %}" class="rounded-full border border-gray-300 bg-white px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50">Cancelar</a>
+            {% endif %}
+            <button type="submit" class="rounded-full bg-green-800 px-6 py-3 text-sm font-semibold text-white hover:bg-green-700">Guardar</button>
+        </div>
+    </form>
+
+    {# Plantilla oculta que el JS clona cada vez que se agrega una fila. #}
+    <template id="plantilla-fila">
+        <div class="fila-actuacion">
+            <select name="__CAMPO___jugador" class="filtro-select select-actuacion">
+                <option value="">Elegir jugador…</option>
+                <optgroup label="{{ partido.equipo_local.nombre }}">
+                    {% for j in plantel_local %}<option value="{{ j.pk }}" data-equipo="{{ partido.equipo_local_id }}">{{ j.nombre }} {{ j.apellido }}{% if j.numero %} · {{ j.numero }}{% endif %}</option>{% endfor %}
+                </optgroup>
+                <optgroup label="{{ partido.equipo_visitante.nombre }}">
+                    {% for j in plantel_visitante %}<option value="{{ j.pk }}" data-equipo="{{ partido.equipo_visitante_id }}">{{ j.nombre }} {{ j.apellido }}{% if j.numero %} · {{ j.numero }}{% endif %}</option>{% endfor %}
+                </optgroup>
+            </select>
+            <input type="number" name="__CAMPO___cantidad" min="1" max="20" value="1" class="cantidad-actuacion" aria-label="Cantidad">
+            <label class="campo-penal" data-solo-goles>
+                <span>De penal</span>
+                <input type="number" name="gol_de_penal" min="0" max="1" value="0" class="penal-actuacion" aria-label="Goles de penal">
+                <small class="penal-tope" data-penal-tope></small>
+            </label>
+            <label class="check-en-contra" data-solo-goles>
+                <input type="checkbox" name="gol_en_contra" value="">
+                <span>En contra</span>
+            </label>
+            <button type="button" class="quitar-fila" aria-label="Quitar">✕</button>
+        </div>
+    </template>
+</div>

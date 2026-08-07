@@ -13,16 +13,21 @@
             {% csrf_token %}
             {{ form.non_field_errors }}
             {% for field in form %}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">{{ field.label }}</label>
-                    {{ field }}
-                    {% if field.help_text %}
-                        <p class="mt-2 text-sm text-gray-500">{{ field.help_text }}</p>
-                    {% endif %}
-                    {% for error in field.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ error }}</p>
-                    {% endfor %}
-                </div>
+                {% if field.field.widget.input_type == 'radio' %}
+                    {% include '_radios.html' %}
+                {% else %}
+                    {# data-campo permite que el JS ubique un campo segun otro. #}
+                    <div data-campo="{{ field.name }}">
+                        <label class="block text-sm font-medium text-gray-700">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}
+                            <p class="mt-2 text-sm text-gray-500">{{ field.help_text }}</p>
+                        {% endif %}
+                        {% for error in field.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
             {% endfor %}
             <div class="flex items-center gap-3">
                 <button type="submit" class="inline-flex items-center justify-center rounded-full bg-green-800 px-6 py-3 text-sm font-semibold text-white hover:bg-green-700">Guardar</button>

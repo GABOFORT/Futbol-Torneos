@@ -2,6 +2,10 @@
 
 {% block titulo %}Palmarés{% endblock %}
 
+{% block descripcion %}Los campeones de cada temporada, con bota de oro, asistencias y guante de oro.{% endblock %}
+{% block og_titulo %}Palmarés · BUHO Sports League{% endblock %}
+{% block og_descripcion %}Los campeones de cada temporada, con bota de oro, asistencias y guante de oro.{% endblock %}
+
 {% comment %}
 La vitrina: las temporadas que ya terminaron.
 
@@ -25,35 +29,62 @@ claves foraneas.
     {% for registro in registros %}
         <article class="vitrina-tarjeta">
             <header class="vitrina-cabecera">
-                <div>
-                    <p class="vitrina-liga">{{ registro.liga_nombre }}</p>
-                    <h2 class="vitrina-categoria">{{ registro.categoria_nombre }}</h2>
+                {% comment %}
+                El logo sale de la liga viva, no del palmarés: este guarda nombres
+                y no claves foráneas justamente para sobrevivir al borrado de la
+                liga. Por eso solo aparece mientras la liga siga existiendo, y
+                cuando se elimine la tarjeta se sigue leyendo igual de bien.
+                El nombre se toma del palmarés siempre: es el que quedó congelado.
+                {% endcomment %}
+                <div class="vitrina-identidad">
+                    {% if registro.categoria.liga %}
+                        {% include 'usuarios/_logo_liga.html' with liga=registro.categoria.liga clase='logo-liga-md' %}
+                    {% endif %}
+                    <div>
+                        <p class="vitrina-liga">{{ registro.liga_nombre }}</p>
+                        <h2 class="vitrina-categoria">{{ registro.categoria_nombre }}</h2>
+                    </div>
                 </div>
                 <span class="vitrina-fecha">Concluida el {{ registro.fecha_cierre|date:'d/m/Y' }}</span>
             </header>
 
-            {% comment %} ---- El podio ---- {% endcomment %}
+            {% comment %}
+            ---- El podio ----
+            Cada lugar termina en un pedestal con su número. Sin el pedestal las
+            tres copas quedaban flotando y no se leía como una premiación: es lo
+            que apoya las columnas en una misma línea de piso y da la jerarquía
+            de un vistazo, antes de leer una sola palabra.
+
+            Las clases llevan el prefijo `vitrina-`: el cuadro de liguilla tiene
+            su propio banner de campeón, y cuando compartían nombre el estilo de
+            una pantalla se colaba en la otra.
+            {% endcomment %}
             {% if registro.campeon %}
-                <div class="podio">
-                    <div class="podio-lugar podio-primero">
-                        <img src="{{ podios.campeon }}" alt="Copa de campeón" class="podio-copa">
-                        <p class="podio-puesto">Campeón</p>
-                        <p class="podio-equipo">{{ registro.campeon }}</p>
+                <div class="vitrina-escenario">
+                    <div class="vitrina-podio">
+                        <div class="vitrina-podio-lugar vitrina-podio-primero vitrina-podio-oro">
+                            <img src="{{ podios.campeon }}" alt="Copa de campeón" class="vitrina-podio-copa">
+                            <p class="vitrina-podio-puesto">Campeón</p>
+                            <p class="vitrina-podio-equipo">{{ registro.campeon }}</p>
+                            <div class="vitrina-podio-base">1</div>
+                        </div>
+                        {% if registro.subcampeon %}
+                            <div class="vitrina-podio-lugar vitrina-podio-plata">
+                                <img src="{{ podios.subcampeon }}" alt="Copa de subcampeón" class="vitrina-podio-copa">
+                                <p class="vitrina-podio-puesto">Subcampeón</p>
+                                <p class="vitrina-podio-equipo">{{ registro.subcampeon }}</p>
+                                <div class="vitrina-podio-base">2</div>
+                            </div>
+                        {% endif %}
+                        {% if registro.tercero %}
+                            <div class="vitrina-podio-lugar vitrina-podio-bronce">
+                                <img src="{{ podios.tercero }}" alt="Copa de tercer lugar" class="vitrina-podio-copa">
+                                <p class="vitrina-podio-puesto">Tercer lugar</p>
+                                <p class="vitrina-podio-equipo">{{ registro.tercero }}</p>
+                                <div class="vitrina-podio-base">3</div>
+                            </div>
+                        {% endif %}
                     </div>
-                    {% if registro.subcampeon %}
-                        <div class="podio-lugar">
-                            <img src="{{ podios.subcampeon }}" alt="Copa de subcampeón" class="podio-copa">
-                            <p class="podio-puesto">Subcampeón</p>
-                            <p class="podio-equipo">{{ registro.subcampeon }}</p>
-                        </div>
-                    {% endif %}
-                    {% if registro.tercero %}
-                        <div class="podio-lugar">
-                            <img src="{{ podios.tercero }}" alt="Copa de tercer lugar" class="podio-copa">
-                            <p class="podio-puesto">Tercer lugar</p>
-                            <p class="podio-equipo">{{ registro.tercero }}</p>
-                        </div>
-                    {% endif %}
                 </div>
             {% endif %}
 
@@ -65,38 +96,41 @@ claves foraneas.
             {% endcomment %}
             <div class="premios">
                 {% if registro.lista_goleadores %}
-                    <div class="premio">
+                    <div class="premio premio-bota">
                         <img src="{{ imagen_bota }}" alt="Bota de oro" class="premio-icono">
-                        <div>
-                            <p class="premio-nombre">Bota de oro · {{ registro.goles_del_goleador }} gol{{ registro.goles_del_goleador|pluralize:"es" }}</p>
+                        <p class="premio-titulo">Bota de oro</p>
+                        <p class="premio-cifra">{{ registro.goles_del_goleador }}<span>gol{{ registro.goles_del_goleador|pluralize:"es" }}</span></p>
+                        <ul class="premio-gente">
                             {% for quien in registro.lista_goleadores %}
-                                <p class="premio-quien">{{ quien }}</p>
+                                <li>{{ quien }}</li>
                             {% endfor %}
-                        </div>
+                        </ul>
                     </div>
                 {% endif %}
 
                 {% if registro.lista_asistidores %}
-                    <div class="premio">
+                    <div class="premio premio-asistencias">
                         <img src="{{ imagen_asistidor }}" alt="Trofeo de asistencias" class="premio-icono">
-                        <div>
-                            <p class="premio-nombre">Asistencias · {{ registro.asistencias_del_asistidor }}</p>
+                        <p class="premio-titulo">Asistencias</p>
+                        <p class="premio-cifra">{{ registro.asistencias_del_asistidor }}<span>pase{{ registro.asistencias_del_asistidor|pluralize:"s" }} de gol</span></p>
+                        <ul class="premio-gente">
                             {% for quien in registro.lista_asistidores %}
-                                <p class="premio-quien">{{ quien }}</p>
+                                <li>{{ quien }}</li>
                             {% endfor %}
-                        </div>
+                        </ul>
                     </div>
                 {% endif %}
 
                 {% if registro.lista_vallas %}
-                    <div class="premio">
+                    <div class="premio premio-guante">
                         <img src="{{ podios.valla }}" alt="Guante de oro" class="premio-icono">
-                        <div>
-                            <p class="premio-nombre">Guante de oro · {{ registro.goles_recibidos }} recibido{{ registro.goles_recibidos|pluralize:"s" }}</p>
+                        <p class="premio-titulo">Guante de oro</p>
+                        <p class="premio-cifra">{{ registro.goles_recibidos }}<span>gol{{ registro.goles_recibidos|pluralize:"es" }} recibido{{ registro.goles_recibidos|pluralize:"s" }}</span></p>
+                        <ul class="premio-gente">
                             {% for quien in registro.lista_vallas %}
-                                <p class="premio-quien">{{ quien }}</p>
+                                <li>{{ quien }}</li>
                             {% endfor %}
-                        </div>
+                        </ul>
                     </div>
                 {% endif %}
             </div>

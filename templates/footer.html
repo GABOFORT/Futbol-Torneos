@@ -1,3 +1,57 @@
-<footer>
-    <p>Futbol Torneos &copy; 2026</p>
+{% load static estaticos %}
+{% comment %}
+El pie de página.
+
+Antes era una línea con el año. Para quien entra sin cuenta el pie es la segunda
+puerta del sitio: es donde busca el reglamento, cómo llegar a la cancha y con
+quién hablar cuando algo no cuadra.
+
+**No hay datos de contacto ni redes cargados en el sistema**, así que esa
+columna no se inventa: se muestra lo que existe de verdad. Cuando la liga
+entregue su teléfono y sus redes, se agregan acá.
+{% endcomment %}
+<footer class="pie">
+    <div class="pie-interior">
+        <div class="pie-marca">
+            <img src="{% static_v 'img/buho-sport.jpeg' %}" alt="BUHO Sports League" class="pie-logo">
+            <p class="pie-nombre">BUHO Sports League</p>
+            <p class="pie-lema">
+                Plataforma de ligas de fútbol infantil y juvenil. Calendario, tablas,
+                estadísticas y palmarés, abiertos para todos.
+            </p>
+        </div>
+
+        <div class="pie-columna">
+            <p class="pie-titulo">El torneo</p>
+            <a href="{% url 'partido-calendario' %}">Calendario mensual</a>
+            <a href="{% url 'partido-list' %}">Partidos por jornada</a>
+            <a href="{% url 'estadisticas-ligas' %}">Tablas de posiciones</a>
+            <a href="{% url 'estadisticas-goleo' %}">Goleadores</a>
+            <a href="{% url 'estadisticas-asistencias' %}">Asistencias</a>
+            <a href="{% url 'estadisticas-porteros' %}">Porterías menos vencidas</a>
+            <a href="{% url 'estadisticas-graficos' %}">Gráficos del torneo</a>
+        </div>
+
+        <div class="pie-columna">
+            <p class="pie-titulo">La liga</p>
+            <a href="{% url 'equipo-list' %}">Equipos</a>
+            <a href="{% url 'vitrina' %}">Palmarés y campeones</a>
+            <a href="{% url 'sedes' %}">Canchas y cómo llegar</a>
+            <a href="{% url 'buscar' %}">Buscar</a>
+            <a href="{% url 'quienes-somos' %}">Quiénes somos</a>
+            <a href="{% url 'donde-estamos' %}">Dónde estamos</a>
+        </div>
+
+        <div class="pie-columna">
+            <p class="pie-titulo">Información</p>
+            <a href="{% url 'reglamento' %}">Reglamento</a>
+            <a href="{% url 'aviso-privacidad' %}">Aviso de privacidad</a>
+            <a href="{% url 'login' %}">Acceso para entrenadores</a>
+        </div>
+    </div>
+
+    <div class="pie-abajo">
+        <p>&copy; {% now "Y" %} BUHO Sports League</p>
+        <p class="pie-nota">Los datos de los jugadores menores de edad se tratan según el aviso de privacidad.</p>
+    </div>
 </footer>

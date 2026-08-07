@@ -5,14 +5,20 @@
 {% block contenido %}
 <div class="max-w-6xl mx-auto p-6">
     <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
-        <div>
-            <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">Plantilla</p>
-            <h1 class="text-3xl font-bold text-green-900 flex flex-wrap items-center gap-2">
-                {{ equipo.nombre }}
-                {# Los premios del club, si la categoría ya terminó. #}
-                {% include 'torneos/_trofeos.html' with trofeos=trofeos_equipo tam='lg' %}
-            </h1>
-            <p class="text-gray-600 mt-2">{{ equipo.liga.nombre }} · {{ equipo.categoria.nombre }}</p>
+        <div class="flex items-center gap-4">
+            <img src="{{ equipo.escudo_url }}" alt="Escudo de {{ equipo.nombre }}" class="escudo-grande">
+            <div>
+                <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">Plantilla</p>
+                <h1 class="text-3xl font-bold text-green-900 flex flex-wrap items-center gap-2">
+                    {{ equipo.nombre }}
+                    {# Los premios del club, si la categoría ya terminó. #}
+                    {% include 'torneos/_trofeos.html' with trofeos=trofeos_equipo tam='lg' %}
+                </h1>
+                <p class="text-gray-600 mt-2">{{ equipo.liga.nombre }} · {{ equipo.categoria.nombre }}</p>
+                {% if equipo.categoria.limites_texto %}
+                    <p class="text-sm text-gray-500 mt-1">{{ equipo.categoria.limite_edad }} · {{ equipo.categoria.limites_texto }}</p>
+                {% endif %}
+            </div>
         </div>
         {% if puede_gestionar %}
             <button class="open-modal inline-flex items-center justify-center rounded-full bg-green-800 px-5 py-3 text-sm font-semibold text-white hover:bg-green-700" data-url="{% url 'jugador-create' equipo.pk %}?modal=1">Agregar jugador</button>
@@ -24,6 +30,7 @@
             <thead class="bg-green-50">
                 <tr>
                     <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Jugador</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Sexo</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Posición</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Número</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Estado</th>
@@ -42,6 +49,13 @@
                                 {# Bota de oro o trofeo de asistencias, si lo ganó. #}
                                 {% include 'torneos/_trofeos.html' with trofeos=jugador.trofeos tam='md' %}
                             </div>
+                        </td>
+                        <td class="px-6 py-4 text-sm">
+                            <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap
+                                {% if jugador.es_femenino %}bg-pink-100 text-pink-800{% else %}bg-sky-100 text-sky-800{% endif %}"
+                                {% if jugador.edad_maxima_permitida %}title="Puede tener hasta {{ jugador.edad_maxima_permitida }} años en esta categoría"{% endif %}>
+                                {{ jugador.get_sexo_display }}
+                            </span>
                         </td>
                         <td class="px-6 py-4 text-sm text-gray-800">{{ jugador.get_posicion_display }}</td>
                         <td class="px-6 py-4 text-sm text-gray-800">{{ jugador.numero|default:'-' }}</td>
@@ -70,7 +84,7 @@
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="5" class="px-6 py-8 text-center text-sm text-gray-500">Sin jugadores registrados todavía.</td>
+                        <td colspan="6" class="px-6 py-8 text-center text-sm text-gray-500">Sin jugadores registrados todavía.</td>
                     </tr>
                 {% endfor %}
             </tbody>

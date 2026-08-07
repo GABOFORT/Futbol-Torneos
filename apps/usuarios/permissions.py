@@ -4,8 +4,16 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 
 
 def _role_test(*roles):
+    """Deja pasar a cualquier Administrador General y a los roles que se pidan.
+
+    Se pregunta por `es_super_admin()` y no por `is_superuser`: el rol de negocio
+    tiene que alcanzar por si solo. Mirando el flag, un usuario con
+    role='superadmin' e is_superuser=False quedaba bloqueado en ligas, categorias
+    y partidos —`admin_liga_required` solo pasa ('adminliga',)— aunque toda la
+    interfaz lo mostrara como administrador general.
+    """
     def test(user):
-        return user.is_authenticated and (user.is_superuser or user.role in roles)
+        return user.is_authenticated and (user.es_super_admin() or user.role in roles)
     return test
 
 
@@ -46,7 +54,10 @@ def ligas_visibles(user):
     """
     from apps.torneos.models import Liga
 
-    if user.is_authenticated and (user.is_superuser or user.role == user.ROLE_ADMIN_LIGA):
+    # es_super_admin() y no is_superuser, igual que en ligas_administradas: sin
+    # esto un administrador general sin el flag veia solo las ligas activas, como
+    # un visitante cualquiera.
+    if user.is_authenticated and (user.es_super_admin() or user.role == user.ROLE_ADMIN_LIGA):
         return ligas_administradas(user)
     return Liga.objects.filter(activa=True)
 
@@ -55,7 +66,7 @@ def ligas_administradas(user):
     """Queryset of Liga this user may manage: all for superuser, own for admin liga, none otherwise."""
     from apps.torneos.models import Liga
 
-    if user.is_superuser or user.role == user.ROLE_SUPERADMIN:
+    if user.es_super_admin():
         return Liga.objects.all()
     if user.role == user.ROLE_ADMIN_LIGA:
         return user.ligas_administradas.all()

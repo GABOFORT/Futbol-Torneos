@@ -117,9 +117,12 @@ Usuario (AbstractUser)
 Liga ──M2M── Usuario(role=adminliga)
   ├─ fecha_pago + dias_gracia        (ciclo de cobranza mensual)
   ├─ activa                          (visibilidad pública)
+  ├─ logo                            (o las iniciales, si no hay)
+  ├─ portada                         (fondo de las pantallas de esta liga)
   │
   ├─ Categoria      [unique: liga + nombre]
   │     ├─ limite_edad  U5 … U17     (se cuenta por año de nacimiento)
+  │     │                            (+1 año para mujeres: U17 admite una de 18)
   │     ├─ cupo_equipos
   │     └─ inscripcion_abierta
   │
@@ -130,6 +133,7 @@ Liga ──M2M── Usuario(role=adminliga)
         ├─ entrenador → Usuario  [PROTECT]
         ├─ formacion
         └─ Jugador               [CASCADE]
+              ├─ sexo: masculino | femenino   (define su límite de edad)
               └─ [unique parcial: equipo + numero, si numero no es NULL]
 
 Partido
@@ -140,11 +144,19 @@ Partido
   ├─ sede + sede_original                  (para detectar cambio de cancha)
   ├─ goles_local / goles_visitante
   ├─ ganador_penales + penales_local / penales_visitante
+  ├─ no_se_presento → Equipo        (ganado por default: el rival se lleva 3-0)
   └─ estado: programado | reprogramado | finalizado | cancelado
         │
         └─ Actuacion   [unique: partido + jugador]
-              └─ goles, goles_en_contra, asistencias
+              └─ goles, goles_en_contra, goles_de_penal, asistencias
 ```
+
+> **`goles_de_penal` va dentro de `goles`, no aparte.** Un penal convertido
+> durante el juego es un gol como cualquier otro: suma al marcador, a la tabla de
+> goleo y a la bota de oro. El campo existe solo para poder decirlo en la ficha.
+> No confundirlo con `Partido.penales_local` / `penales_visitante`, que son la
+> **tanda que desempata**: esos no son goles, no crean ninguna `Actuacion`, y solo
+> definen el punto extra en el regular o quién pasa en la liguilla.
 
 ### Decisiones de diseño acertadas
 
@@ -232,6 +244,10 @@ PÚBLICO (sin cuenta)
 | Bota de oro y trofeo de asistencias son individuales, sin importar el equipo | `palmares._mejores_jugadores` |
 | El guante de oro es del equipo con menos goles recibidos | `palmares._mejores_vallas` |
 | Los empates se premian compartidos, en los tres premios | idem |
+| Al eliminar una liga se van también **las cuentas de sus entrenadores** | `eliminar.entrenadores_sin_equipo_tras_borrar` |
+| Un entrenador que además dirige en otra liga **se conserva** | idem (se mira lo que le queda, no lo que se va) |
+| Un entrenador recién dado de alta, sin equipo todavía, no se toca | idem |
+| El **Administrador de Liga no se borra** con su liga: es la cuenta del cliente y tiene su propia cuota | decisión de negocio, 06/08/2026 |
 | Una liga concluida no cuenta contra `limite_ligas` | `usuarios/views.py::liga_create` |
 | Una liga concluida no se puede borrar antes de 30 días | `usuarios/views.py::liga_delete` |
 | Corregir la final recalcula el palmarés; corregir una semi lo elimina | `palmares.cerrar` / `palmares.reabrir` |
@@ -246,8 +262,19 @@ PÚBLICO (sin cuenta)
 | Los goles cargados deben cuadrar con el marcador | `actuaciones.errores` |
 | No hay más asistencias que goles | idem |
 | Gol en contra suma al marcador del rival, no a la tabla de goleo | `Partido._asignados` |
+| Un gol de penal del juego cuenta como gol normal (marcador, goleo, bota de oro) | `Actuacion.goles_de_penal` |
+| Un penal no lleva asistencia: asistencias ≤ goles − goles de penal | `actuaciones.errores` |
+| Un gol en contra no puede ser de penal | `actuaciones.leer` + `actuaciones.js` |
+| Si un equipo no se presenta, el rival gana **3-0** (fijo, igual en toda liga) | `Partido.MARCADOR_DEFAULT` · `ResultadoForm.clean` |
+| Un partido ganado por default no lleva goleadores ni asistencias | `partidos/views.py::partido_resultado` |
+| El 3-0 por default cuenta normal en la tabla, y como valla invicta para el que sí llegó | `tabla.calcular`, `porteros.calcular` (sin cambios: es un 3-0 real) |
+| El equipo ausente no recibe sanción extra: solo pierde | decisión de negocio, 05/08/2026 |
 | La liguilla no cuenta para la tabla ni para porterías | `tabla.calcular`, `porteros.calcular` |
-| Un jugador no entra si supera el límite de edad de la categoría | `JugadorForm.clean` |
+| Un jugador no entra si supera el límite de edad de la categoría | `Categoria.acepta` + `JugadorForm.clean` |
+| **Las mujeres entran con un año más que la categoría** (U17 admite una de 18, U15 una de 16) | `Categoria.ANIOS_EXTRA_FEMENINO` |
+| La tolerancia es de **un solo año** y es igual en todas las ligas | idem (constante, no campo configurable) |
+| Todas las categorías son mixtas: no hay rama varonil ni femenil | decisión de negocio, 06/08/2026 |
+| Ante la duda se aplica el límite estricto, el de los varones | `Categoria.edad_maxima_para` |
 | El dorsal no se repite dentro del equipo | `JugadorForm.clean_numero` + constraint |
 | No se carga resultado de un partido que no empezó | `partidos/views.py::partido_resultado` |
 | No se reprograma un partido que ya tiene resultado | `partidos/views.py::partido_edit` |
@@ -310,37 +337,73 @@ El dashboard avisa cuando faltan 7 días o menos.
 
 ## 6. Estado real de la base de datos
 
-Inventario de solo lectura ejecutado el 03/08/2026.
+Inventario **reconstruido el 06/08/2026**. Ese día pasaron dos cosas que cambian por
+completo la foto anterior:
+
+1. El superadmin **eliminó Liga Premier Villahermosa y Cachirules** desde la pantalla
+   de ligas. Villahermosa era la única liga real en producción.
+2. Las cinco ligas restantes se **regeneraron con datos de demostración coherentes**
+   (ver la bitácora del 06/08 y `crear_datos_demo`).
+
+Hoy **no queda ninguna liga real cargada**: las cinco que hay son de demostración.
 
 ### Volumen
 
-| Tabla | Registros |
-|---|---:|
-| Usuario | 204 |
-| Liga | 7 |
-| Categoria | 13 |
-| Sede | 2 |
-| Equipo | 202 |
-| Jugador | 2 832 |
-| Partido | 225 |
-| Actuacion | 746 |
+| Tabla | 03/08 | 06/08 |
+|---|---:|---:|
+| Usuario | 204 | **408** |
+| Liga | 7 | **5** |
+| Categoria | 13 | **20** |
+| Sede | 2 | **87** |
+| Equipo | 202 | **211** |
+| Jugador | 2 832 | **3 478** |
+| Partido | 225 | **1 388** |
+| Actuacion | 746 | **6 167** |
+| Palmares | — | **8** |
 
-**Usuarios por rol:** 1 superadmin · 6 admin liga · 197 entrenadores
-
-**Partidos por estado:** 178 finalizados · 46 programados · 1 reprogramado
-**Partidos por fase:** 217 regular · 4 cuartos · 2 semifinal · 1 tercer lugar · 1 final
+**Usuarios por rol:** 2 superadmin · 6 admin liga · 400 entrenadores
+(de esos, **197 son cuentas huérfanas** de las ligas borradas antes de que el borrado
+arrastrara a sus entrenadores; se limpian con `manage.py limpiar_entrenadores`)
 
 ### Ligas cargadas
 
-| Liga | Categorías | Equipos | Sedes | Partidos |
-|---|---:|---:|---:|---:|
-| **Liga Premier Villahermosa** (real) | 2 | 14 | 0 | 46 |
-| La Liga | 2 | 38 | 2 | 179 |
-| Liga MX | 2 | 40 | 0 | 0 |
-| Premier League | 2 | 32 | 0 | 0 |
-| Serie A | 2 | 34 | 0 | 0 |
-| Bundesliga | 2 | 44 | 0 | 0 |
-| Cachirules | 1 | 0 | 0 | 0 |
+Todas son de demostración. Los clubes y los estadios son reales; las personas no.
+
+| Liga | Categorías | Equipos | Sedes | Partidos | Estado |
+|---|---:|---:|---:|---:|---|
+| Bundesliga | 4 | 47 | 20 | 333 | 1 categoría concluida, 3 en juego |
+| Liga MX | 3 | 31 | 15 | 164 | 1 concluida, 2 en juego |
+| Premier League | 5 | 59 | 20 | 419 | 1 concluida, 4 en juego |
+| Serie A | 2 | 17 | 12 | 109 | **concluida** · 30 días en vitrina |
+| La Liga | 6 | 57 | 20 | 363 | 3 concluidas, 3 en juego |
+
+**Cupos de 3 a 20 equipos**, quince tamaños distintos y siete categorías con cupo impar
+(donde un equipo descansa cada jornada). Los planteles van de 13 a 20 jugadores.
+
+**Ninguna liga tiene `fecha_pago` cargada**, así que hoy ninguna está vencida y el
+bloqueo por cobranza nunca se disparó en la práctica.
+
+### Palmarés grabados
+
+Ocho categorías concluidas, con el podio y los premios congelados:
+
+| Liga / Categoría | Campeón | Bota de oro | Guante de oro |
+|---|---|---|---|
+| Bundesliga / Sub-11 | Bayern München | Theo Braun (12) | 1. FC Nürnberg / B… (23) |
+| Liga MX / Sub-13 | Pumas UNAM | Daniel Reyes Ramírez (11) | Puebla (15) |
+| Premier League / Sub-9 | Newcastle United | Jack Walker, del Fulham (15) | Newcastle United (29) |
+| Serie A / Sub-15 | Cagliari | Martina Russo, del Juventus (10) | Atalanta (13) |
+| Serie A / Sub-17 | Milan | Marco Gallo (3) | Milan (3) |
+| La Liga / Sub-7 | Real Madrid | Sergio Martínez Martín (11) | Mallorca (25) |
+| La Liga / Sub-9 | Atlético de Madrid | Hugo Martín Fernández (12) | Valencia (12) |
+| La Liga / Sub-15 | Barcelona | Álvaro Ruiz García (6) | Barcelona / Real S… (4) |
+
+Confirman con datos las reglas que el sistema declara: **la bota de oro es individual y
+no del campeón** (la ganan jugadores de Fulham y Juventus en categorías que ganaron
+Newcastle y Cagliari), **los empates se premian compartidos** (dos guantes de oro con
+`/`), y **el cierre en cadena funciona**: Serie A cerró sola al terminar sus dos
+categorías, y las otras cuatro ligas siguen abiertas porque les quedan categorías en
+juego.
 
 ### Verificación de integridad — todo limpio
 
@@ -353,22 +416,79 @@ Inventario de solo lectura ejecutado el 03/08/2026.
 | Jugadores fuera del límite de edad de su categoría | 0 ✅ |
 | `ganador_penales` cargado sin empate en el marcador | 0 ✅ |
 | Jugadores sin fecha de nacimiento | 0 ✅ |
+| `goles_de_penal` mayor que `goles` en una actuación | 0 ✅ |
+| Partidos por default con goleadores cargados | 0 ✅ |
 
-**No hay un solo dato corrupto.** Las validaciones del sistema están funcionando de
-verdad, no solo declaradas.
+**Sigue sin haber un solo dato corrupto**, ya con los campos nuevos (`goles_de_penal`,
+`no_se_presento`) en uso.
+
+### Escenarios cargados
+
+Los datos de demostración cubren a propósito todos los caminos del sistema, para que
+ninguna pantalla quede sin ejercitar:
+
+| Escenario | Cantidad |
+|---|---:|
+| Partidos ganados por default (3-0, sin goleadores) | 37 |
+| Tandas de penales | 69 |
+| — de ellas, **finales definidas desde el punto penal** | 3 |
+| — el resto, empates del regular con **+1 punto** | 66 |
+| Goles de penal dentro del juego | 649 |
+| Goles en contra | 86 |
+| Partidos reprogramados (`fecha` ≠ `fecha_original`) | 128 |
+| Cambios de cancha (`sede` ≠ `sede_original`) | 71 |
+| Jugadoras mujeres | 716 |
+| — de ellas, usando el **año extra de tolerancia** | 398 |
+| Jugadores lesionados / sancionados / de baja | 166 / 99 / 65 |
+
+**Los tres tamaños de cuadro de liguilla quedan cargados**, que era imposible con un
+cupo único:
+
+| Equipos en la categoría | Cuadro | Ejemplo |
+|---|---|---|
+| 8 o más | cuartos de final | Premier League / Sub-9 (20 equipos) |
+| 4 a 7 | semifinales | La Liga / Sub-15 (5 equipos) |
+| 2 o 3 | final directa | Serie A / Sub-17 (3 equipos) |
 
 ### Observaciones sobre los datos
 
-- **223 de 225 partidos no tienen sede asignada.** Solo hay 2 canchas dadas de alta, y
-  ninguna en la liga real. Toda la función de mapas (Leaflet, alta de sede desde el pin,
-  `url_como_llegar`) está construida pero sin uso.
-- **46 partidos "programados" sin fecha** — es el estado normal recién generado el
-  calendario, pero impacta en la portada (ver hallazgo #6).
-- **185 de 204 usuarios nunca iniciaron sesión.** Las 197 cuentas de entrenador se
-  crearon en lote (existe el CSV) y casi ninguna se usó todavía.
-- **La única liguilla completa (con campeón) está en La Liga → Segunda División**, que es
-  liga de prueba. La liga real va por la jornada 1-4.
-- **236 sesiones acumuladas** en `django_session`. Nunca se corrió `clearsessions`.
+- **12 partidos sin sede**: son las semifinales que el sistema creó solo al cerrarse los
+  cuartos, y que todavía esperan fecha y cancha. Es el estado correcto —el propio mensaje
+  dice *"Solo falta ponerles fecha y cancha"*—, no un dato faltante.
+- **Los partidos por jugarse sí tienen fecha**, así que la portada ya no muestra partidos
+  sin fecha. El hallazgo #6 sigue abierto igual: la consulta no excluye los nulos ni
+  filtra por liga activa, solo que hoy no hay nulos que lo delaten.
+- **197 cuentas de entrenador huérfanas**, de las ligas eliminadas antes del arreglo del
+  06/08. No se borran solas: ver `manage.py limpiar_entrenadores`.
+- **Rendimiento medido sobre las 21 pantallas públicas** con `RequestFactory`: todas
+  responden 200 y **el peor caso son 27 consultas**. La tabla de goleo, que llegó a hacer
+  1 822, quedó en 8 (ver #12). Las pantallas nuevas —canchas, calendario mensual y
+  vitrina— resuelven con **1 consulta** cada una, y los gráficos con 3.
+- **Sesiones acumuladas** en `django_session`. Nunca se corrió `clearsessions`.
+
+### Estado de los hallazgos al 06/08/2026
+
+Reverificado contra el código, no contra el documento:
+
+| # | Hallazgo | Estado |
+|:-:|---|---|
+| 1 | `DEBUG=True` apuntando a la base real | **abierto** — `settings.py` ya usa `default=False`, pero el `.env` local dice `DEBUG=True` y apunta a `SISTEMA-FUTBOL` |
+| 2 | Credenciales reales como default en `settings.py` | **abierto** — líneas 104-106 sin cambios |
+| 3 | Faltan settings de seguridad | **abierto** — `check --deploy` devuelve 5 warnings (W004, W008, W012, W016, W018) |
+| 4 | `credenciales-entrenadores.csv` en disco | **abierto** — sigue ahí, 13 KB |
+| 5 | Plantillas de menores sin acotar por `ligas_visibles` | **abierto** — `jugador_list` sigue con `get_object_or_404(Equipo, pk=...)` |
+| 6 | Portada muestra partidos sin fecha | ✅ **resuelto 06/08** — la portada se rehizo sobre `portada.py`, que filtra `fecha__gte=ahora` y acota todo a `Liga.activa=True` |
+| 7 | Rehacer rondas de liguilla | ✅ resuelto 03/08 |
+| 8 | `superadmin` sin `is_superuser` bloqueado | ✅ resuelto 05/08 |
+| 9 | Fuga de visibilidad entre ligas | **parcial** — `estadisticas_liga_categorias` resuelto; siguen abiertos `tabla_posiciones`, `liguilla_categoria` y `equipo_detail` |
+| 10 | El bloqueo por pago no alcanza a entrenadores | **abierto** |
+| 11 | El ranking cuenta los partidos de liguilla | ✅ **resuelto 06/08** — `jugados` filtra `fase=FASE_REGULAR`, igual que `tabla.py` y `porteros.py` |
+| 12 | N+1 en goleo y asistencias | ✅ **resuelto 06/08** — los equipos por categoría se precalculan en una consulta: de **1 822 a 8** consultas, de 1,2 s a 0,5 s |
+| 13 | Sin paginación | **abierto** |
+| 15 | Faltan índices compuestos | **abierto** — ningún modelo declara `indexes` |
+| 16 | Cero tests | **abierto** — sigue sin existir un solo archivo de test |
+| 18 | `.pyc` versionados | **abierto** |
+| 19 | `LANGUAGE_CODE`/`TIME_ZONE` duplicados | **abierto** — líneas 136-138 y 160-161 |
 
 ---
 
@@ -510,7 +630,7 @@ esperando a la siguiente cuenta.
 
 Estas vistas usan `get_object_or_404(...)` sin acotar por `ligas_visibles`:
 
-- `estadisticas/views.py::estadisticas_liga_categorias` (línea 21)
+- ~~`estadisticas/views.py::estadisticas_liga_categorias`~~ ✅ **RESUELTO 05/08/2026**
 - `estadisticas/views.py::tabla_posiciones` (línea 27)
 - `estadisticas/views.py::liguilla_categoria` (línea 132)
 - `equipos/views.py::equipo_detail` (línea 160)
@@ -589,6 +709,19 @@ el template es difícil.
 Las razones para usar CSS plano en vez de Tailwind están bien documentadas y son válidas
 (`:has()`, superponer el dorsal sobre la camiseta, la flecha propia de los `<select>`).
 Pero eso justifica un `static/css/componentes.css`, no meterlo dentro del template.
+
+> **Se empezó a desarmar (06/08/2026).** El CSS de la portada, la barra y el pie
+> se escribió en `static/css/portada.css`, fuera del template. Es el primer
+> pedazo que sale del bloque `<style>`, y el criterio para lo que venga: cada
+> componente con su prefijo, en su archivo, cacheable aparte.
+>
+> **Ya costó un bug visible (06/08/2026).** En un bloque de 2 000 líneas, dos
+> componentes distintos —el podio de la vitrina y el banner del campeón de la
+> liguilla— terminaron declarando las mismas clases `.podio-*` a mil líneas de
+> distancia, y se pisaban: el nombre del equipo salía sin centrar y la copa del
+> campeón se veía más chica que la del subcampeón. Encima, uno de los dos bloques
+> llevaba tiempo sin usarse y nadie lo notó. Partir el CSS por componente hace que
+> este tipo de colisión salte a la vista en vez de esconderse.
 
 #### 18. Archivos `.pyc` versionados
 
@@ -843,6 +976,34 @@ Si resolvió un hallazgo, citar su número.
 
 | Fecha | Tipo | Cambio | Secciones actualizadas |
 |---|---|---|---|
+| 07/08/2026 | Modelo + Diseño | **Portada por liga: cada liga se ve con su propia identidad.** Campo `portada` en `Liga` (migración `torneos.0011`) que el Admin de Liga carga al crear o editar su liga, y que se pinta de fondo en **todas las pantallas de esa liga**, para todos —también para el público—, en lugar del gris `bg-gray-100` del sistema. **El problema de fondo no era la imagen sino saber de qué liga es cada pantalla:** no existe una "liga actual". Estadísticas manda `liga`, la tabla de posiciones manda `categoria`, el perfil de equipo manda `equipo` y la ficha manda `partido` — en tres de esas cuatro no hay ninguna variable llamada `liga`. Se resolvió con el template tag **`apps/torneos/templatetags/liga_actual.py`**, que recorre esos caminos en orden. **La regla es la misma para los tres roles** —visitante, Admin de Liga y Administrador General—: lo único que decide es de qué liga es la pantalla, nunca quién la mira. Hubo una regla de último recurso *("si el que entró tiene una sola liga, usa su portada")* pensada para darle fondo al tablero, y **se quitó el mismo día**: en la práctica le pegaba la portada del admin a **todas** las pantallas —inicio, buscador, canchas, vitrina, listado de equipos— que no son de ninguna liga en particular. El tablero queda gris. **Se descartó el context processor**, que era lo primero que parecía: solo recibe el `request` y no ve lo que la vista puso en el contexto, que es justo de donde sale la liga. También se descartó agregar `liga` al contexto de las ~20 vistas: una que se olvide se queda sin fondo y nada lo avisa. **La imagen nunca se muestra limpia**: capa fija propia (`.fondo-liga`), desenfoque de 3 px y velo blanco en degradado (0.93 arriba y abajo, 0.84 al medio). Sin velo, una portada oscura deja ilegible un sistema entero armado sobre fondo claro con tarjetas blancas — y el admin no se enteraría hasta que alguien se lo dijera. El desenfoque se apaga por debajo de 48rem (cuesta caro en un celular de gama baja y la imagen ya viene muy escalada) y la capa entera se oculta al imprimir. El gris pasó al `<html>` porque un `z-index: -1` no se ve si el `<body>` tiene fondo opaco. **Tope de reducción propio**: `TOPE_PANTALLA_PX = 1920` en `imagenes.py`, porque con los 512 px del resto de las imágenes una portada a pantalla completa se vería pixelada y parecería culpa de la imagen subida. **Verificado en 14 pantallas**: aparece en estadísticas de liga, tabla, liguilla, detalle de equipo y ficha de partido; **no** aparece en la portada del sitio, el buscador, el mapa de canchas, la vitrina, el listado de ligas ni en las categorías de otra liga — las que mezclan ligas o no son de ninguna se quedan en gris a propósito, porque elegir "la primera que aparezca" sería arbitrario. Nueva carpeta `portadas-ligas/` en `MEDIA_ROOT`, al lado de `logos-ligas/`; se borró `equipos/`, que estaba vacía y ningún modelo usaba | §3, §7 |
+| 07/08/2026 | Fix | **`achicar_imagen` reventaba si el archivo ya no estaba en disco.** `getattr(campo, 'file', None)` sobre un `FieldFile` cuyo archivo fue borrado lanza `FileNotFoundError`, y eso tumbaba el `save()` entero: no se podía ni corregir el nombre de una liga hasta volver a subirle la imagen. Afectaba también a escudos y fotos de jugadores, y el escenario es realista porque `MEDIA_ROOT` es configurable — si apunta a otra carpeta, todas las imágenes quedan "perdidas" a la vez. Se envolvió en un `try/except` con el mismo criterio que el `except` que ya tenía la función para archivos corruptos: un problema con el archivo no debe impedir guardar el registro. Apareció al probar la portada de liga | §7 |
+| 06/08/2026 | Diseño + Negocio | **Once correcciones sobre la cara pública, pedidas mirando la pantalla.** (1) **Las tarjetas de "Partidos de hoy" quedaban desparejas**: un nombre de dos renglones —*Wolverhampton Wanderers*— empujaba la fila de chips hacia abajo solo en esa tarjeta. La tarjeta pasa a ser una columna flex con los chips anclados al fondo. (2) **Escudo en la plantilla**, que arrancaba con un texto suelto. (3) y (6) **Los filtros eran solo para administradores**: en el calendario `partido_list` los armaba dentro de un `if puede_gestionar`, y en equipos la plantilla los escondía con `puede_filtrar`. El visitante —el que más los necesita, porque entra a buscar a su equipo entre doce categorías— no tenía ninguno. Ahora son para todos, acotados por `ligas_visibles`. (4) **"Jugador del momento", rehecho**: mostraba un número y la palabra *participaciones*, que no dice si fueron goles o pases. Ahora lleva escudo, dorsal, tres cifras separadas y **su mejor partido concreto** —*"2 goles y 2 asistencias ante Wolverhampton"*— que enlaza a esa ficha. (5) **El emoji 🏆 pasa a ser la copa real**, la misma imagen de la vitrina. (8) **"Torneos en juego" sube arriba de los partidos.** (9) **Los rankings muestran 5 y no 10**: con diez, las tres columnas empujaban el resto fuera de pantalla. (10) **El buscador dejó de cambiar de tamaño**: se ensanchaba al enfocarlo y movía la barra entera justo cuando alguien iba a escribir. (11) **Seguir equipos**, abajo | §7 |
+| 06/08/2026 | Diseño | **La barra pasa a dos niveles.** En una sola fila entraban siete secciones, el buscador y el bloque de sesión, todo apretado. Ahora: arriba identidad, buscador y sesión sobre el verde oscuro; abajo la navegación sobre el verde de marca, con la sección activa subrayada en amarillo y los desplegables con una línea de descripción por opción. Es fija al hacer scroll —en un calendario de un mes, volver arriba para cambiar de sección era un scroll entero— y en el celular sigue siendo una fila con menú lateral. El borde inferior transparente en cada enlace reserva el lugar del subrayado para que el texto no salte 3 px al pasar el mouse | §7 |
+| 06/08/2026 | Negocio + Diseño | **Seguir equipos, guardado en el navegador.** El visitante no tiene cuenta, así que el sistema no puede saber cuál es "su" equipo. Una estrella en la tarjeta y en la página del club lo guarda en **su propio dispositivo** con `localStorage`, y la portada abre con **"Tus equipos"** y sus próximos partidos. **No se guarda nada en el servidor y no se pide ningún dato** — en un sitio con información de menores eso es una ventaja, no una limitación. El HTML de la sección **lo arma el servidor**, no el JavaScript: el navegador manda los ids a `/mis-equipos/` y recibe el fragmento ya dibujado, así el estilo, el formato de fechas y el filtro por ligas públicas quedan en un solo lugar. Los ids vienen del cliente y **no son de fiar**: se filtran a números, se topan en 20 y se consultan acotados a las ligas públicas — probado con `abc`, `1;drop`, ids inexistentes y una lista de cien. Se descartó la cuenta de aficionado: abrir registro público en un sistema con datos de menores es una decisión de negocio y legal, no de diseño. De paso, **la página del equipo suma "Próximos partidos" y "Últimos resultados"**: estaban solo dentro del perfil en modal, que hay que saber que existe para abrirlo | §4, §7 |
+| 06/08/2026 | Diseño | **SEO, accesibilidad y estados de carga.** Las páginas tenían `<title>` y nada más: **sin descripción ni Open Graph**, compartir el enlace de un partido por WhatsApp mostraba una dirección pelada. Ahora cada pantalla declara su descripción, y la ficha de partido comparte el cruce, el torneo y el marcador — *"Hertha BSC vs Eintracht Frankfurt · Bundesliga · Sub-11 · Cuartos · Final 2-4"*. Se agregaron `canonical` y `theme-color`. **Accesibilidad**: enlace de salto al contenido para quien navega con teclado, foco visible en la barra, `aria-pressed` en las estrellas, `aria-expanded` en el menú del celular, `aria-haspopup` en los desplegables, áreas de toque de 44 px y respeto por `prefers-reduced-motion`. **El modal ya no se queda mudo** mientras trae la ficha: muestra un indicador y, si falla la red, un mensaje en vez de girar para siempre | §7 |
+| 06/08/2026 | Fix + Diseño | **La ficha de partido salía sin diseño al abrirla por enlace.** `partido_detalle.html` era un **fragmento** —empezaba en `<div class="ficha-modal">`, sin `<html>`, sin barra ni hoja de estilos— porque siempre se había abierto dentro del modal del calendario. Las pantallas nuevas la enlazaban con un `<a href>` normal, así que el navegador mostraba el HTML crudo. Se partió en dos siguiendo la convención que el proyecto ya usa en jugadores, categorías y equipos: **`_ficha_partido.html`** es el fragmento y **`partido_detalle.html`** la página completa que lo envuelve; la vista devuelve uno u otro según `?modal=1`, que se agregó a los cinco `data-url` que la abren en modal. La página suma migas de pan, atajos al pie (tabla, las dos plantillas, cómo llegar) e incluye el modal, para que los botones internos —perfil de equipo, otra ficha— sigan funcionando. **Ahora el enlace de un partido se puede compartir.** `resultado_form.html` tenía el mismo defecto y recibió el mismo tratamiento | §7 |
+| 06/08/2026 | Fix | **El desplegable de la barra no abría: ninguno de los dos.** Tailwind v4 genera `.group-hover\:block:is(:where(.group):hover *)`, y `:where()` **pesa cero**, así que ese selector vale lo mismo que una clase suelta — igual que `.nav-menu`. Empatados en especificidad gana el que va después, y `portada.css` se carga después de `tailwind.css`: mi `display: none` ganaba siempre. Al mover el estilo de la barra a mi archivo rompí ese equilibrio sin verlo. Consecuencia real: desde la computadora **no se llegaba a goleadores, asistencias, porterías ni gráficos**. Abrir y cerrar pasa a resolverse en `portada.css`, al lado del `display: none` que lo controla y sin depender de Tailwind, con `:hover` y `:focus-within` —ahora también abre con el teclado, que antes tampoco andaba—, un puente invisible para que el hueco entre botón y menú no corte el hover, y la flecha que gira al desplegarse. **Y se corrigió el método de verificación**: la prueba de humo solo miraba que la página respondiera 200, y una página responde perfecto con el menú roto. Ahora se recorren todos los enlaces de la barra y del pie y se pide cada uno: 27 enlaces, 0 rotos | §7 |
+| 06/08/2026 | Fix | **Rota una convención del proyecto sin darme cuenta, y repuesta.** `.vscode/settings.json` dice, textual: *"Nada de apagar validaciones: las plantillas no llevan etiquetas de Django dentro de atributos `style`… los anchos de las barras van con clases (`.ancho-45`)"*. Las pantallas nuevas —y las del 05/08— habían vuelto al `style="width: {{ x }}%"`, que es exactamente lo que el editor marca como error de CSS. Corregidos **los 9 casos** (portada, panorama de liga y gráficos) y también los `style` estáticos que quedaban. El helper `_a_paso` estaba escondido dentro de `perfil.py`: se movió a **`apps/usuarios/barras.py`**, junto al resto de las utilidades transversales, con `a_paso()` y un `reparto()` nuevo que le da el sobrante del redondeo al tramo más grande para que una barra partida en tres sume 100 exacto. Se agregaron las clases **`.alto-N`** —no existían— para las barras verticales. Aparte: el comentario que puse en `base.html` contenía la etiqueta de estilos escrita con sus signos, y el editor la tomaba como apertura real **aunque estuviera dentro de un comentario de Django**, parseando el resto del archivo como CSS; ése era el error de la línea 10 | §7 |
+| 06/08/2026 | Diseño | **Gráficos del torneo** (`/estadisticas/graficos/`): goles por jornada, equipos más ofensivos, equipos menos goleados y cómo terminan los partidos (local / empate / visitante), con filtro por categoría. Nuevo `apps/estadisticas/graficos.py`, **3 consultas**. Se agrega en una sola pasada sobre los partidos y **no con `annotate` sobre relaciones**: los goles de un equipo viven en dos columnas según juegue de local o de visitante, y unir las dos relaciones multiplica las filas — el mismo error que ya había aparecido en las vallas de la portada. **Las barras son CSS**, sin librería: meter una de cientos de KB por cuatro gráficos de barras no se paga, y las alturas se calculan en Python porque el template de Django no sabe dividir. Los porcentajes del reparto se calculan dejando el último como el resto: redondear los tres por separado daba 101 y desbordaba la barra. Solo entran equipos con 4 partidos o más —con dos, cualquiera encabeza— y solo torneo regular, igual que la tabla | §7 |
+| 06/08/2026 | Fix | **El goleo pasó de 1 822 consultas a 8.** `_partidos_del_equipo` ejecutaba un `Equipo.objects.count()` por cada renglón de la tabla, solo para dividir y mostrar el promedio; ahora los equipos por categoría se precalculan en una consulta, como ya se hacía con los partidos jugados (**resuelve #12**). De paso, `jugados` pasa a filtrar `fase=FASE_REGULAR` igual que `tabla.py` y `porteros.py`: los partidos de liguilla inflaban el divisor y todos los promedios de gol salían más bajos de lo real (**resuelve #11**). La tabla completa bajó de 1,2 s a 0,5 s | §7 · **resuelve #11 y #12** |
+| 06/08/2026 | Diseño | **Tres pantallas públicas nuevas: buscador, canchas y calendario mensual.** (1) **Buscador** (`/buscar/`), una sola caja que encuentra jugadores, equipos, torneos y canchas a la vez — quien busca no sabe en qué tabla está lo que quiere. Insensible a acentos por el `unaccent` que ya usaba `filtros.buscar`, así que *garcía* y *garcia* dan lo mismo. Acotado por `ligas_visibles` y resuelto en 4 consultas. **No busca árbitros**: no hay modelo ni campo, y ofrecer un filtro que nunca devuelve nada es peor que no tenerlo. (2) **Canchas** (`/sedes/`): las 87 sedes con coordenadas en un mapa Leaflet, 1 consulta. El módulo de mapas estaba construido desde julio para elegir la cancha de un partido, pero **no existía ninguna pantalla que las mostrara juntas**: quien viene a ver dónde juega su hijo no tenía a dónde ir. Los datos de cada pin se leen del listado que ya está en la página, así que con el JS apagado la lista sigue sirviendo con su enlace a Google Maps. Leaflet se carga solo en esa pantalla. (3) **Calendario mensual** (`/partidos/calendario/`): responde la pregunta que hace quien no administra nada —*qué se juega este sábado*— mezclando todas las categorías, mientras que el listado por jornadas sigue sirviendo para seguir una sola. Grilla de siete columnas en escritorio; en el celular los días vacíos se ocultan y queda una lista. El mes llega por la URL y **no se confía en él**: un mes 13 o un año de cinco cifras caen al mes actual en vez de reventar. Las tres quedaron enlazadas en la barra y en el pie | §7 |
+| 06/08/2026 | Diseño + Negocio | **La cara pública del sitio: portada, barra y pie.** El sistema estaba armado para quien administra; quien entra sin cuenta —los padres, que son la mayoría del tráfico— encontraba una portada con tres listas sueltas y una barra llena de pantallas de gestión. Ahora: **franja de marcadores** arriba de todo con lo que se juega hoy (el elemento que hace que un sitio se lea como sitio deportivo; se tomó de ESPN, que el cliente puso de referencia), **hero** con el partido destacado y cuenta regresiva, **cuatro cifras** vivas, **partidos de hoy** con hora, cancha y categoría, **jugador del momento**, **últimos resultados**, los **tres rankings** (goleo, asistencias, vallas), **torneos en juego** con barra de avance y **últimos campeones**. Todo en `apps/torneos/portada.py`, **31 consultas fijas**. El partido destacado no lo marca nadie: es el cruce de los dos equipos mejor ubicados entre los que se vienen. **La barra se partió en dos**: arriba solo lo público (Inicio · Partidos · Tablas · Equipos · Palmarés · Información) y la gestión —Categorías, Jugadores, Roles— se fue al tablero, que es donde el admin y el entrenador ya la tenían con contexto. **El pie de página existía como plantilla y nadie lo incluía**: el sitio se venía mostrando sin pie desde siempre; ahora son cuatro columnas con navegación, reglamento, aviso de privacidad y la nota sobre datos de menores. **Nada se inventó**: se descartaron noticias, tarjetas, Fair Play, árbitros, marcadores en vivo, clima, comentarios e inscripción en línea porque no hay datos que los sostengan | §7 (#6, #17) |
+| 06/08/2026 | Diseño | **Escudos generados para los 211 equipos, que no tienen ninguno cargado.** `Equipo.escudo_url` devolvía la misma imagen gris para todos: el calendario y las tablas quedaban llenos de manchas idénticas. Nuevo `apps/usuarios/monograma.py`: las iniciales del club sobre un color propio, como **SVG en una `data:` URI**. Entra donde ya había un `<img src>`, así que **las trece pantallas que muestran un escudo no se tocaron**; escala sin pixelarse de los 28 px de la llave a los 80 px del detalle; y no hay archivos que guardar ni borrar. El color sale de un `md5` del nombre y no de `hash()`, que cambia en cada arranque de Python: el mismo club tiene siempre el mismo color. Veinte colores y no doce por el problema del palomar — una categoría llega a 20 equipos. `Liga.iniciales` pasa a usar el mismo criterio, para que una liga y un club no se abrevien con reglas distintas | §7 |
+| 06/08/2026 | Diseño | **La vitrina, rediseñada: de tres copas flotando a una premiación.** Arreglada la colisión de clases, la pantalla quedaba correcta pero plana — la información estaba bien y no se veía como nada. Cambios: (1) **pedestales numerados** bajo cada copa, con altura y color de metal propios (oro 5rem, plata 3.5rem, bronce 2.5rem); es lo que convierte tres imágenes sueltas en un podio, porque la jerarquía se lee por altura antes que por texto; (2) un **escenario** con la luz cayendo desde arriba al centro (degradado radial) y una línea de piso donde los tres pedestales apoyan; (3) **resplandor dorado** solo en la copa del campeón, que lo distingue sin agrandar tipografías; (4) los **premios pasan de icono suelto a tarjeta**, en rejilla que se acomoda sola, cada una con la franja de su color, la **cifra como dato principal** y los ganadores separados —importa cuando un premio tiene tres empatados y el de al lado uno solo—; (5) franja de medalla arriba de cada temporada, fecha de cierre como sello ámbar y *"Ver la tabla final"* como pastilla en vez de enlace suelto. Verificado sobre los 8 palmarés: 23 pedestales, y el de 2 lugares (Serie A / Sub-17) sale con 1 y 2, sin bronce | §7 (#17) |
+| 06/08/2026 | Fix + Diseño | **El podio de la vitrina se veía chueco: dos componentes compartían el nombre de las clases.** La vitrina y el banner del campeón del cuadro de liguilla usaban los dos `.podio`, `.podio-copa` y `.podio-equipo`, y el CSS de uno se colaba en el otro. Consecuencias, todas visibles en pantalla: **el nombre del equipo salía pegado a la izquierda** (la liguilla convertía `.podio-equipo` en un flex con `justify-content: flex-start`), **la copa del campeón quedaba más chica que las de plata y bronce** —`.podio-primero .podio-copa` le ganaba **por especificidad**, dos clases contra una, a la altura que ponía la liguilla— los nombres quedaban a distinta altura porque el `align-items` de la liguilla pisaba al de la vitrina, y de fondo aparecía el recuadro verde con degradado del banner. El podio de la vitrina pasa a `vitrina-podio-*`: columnas del mismo ancho apoyadas en una línea de piso común, copa del campeón por encima de las otras dos, nombre centrado y con `overflow-wrap` para los nombres largos, y un corte adaptativo a 40rem. Al revisarlo apareció que **el bloque `.podio-*` de la liguilla era CSS muerto**: ese banner había pasado a `bracket-campeon-*` y nadie lo usaba desde entonces — 50 líneas eliminadas. Verificado contra los 8 palmarés cargados, incluido el de 2 lugares (Serie A / Sub-17, que no tiene tercer puesto porque con 3 equipos la liguilla es solo la final) | §7 (#17) |
+| 06/08/2026 | Datos | **Las cinco ligas de demostración, rehechas con datos coherentes.** Nuevo comando `manage.py crear_datos_demo` (con `--resumen` para ver qué haría y `--borrar` para deshacer). Antes eran 2 categorías idénticas por liga llamadas *Primera/Segunda División* —que no es una categoría de edad— con equipos de nombre combinatorio (*Independiente* + animal) y una Serie A Primera **U7 con 255 jugadores**. Ahora: **20 categorías** con la nomenclatura real del formativo (Sub-7 a Sub-17), **clubes reales** de cada liga y **87 estadios con coordenadas verificadas** contra Wikipedia/latitude.to, y nombres de persona verosímiles del país de cada liga. **No se usan identidades de menores reales**: son datos de prueba en una base de producción que publica su propio aviso de privacidad. **Cupos de 3 a 20 equipos** (quince tamaños, siete impares) y planteles de 13 a 20: con un cupo único, dos tercios de `liguilla.py` no se ejecutaban nunca — ahora quedan cargados los tres cuadros (cuartos, semifinales y final directa). El comando **no fabrica filas a mano**: el calendario lo arma `calendario.armar_jornadas`, la liguilla la arma y la avanza `liguilla.iniciar`/`avanzar` y el palmarés lo graba `palmares.cerrar_si_termino`, así que si alguna de esas reglas se rompe el comando falla. Verificado: 0 fallas en las nueve comprobaciones de integridad y 200 en las 16 pantallas principales | §6 |
+| 06/08/2026 | Negocio + Permisos | **Al eliminar una liga se van sus entrenadores.** Antes quedaban vivos y sin equipos: así se juntaron 197 cuentas fantasma. Nueva `eliminar.entrenadores_sin_equipo_tras_borrar(equipos)`, que decide **por lo que le queda al entrenador y no por lo que se va**: quien además dirige en otra liga se conserva —y borrarlo habría reventado igual, porque `Equipo.entrenador` es PROTECT— y quien fue dado de alta y todavía no tiene equipo no se toca. La pantalla de confirmación ahora lista *"N cuenta(s) de entrenador"* junto con lo demás que se arrastra. **El Administrador de Liga no se borra**: es la cuenta del cliente, tiene su propia cuota y puede crear otra liga. Para las 197 que ya estaban sueltas: `manage.py limpiar_entrenadores` (lista sin borrar; borra solo con `--confirmar`) | §4 |
+| 06/08/2026 | Negocio + Modelo + Diseño | **Las mujeres entran con un año más que la categoría.** En U17 juega una jugadora de 18, en U15 una de 16; un solo año, no dos. Campo `sexo` en `Jugador` (migración `jugadores.0006`) y constante `Categoria.ANIOS_EXTRA_FEMENINO = 1` — va como constante y no como campo configurable por el mismo motivo que `MARCADOR_DEFAULT`: es reglamento, no preferencia de liga. `edad_maxima_para(sexo)`, `nacimiento_minimo_para(sexo)` y `acepta(fecha, sexo)` reemplazan a las versiones de un solo límite, así que **la regla sigue escrita una sola vez** y todas las pantallas la heredan. El campo de sexo va **arriba** de la fecha de nacimiento porque la condiciona, y `sexo-edad.js` corre el tope del selector al cambiarlo: los dos topes viajan en `data-min-masculino` / `data-min-femenino` calculados por el servidor, el JS solo elige cuál aplica. El `clean` revalida igual, porque un POST armado a mano ignora cualquier tope de la página. **El error nombra los dos límites** y, cuando la fecha entraría marcando Femenino, lo dice — sin eso el mensaje hablaba de la fecha y el problema estaba en el campo de al lado, tanto al cargar una jugadora como al corregirle el sexo a una ya cargada. Se muestra en la plantilla (columna con pastilla y el límite en el tooltip), en el encabezado del equipo, en la tarjeta de categoría —que anunciaba un solo límite y contradecía a la validación— y en el alta de categoría. **Backfill:** los 2 832 jugadores existentes quedaron en masculino, que es el límite estricto; se revisó antes que la liga real tuviera 12 jugadores y el resto fueran ligas de prueba. Verificado: 0 jugadores fuera de su límite con la regla nueva. De paso, `_radios.html` pasó de `grid-cols-3` a flex: con 2 opciones dejaba una celda vacía que se leía como un campo a medio cargar | §3, §4 |
+| 06/08/2026 | Documentación | **Reverificación completa** del código y de la base (solo lectura). Se actualizó el inventario de §6 con los números de hoy (241 partidos, 776 actuaciones, 2 palmarés, 2 superadmin), se agregaron los palmarés grabados y la tabla de **estado de cada hallazgo**, comprobada contra el código y no contra este documento. Sin cambios de negocio. Hallazgos nuevos: 14 partidos finalizados con goles y sin actuaciones (carga por simulación, no por pantalla) y ninguna liga con `fecha_pago`, así que el bloqueo por cobranza nunca se ejercitó | §6 |
+| 05/08/2026 | Diseño | **Listado de ligas con datos.** Cada fila decía solo *"2 categoría(s)"* y todas se veían iguales. Ahora es una rejilla de tarjetas con el **estado de la liga**, un **anillo de avance del calendario** (SVG inline, el recorte del trazo se calcula en `resumen._anillo` porque el template no puede multiplicar y meter JS por un número fijo sería pagarlo caro), y cuatro cifras: equipos/cupo, jugadores, partidos jugados y goles con promedio. Al pie, **los campeones** si la temporada terminó, o **qué falta hacer** si no arrancó. `resumen.panorama()` resuelve **las 7 ligas en 8 consultas fijas**: agrupa por liga en una pasada en vez de llamar a `panel()` en un bucle, que habría pasado de cien | §7 |
+| 05/08/2026 | Diseño + Permisos | **Panorama de la liga en Estadísticas.** La pantalla era una lista de nombres de categorías que no decía nada. Ahora abre con cuatro cifras (equipos/cupo, jugadores, partidos jugados con barra de avance, goles y promedio) y una tarjeta por categoría con **líder, goleador, estado del torneo y progreso por jornada**. Nuevo módulo `apps/estadisticas/resumen.py` (`panel()` y `tarjetas()`): el líder sale de `tabla.calcular()` y no de un `annotate` propio, para no reescribir la regla de los puntos. Los vacíos dicen **qué falta hacer** ("Cierra la inscripción para poder generar el calendario") en vez de "sin datos". Cuesta 15 consultas en la liga más grande. De paso, `estadisticas_liga_categorias` pasa a acotarse por `ligas_visibles` — **resuelve parcialmente el hallazgo #9**: antes se llegaba a cualquier liga escribiendo su id en la URL | §7 · **resuelve parte de #9** |
+| 05/08/2026 | Permisos + Modelo + Diseño | **Alta de un Administrador General.** Cinco arreglos: (1) `Usuario.save()` sincroniza el rol con los flags de Django — un Administrador General queda con `is_superuser`/`is_staff` en `True` por cualquier vía (pantalla, admin, shell); (2) `_role_test` pasa a preguntar por `es_super_admin()` en vez de `is_superuser` — **resuelve el hallazgo #8**: un `role='superadmin'` sin el flag quedaba bloqueado en ligas, categorías y partidos; (3) `ligas_visibles` usa el mismo criterio, igualándose a `ligas_administradas`; (4) el campo **`limite_ligas` desaparece** salvo para el Administrador de Liga (`static/js/roles.js` lo oculta y `CuotaSegunRolMixin.clean` lo descarta también en el servidor, porque esconder un campo no impide mandarlo por POST); (5) `usuario_create` graba `creado_por`. Verificado en la base: 0 cuentas quedaron en el estado roto | §4, §5 · **resuelve #8** |
+| 05/08/2026 | Diseño | **Logo de la liga en la vitrina.** La tarjeta de cada temporada concluida encabeza con el logo (o las iniciales si no tiene). Sale de `registro.categoria.liga`, que ya venía en el `select_related`, y solo mientras la liga exista: el palmarés guarda nombres y no claves foráneas justamente para sobrevivir a su borrado, así que el nombre se sigue tomando del registro congelado | §13 |
+| 05/08/2026 | Diseño | La fila de goles pasó de `grid` a `flex`: al sumarle el campo "de penal" quedó con un control más que la de asistencias y la **✕ de quitar se caía al renglón de abajo**. Ahora la ✕ va siempre pegada a la derecha (`margin-left:auto`) en las dos secciones. Además el tope de penales se muestra al lado del campo (*"de 3"*) y en su tooltip: antes recortaba el número en silencio y parecía un límite del partido, cuando **el límite es por goleador** | §13 |
+| 05/08/2026 | Fix + Diseño | **El desplegable "¿Alguno no se presentó?" trababa la página.** Dos causas: `default.js` creaba y borraba el nodo del aviso, lo que despertaba al observador del DOM en cada cambio; y `default.js` y `penales.js` se peleaban por el mismo `hidden` (con el marcador oculto en 0-0, penales.js lo leía como empate y volvía a mostrar la tanda). Se resolvió sacando el aviso a la plantilla —el JS ya no muta la lista de nodos— y coordinando los dos scripts con `window.hayEquipoAusente()` / `window.revisarPenales()`. Además el desplegable pasa a ocupar la fila completa: su texto de ayuda empujaba la grilla y dejaba los dos marcadores en renglones distintos. Quitado el icono ⚠ de la pastilla "Por default" | §13 |
+| 05/08/2026 | Negocio + Modelo + Diseño | **Partido ganado por default.** Campo `no_se_presento` en `Partido` (migración `partidos.0015`) que guarda *qué* equipo faltó, no un sí/no: con el equipo se sabe también quién ganó y la ficha puede nombrarlo. Constante `MARCADOR_DEFAULT = 3`, fija para todas las ligas. El formulario de resultado pregunta primero si alguno no se presentó y, al elegirlo, **esconde el marcador y las secciones de goleadores** — no hay nada que cargar — y muestra quién gana. El 3-0 lo pone el servidor e ignora cualquier marcador que venga. Aviso ámbar en la ficha (*"Ganó por default · X no se presentó"*) y pastilla "Por default" en la tarjeta del calendario. **`tabla.py` y `porteros.py` no se tocaron**: es un 3-0 real, así que cuenta normal en la tabla y como valla invicta para el que sí llegó. El ausente no recibe sanción extra | §3, §4 |
+| 05/08/2026 | Negocio + Modelo + Diseño | **Goles de penal en la ficha del partido.** Campo `goles_de_penal` en `Actuacion` (migración `partidos.0014`), campo numérico por fila en el formulario de resultado, y etiqueta *"de penal"* en la crónica. Va **dentro** de `goles`: no cambia el marcador, la tabla de goleo ni la bota de oro. Se decidió **no** registrar el minuto del gol (no se consulta) ni distinguir penales en la tabla de goleo. Validaciones nuevas: penales ≤ goles de la fila, un gol en contra no puede ser de penal, y asistencias ≤ goles − penales | §3, §4 |
 | 03/08/2026 | Diseño | Trofeos en la plantilla del equipo; escala de tamaños (18/28/44 px); premios de la vitrina centrados y adaptables; contraste corregido en los botones Ida/Vuelta; bloque de felicitación alineado | §13 |
 | 03/08/2026 | Negocio | Los premios individuales (bota de oro, trofeo de asistencias) también se muestran **en el escudo del club** del premiado, con su nombre en el tooltip | §13 |
 | 03/08/2026 | Diseño | **Felicitación al entrenador** en su tablero cuando su equipo sube al podio, con los trofeos del club y los individuales de sus jugadores | §13 |

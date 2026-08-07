@@ -13,7 +13,8 @@
             {% csrf_token %}
             {{ form.non_field_errors }}
             {% for field in form %}
-                <div>
+                {# data-campo permite que el JS oculte o muestre un campo segun otro, igual que en el modal. #}
+                <div data-campo="{{ field.name }}">
                     <label class="block text-sm font-medium text-gray-700">{{ field.label }}</label>
                     {{ field }}
                     {% if field.help_text %}

@@ -110,7 +110,7 @@ ningun lado del sistema (ver el docstring de apps/equipos/perfil.py).
                         partido sin abrir una ventana encima de la otra.
                         {% endcomment %}
                         <li class="perfil-juego open-modal {% if fila.jugado %}perfil-juego-{{ fila.signo }}{% endif %}"
-                            data-url="{% url 'partido-detalle' fila.partido_id %}"
+                            data-url="{% url 'partido-detalle' fila.partido_id %}?modal=1"
                             role="button" tabindex="0"
                             aria-label="Ver la ficha del partido contra {{ fila.rival.nombre }}">
 

@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Buscar{% endblock %}
+
+{% block descripcion %}Encontrá un jugador, un equipo, un torneo o una cancha.{% endblock %}
+{% block og_titulo %}Buscar · BUHO Sports League{% endblock %}
+{% block og_descripcion %}Encontrá un jugador, un equipo, un torneo o una cancha.{% endblock %}
+
+{% comment %}
+El buscador del sitio.
+
+Una sola caja para las cuatro cosas que alguien puede estar buscando: un
+jugador, un equipo, un torneo o una cancha. Los resultados se agrupan por tipo
+porque el mismo texto puede coincidir con varios ("Real" es equipo y parte de
+varios apellidos).
+
+No busca árbitros: el sistema no los registra.
+{% endcomment %}
+
+{% block contenido %}
+<div class="buscador-cabecera">
+    <div class="ancho-pagina">
+        <h1 class="buscador-titulo">Buscar</h1>
+        <form method="get" action="{% url 'buscar' %}" class="buscador-caja" role="search">
+            <input type="search" name="q" value="{{ termino }}" autofocus
+                   placeholder="Jugador, equipo, torneo o cancha…"
+                   aria-label="Qué buscar" class="buscador-campo">
+            <button type="submit" class="buscador-boton">Buscar</button>
+        </form>
+        {% if termino and not hay_termino %}
+            <p class="buscador-aviso">Escribí al menos {{ minimo }} letras.</p>
+        {% elif hay_termino %}
+            <p class="buscador-aviso">
+                {{ resultados.total }} resultado{{ resultados.total|pluralize:"s" }} para «{{ termino }}»
+            </p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="ancho-pagina">
+    {% if hay_termino and not resultados.total %}
+        <div class="vacio">
+            <p class="vacio-titulo">No encontramos nada con «{{ termino }}»</p>
+            <p class="vacio-texto">
+                Probá con el apellido del jugador, el nombre del club o el de la cancha.
+                También podés mirar el <a href="{% url 'equipo-list' %}">listado de equipos</a>
+                o el <a href="{% url 'partido-list' %}">calendario</a>.
+            </p>
+        </div>
+    {% elif not termino %}
+        <div class="vacio">
+            <p class="vacio-titulo">¿Qué estás buscando?</p>
+            <p class="vacio-texto">
+                Escribí un nombre y te mostramos jugadores, equipos, torneos y canchas
+                que coincidan. No hace falta poner los acentos.
+            </p>
+        </div>
+    {% endif %}
+
+    {% if resultados.equipos %}
+        <section class="grupo">
+            <h2 class="grupo-titulo">Equipos</h2>
+            <div class="grupo-lista">
+                {% for equipo in resultados.equipos %}
+                    <a href="{% url 'equipo-detail' equipo.pk %}" class="hallazgo">
+                        <img src="{{ equipo.escudo_url }}" alt="" class="hallazgo-escudo">
+                        <div class="hallazgo-datos">
+                            <p class="hallazgo-nombre">{{ equipo.nombre }}</p>
+                            <p class="hallazgo-detalle">{{ equipo.liga.nombre }} · {{ equipo.categoria.nombre }}</p>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+
+    {% if resultados.jugadores %}
+        <section class="grupo">
+            <h2 class="grupo-titulo">Jugadores</h2>
+            <div class="grupo-lista">
+                {% for jugador in resultados.jugadores %}
+                    <a href="{% url 'jugador-list' jugador.equipo.pk %}" class="hallazgo">
+                        <img src="{{ jugador.equipo.escudo_url }}" alt="" class="hallazgo-escudo">
+                        <div class="hallazgo-datos">
+                            <p class="hallazgo-nombre">
+                                {{ jugador.nombre }} {{ jugador.apellido }}
+                                {% if jugador.numero %}<span class="hallazgo-dorsal">{{ jugador.numero }}</span>{% endif %}
+                            </p>
+                            <p class="hallazgo-detalle">{{ jugador.equipo.nombre }} · {{ jugador.equipo.categoria.nombre }}</p>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+
+    {% if resultados.torneos %}
+        <section class="grupo">
+            <h2 class="grupo-titulo">Torneos</h2>
+            <div class="grupo-lista">
+                {% for categoria in resultados.torneos %}
+                    <a href="{% url 'estadisticas-categoria' categoria.pk %}" class="hallazgo">
+                        {% include 'usuarios/_logo_liga.html' with liga=categoria.liga clase='logo-liga-sm' %}
+                        <div class="hallazgo-datos">
+                            <p class="hallazgo-nombre">{{ categoria.nombre }}</p>
+                            <p class="hallazgo-detalle">
+                                {{ categoria.liga.nombre }}
+                                {% if categoria.limite_edad %} · {{ categoria.limite_edad }}{% endif %}
+                                {% if categoria.cerrada %} · concluida{% endif %}
+                            </p>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+
+    {% if resultados.sedes %}
+        <section class="grupo">
+            <h2 class="grupo-titulo">Canchas</h2>
+            <div class="grupo-lista">
+                {% for sede in resultados.sedes %}
+                    <a href="{{ sede.url_como_llegar }}" target="_blank" rel="noopener" class="hallazgo">
+                        <div class="hallazgo-datos">
+                            <p class="hallazgo-nombre">{{ sede.nombre }}</p>
+                            <p class="hallazgo-detalle">
+                                {{ sede.liga.nombre }}
+                                {% if sede.direccion %} · {{ sede.direccion }}{% endif %}
+                            </p>
+                        </div>
+                        <span class="hallazgo-ir">Cómo llegar →</span>
+                    </a>
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+</div>
+{% endblock %}

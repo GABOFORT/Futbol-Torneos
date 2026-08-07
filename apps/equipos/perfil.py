@@ -25,6 +25,7 @@ from django.db.models import Q, Sum
 from apps.estadisticas import porteros, tabla
 from apps.partidos import ficha
 from apps.partidos.models import Actuacion, Partido
+from apps.usuarios.barras import a_paso
 
 CUANTAS_FIGURAS = 3
 CUANTOS_DE_RACHA = 5
@@ -152,7 +153,7 @@ def _distribucion(posiciones, equipo_id):
         {'clave': 'pp', 'etiqueta': 'Perdidos', 'cantidad': fila['pp']},
     ]
     for tramo in tramos:
-        tramo['ancho'] = _a_paso(tramo['cantidad'] * 100 / total)
+        tramo['ancho'] = a_paso(tramo['cantidad'] * 100 / total)
 
     sobrante = 100 - sum(t['ancho'] for t in tramos)
     if sobrante:
@@ -160,15 +161,6 @@ def _distribucion(posiciones, equipo_id):
         mayor['ancho'] += sobrante
 
     return {'tramos': [t for t in tramos if t['cantidad']], 'total': total}
-
-
-# Las clases .ancho-N de base.html van de 5 en 5: son 21 clases en vez de 101, y
-# la diferencia con el valor exacto no se nota en una barra.
-PASO_ANCHO = 5
-
-
-def _a_paso(valor):
-    return round(valor / PASO_ANCHO) * PASO_ANCHO
 
 
 # --------------------------------------------------------------------------
@@ -206,7 +198,7 @@ def radar(equipo, posiciones):
             # El puntaje exacto es el que se muestra como numero; este otro es el
             # que dibuja la barra, redondeado al paso de las clases .ancho-N. La
             # diferencia no llega a 3 puntos y no se percibe.
-            'ancho': _a_paso(puntaje),
+            'ancho': a_paso(puntaje),
         })
 
     return {

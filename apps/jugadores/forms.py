@@ -7,18 +7,26 @@ from apps.usuarios.forms import StyledFormMixin
 from .models import Jugador
 
 
+def _dia(fecha):
+    return fecha.strftime('%d/%m/%Y')
+
+
 class JugadorForm(StyledFormMixin, forms.ModelForm):
     CAMPOS_OBLIGATORIOS = ('fecha_nacimiento',)
     CAMPOS_CAPITALIZAR = ('nombre', 'apellido')
 
     class Meta:
         model = Jugador
-        fields = ['foto', 'nombre', 'apellido', 'fecha_nacimiento', 'posicion', 'numero', 'estado', 'observaciones']
+        # El sexo va antes de la fecha de nacimiento a proposito: es lo que
+        # define el limite de edad, asi que primero se dice quien es y recien
+        # despues se elige la fecha, ya con el rango que le corresponde.
+        fields = ['foto', 'nombre', 'apellido', 'sexo', 'fecha_nacimiento', 'posicion', 'numero', 'estado', 'observaciones']
         labels = {
             'nombre': 'Nombre completo',
             'apellido': 'Apellido completo',
         }
         widgets = {
+            'sexo': forms.RadioSelect,
             'fecha_nacimiento': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
             'observaciones': forms.Textarea(attrs={'rows': 3}),
         }
@@ -33,16 +41,42 @@ class JugadorForm(StyledFormMixin, forms.ModelForm):
         # Nadie nacio manana.
         campo.widget.attrs['max'] = datetime.date.today().isoformat()
 
+        # El desplegable de sexo se marca para que el JS lo encuentre: al
+        # cambiarlo tiene que correr el tope del selector de fecha.
+        self.fields['sexo'].widget.attrs['data-sexo'] = '1'
+        self.fields['sexo'].help_text = ''   # la explicacion va en la fecha, que es donde se nota
+
         categoria = equipo.categoria if equipo else None
-        minimo = categoria.nacimiento_minimo if categoria else None
-        if minimo:
-            # Con min/max el propio selector de fecha deja fuera lo que no
-            # corresponde, en vez de aceptarlo y recien rebotarlo al guardar.
-            campo.widget.attrs['min'] = minimo.isoformat()
-            campo.help_text = (
-                f'{categoria.nombre} es {categoria.limite_edad}: solo entran jugadores '
-                f'nacidos desde el {minimo.strftime("%d/%m/%Y")}.'
-            )
+        if not categoria or not categoria.limite_edad:
+            return
+
+        # Los dos topes viajan con el campo. El limite depende del sexo, que se
+        # elige en este mismo formulario, asi que ya no alcanza con calcular uno
+        # solo al abrir: el JS alterna entre estos dos sin volver al servidor.
+        topes = {
+            valor: categoria.nacimiento_minimo_para(valor)
+            for valor, _ in Jugador.SEXO_CHOICES
+        }
+        for valor, minimo in topes.items():
+            campo.widget.attrs[f'data-min-{valor}'] = minimo.isoformat()
+
+        # Con min/max el propio selector de fecha deja fuera lo que no
+        # corresponde, en vez de aceptarlo y recien rebotarlo al guardar.
+        elegido = self.data.get('sexo') or self.initial.get('sexo') or self.instance.sexo
+        if elegido not in topes:
+            elegido = Jugador.SEXO_MASCULINO
+        campo.widget.attrs['min'] = topes[elegido].isoformat()
+
+        # El texto nombra los dos limites siempre, aunque el JS resalte el que
+        # aplica: quien carga la plantilla tiene que saber que la tolerancia
+        # existe antes de toparse con el error.
+        campo.help_text = (
+            f'{categoria.nombre} es {categoria.limite_edad}: hasta '
+            f'{categoria.edad_maxima} años en varones (nacidos desde el '
+            f'{_dia(topes[Jugador.SEXO_MASCULINO])}) y '
+            f'{categoria.edad_maxima_femenino} en mujeres (desde el '
+            f'{_dia(topes[Jugador.SEXO_FEMENINO])}).'
+        )
 
     def clean_numero(self):
         numero = self.cleaned_data.get('numero')
@@ -61,14 +95,36 @@ class JugadorForm(StyledFormMixin, forms.ModelForm):
         return numero
 
     def clean(self):
+        """Revalida la edad en el servidor.
+
+        El selector de fecha ya trae el tope puesto, pero esconder o ampliar un
+        campo en pantalla no impide mandar otra cosa por POST, y el JS puede
+        estar apagado. La regla que manda es esta.
+        """
         cleaned_data = super().clean()
         fecha_nacimiento = cleaned_data.get('fecha_nacimiento')
+        sexo = cleaned_data.get('sexo') or Jugador.SEXO_MASCULINO
         categoria = self.equipo.categoria if self.equipo else None
-        if fecha_nacimiento and categoria and not categoria.acepta(fecha_nacimiento):
-            self.add_error('fecha_nacimiento', (
-                f'La categoría {categoria.nombre} es {categoria.limite_edad}: solo entran '
-                f'jugadores de hasta {categoria.edad_maxima} años. Este cumple '
-                f'{categoria.edad_en_temporada(fecha_nacimiento)} en la temporada '
-                f'{categoria.anio_temporada}.'
-            ))
+
+        if not fecha_nacimiento or not categoria or categoria.acepta(fecha_nacimiento, sexo):
+            return cleaned_data
+
+        cumple = categoria.edad_en_temporada(fecha_nacimiento)
+        etiqueta = dict(Jugador.SEXO_CHOICES)[sexo]
+        mensaje = (
+            f'La categoría {categoria.nombre} es {categoria.limite_edad}: admite hasta '
+            f'{categoria.edad_maxima} años en varones y {categoria.edad_maxima_femenino} '
+            f'en mujeres. Marcaste {etiqueta} y cumple {cumple} '
+            f'en la temporada {categoria.anio_temporada}.'
+        )
+
+        # El caso que de otro modo se lee como una falla del sistema: la fecha
+        # entraria si estuviera bien marcado el sexo. Pasa al cargar una
+        # jugadora sin cambiar el sexo, y tambien al corregirle el sexo a una
+        # que ya estaba cargada. Sin esta linea el mensaje habla de la fecha y
+        # el problema esta en el campo de al lado.
+        if categoria.acepta(fecha_nacimiento, Jugador.SEXO_FEMENINO):
+            mensaje += ' Si es mujer, marcá Femenino: con ese límite sí entra.'
+
+        self.add_error('fecha_nacimiento', mensaje)
         return cleaned_data

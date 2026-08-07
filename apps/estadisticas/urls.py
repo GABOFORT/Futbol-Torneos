@@ -7,6 +7,7 @@ urlpatterns = [
     path('categoria/<int:categoria_id>/', views.tabla_posiciones, name='estadisticas-categoria'),
     path('categoria/<int:categoria_id>/liguilla/', views.liguilla_categoria, name='categoria-liguilla'),
     path('vitrina/', views.vitrina, name='vitrina'),
+    path('graficos/', views.pantalla_graficos, name='estadisticas-graficos'),
     path('porteros/', views.tabla_porteros, name='estadisticas-porteros'),
     path('goleo/', views.tabla_goleo, name='estadisticas-goleo'),
     path('asistencias/', views.tabla_asistencias, name='estadisticas-asistencias'),

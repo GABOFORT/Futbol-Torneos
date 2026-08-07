@@ -3,6 +3,7 @@ from . import views
 
 urlpatterns = [
     path('', views.partido_list, name='partido-list'),
+    path('calendario/', views.calendario_mes, name='partido-calendario'),
     path('<int:pk>/', views.partido_detalle, name='partido-detalle'),
     path('<int:pk>/editar/', views.partido_edit, name='partido-edit'),
     path('<int:pk>/resultado/', views.partido_resultado, name='partido-resultado'),
