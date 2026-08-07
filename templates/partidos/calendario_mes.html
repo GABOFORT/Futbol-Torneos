@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Calendario · {{ titulo_mes }}{% endblock %}
+
+{% block descripcion %}Todos los partidos del mes: hora, cancha y categoría. Sin registro.{% endblock %}
+{% block og_titulo %}Calendario de partidos · BUHO Sports League{% endblock %}
+{% block og_descripcion %}Todos los partidos del mes: hora, cancha y categoría. Sin registro.{% endblock %}
+
+{% comment %}
+El calendario en vista mensual.
+
+Responde a una pregunta distinta de la del listado por jornadas: aquél sirve
+para seguir una categoría, éste para saber **qué se juega este sábado**, que es
+lo que pregunta quien no administra nada.
+
+En el celular la grilla de siete columnas no entra, así que los días sin
+partidos se ocultan y queda una lista de los días que sí tienen. Es la misma
+información, ordenada de otra manera.
+{% endcomment %}
+
+{% block contenido %}
+<div class="ancho-pagina ancho-pagina-arriba">
+    <div class="mes-cabecera">
+        <div>
+            <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">Calendario</p>
+            <h1 class="mes-titulo">{{ titulo_mes }}</h1>
+            <p class="mes-total">
+                {{ total }} partido{{ total|pluralize:"s" }} programado{{ total|pluralize:"s" }}
+            </p>
+        </div>
+        <div class="mes-navegacion">
+            <a href="?mes={{ mes_anterior }}" class="mes-flecha" aria-label="Mes anterior">←</a>
+            {% if not es_mes_actual %}
+                <a href="{% url 'partido-calendario' %}" class="mes-hoy">Hoy</a>
+            {% endif %}
+            <a href="?mes={{ mes_siguiente }}" class="mes-flecha" aria-label="Mes siguiente">→</a>
+            <a href="{% url 'partido-list' %}" class="mes-jornadas">Por jornada</a>
+        </div>
+    </div>
+
+    <div class="mes-grilla">
+        {% for dia in dias %}
+            <div class="mes-encabezado">{{ dia }}</div>
+        {% endfor %}
+
+        {% for semana in semanas %}
+            {% for celda in semana %}
+                <div class="mes-dia
+                            {% if not celda.del_mes %}mes-dia-fuera{% endif %}
+                            {% if celda.es_hoy %}mes-dia-hoy{% endif %}
+                            {% if not celda.partidos %}mes-dia-vacio{% endif %}">
+                    <p class="mes-numero">
+                        {{ celda.dia }}
+                        {% if celda.partidos %}
+                            <span class="mes-cuenta">{{ celda.partidos|length }}</span>
+                        {% endif %}
+                    </p>
+                    {% for partido in celda.partidos %}
+                        <a href="{% url 'partido-detalle' partido.pk %}" class="mes-partido">
+                            <span class="mes-hora">{{ partido.fecha|date:'H:i' }}</span>
+                            <span class="mes-cruce">
+                                {{ partido.equipo_local.nombre }}
+                                {% if partido.jugado %}
+                                    <strong>{{ partido.goles_local }}-{{ partido.goles_visitante }}</strong>
+                                {% else %}vs{% endif %}
+                                {{ partido.equipo_visitante.nombre }}
+                            </span>
+                            <span class="mes-torneo">{{ partido.categoria.nombre }}</span>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        {% endfor %}
+    </div>
+
+    {% if not total %}
+        <div class="vacio vacio-separado">
+            <p class="vacio-titulo">No hay partidos programados en {{ titulo_mes }}</p>
+            <p class="vacio-texto">
+                Probá con <a href="?mes={{ mes_siguiente }}">el mes siguiente</a>
+                o mirá el <a href="{% url 'partido-list' %}">calendario por jornadas</a>.
+            </p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

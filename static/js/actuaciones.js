@@ -35,9 +35,10 @@
     fila.querySelectorAll('[name]').forEach(function (campo) {
       campo.name = campo.name.replace('__CAMPO__', seccion);
     });
-    // El "en contra" solo aplica a goles; en asistencias no tiene sentido.
-    var enContra = fila.querySelector('[data-solo-goles]');
-    if (enContra && seccion !== 'gol') enContra.remove();
+    // "En contra" y "de penal" solo aplican a goles; en asistencias no tienen sentido.
+    if (seccion !== 'gol') {
+      fila.querySelectorAll('[data-solo-goles]').forEach(function (nodo) { nodo.remove(); });
+    }
 
     contenedor.appendChild(fila);
     reindexar();
@@ -51,7 +52,51 @@
     filas.forEach(function (fila, indice) {
       var check = fila.querySelector('input[name="gol_en_contra"]');
       if (check) check.value = indice;
+      ajustarPenal(fila, check);
     });
+  }
+
+  // El campo "de penal" no puede pasarse de los goles de su fila, y no aplica a
+  // un gol en contra: al penal lo patea el rival.
+  //
+  // Se bloquea con readonly y no con disabled a proposito: un campo disabled no
+  // viaja en el POST, y el servidor empareja estas listas por indice, asi que
+  // faltando uno se le asignaria el penal a otro goleador.
+  function ajustarPenal(fila, check) {
+    var etiqueta = fila.querySelector('.campo-penal');
+    var penal = fila.querySelector('.penal-actuacion');
+    if (!etiqueta || !penal) return;
+
+    var cantidad = numero(fila.querySelector('.cantidad-actuacion'));
+    var enContra = !!(check && check.checked);
+    var tope = enContra ? 0 : Math.max(cantidad, 0);
+
+    if (penal.max !== String(tope)) penal.max = tope;
+    if (numero(penal) > tope) penal.value = tope;
+
+    // El tope se explica en el campo: antes recortaba el numero en silencio y
+    // parecia que el formulario no dejaba cargar mas de N penales en todo el
+    // partido, cuando el limite es por goleador. Para mas penales hay que subir
+    // los goles de esa fila, o agregar otra fila con otro goleador.
+    var ayuda = enContra
+      ? 'Un gol en contra no puede ser de penal: al penal lo patea el rival.'
+      : 'Cuántos de esos ' + cantidad + ' gol(es) fueron de penal. Máximo ' + tope +
+        '. Si necesitas más, súbele los goles a esta fila o agrega otro goleador.';
+    if (penal.title !== ayuda) penal.title = ayuda;
+
+    // "de 3" al lado del campo. Con un solo gol no se muestra: el tope es obvio
+    // y el renglon ya va cargado de controles.
+    var tapa = fila.querySelector('[data-penal-tope]');
+    if (tapa) {
+      var leyenda = (!enContra && cantidad > 1) ? 'de ' + tope : '';
+      if (tapa.textContent !== leyenda) tapa.textContent = leyenda;
+    }
+
+    etiqueta.classList.toggle('campo-penal-bloqueado', enContra);
+    penal.readOnly = enContra;
+    // Marca visual: el campo se resalta solo cuando hay un penal cargado, para
+    // que no compita con el resto de la fila cuando esta en cero.
+    etiqueta.toggleAttribute('data-activo', !enContra && numero(penal) > 0);
   }
 
   // El observador vigila el DOM y recalcular escribe en el DOM, asi que sin este

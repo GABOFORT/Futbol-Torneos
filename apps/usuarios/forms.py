@@ -57,7 +57,36 @@ class StyledFormMixin:
         return cleaned_data
 
 
-class UsuarioCreateForm(StyledFormMixin, forms.ModelForm):
+class CuotaSegunRolMixin:
+    """El límite de ligas solo existe para el Administrador de Liga.
+
+    Un Administrador General no tiene cuota (crea las que quiera) y un Entrenador
+    no crea ligas, así que el campo se esconde para esos dos roles y su valor se
+    descarta al guardar. El JS lo muestra y lo oculta al vuelo; el `clean` repite
+    la regla en el servidor, porque esconder un campo no impide mandarlo en el POST.
+    """
+
+    def _preparar_cuota(self):
+        cuota = self.fields['limite_ligas']
+        cuota.required = False
+        cuota.help_text = 'Cuántas ligas en curso puede tener a la vez.'
+        # static/js/roles.js usa estas marcas para mostrar u ocultar el campo.
+        cuota.widget.attrs['data-solo-rol'] = Usuario.ROLE_ADMIN_LIGA
+        self.fields['role'].widget.attrs['data-rol'] = '1'
+
+    def clean(self):
+        datos = super().clean()
+        if datos.get('role') != Usuario.ROLE_ADMIN_LIGA:
+            # Se guarda en cero en vez de dejar el default 1: así no queda una
+            # cuota fantasma en cuentas a las que no les aplica.
+            datos['limite_ligas'] = 0
+            self.errors.pop('limite_ligas', None)
+        elif not datos.get('limite_ligas'):
+            self.add_error('limite_ligas', 'Indica cuántas ligas puede crear este administrador.')
+        return datos
+
+
+class UsuarioCreateForm(CuotaSegunRolMixin, StyledFormMixin, forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput, label='Contraseña')
     CAMPOS_OBLIGATORIOS = ('first_name', 'last_name', 'phone')
 
@@ -75,11 +104,13 @@ class UsuarioCreateForm(StyledFormMixin, forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['limite_ligas'].help_text = 'Solo aplica para Administrador de Liga: cuántas ligas puede crear.'
+        self._preparar_cuota()
 
     def save(self, commit=True):
         usuario = super().save(commit=False)
+        usuario.limite_ligas = self.cleaned_data.get('limite_ligas') or 0
         usuario.set_password(self.cleaned_data['password'])
+        # is_superuser / is_staff los resuelve Usuario.save() segun el rol.
         if commit:
             usuario.save()
         return usuario
@@ -138,7 +169,7 @@ class EntrenadorUpdateForm(StyledFormMixin, forms.ModelForm):
         return usuario
 
 
-class UsuarioUpdateForm(StyledFormMixin, forms.ModelForm):
+class UsuarioUpdateForm(CuotaSegunRolMixin, StyledFormMixin, forms.ModelForm):
     password = forms.CharField(
         widget=forms.PasswordInput, label='Nueva contraseña', required=False,
         help_text='Déjalo vacío para no cambiar la contraseña actual.',
@@ -159,12 +190,15 @@ class UsuarioUpdateForm(StyledFormMixin, forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['limite_ligas'].help_text = 'Solo aplica para Administrador de Liga: cuántas ligas puede crear.'
+        self._preparar_cuota()
 
     def save(self, commit=True):
         usuario = super().save(commit=False)
+        usuario.limite_ligas = self.cleaned_data.get('limite_ligas') or 0
         if self.cleaned_data.get('password'):
             usuario.set_password(self.cleaned_data['password'])
+        # Cambiar el rol a Administrador General tambien enciende is_superuser:
+        # lo resuelve Usuario.save(), asi vale igual al crear que al editar.
         if commit:
             usuario.save()
         return usuario
@@ -178,7 +212,9 @@ class LigaForm(StyledFormMixin, forms.ModelForm):
 
     class Meta:
         model = Liga
-        fields = ['nombre', 'logo', 'descripcion', 'fecha_inicio', 'fecha_final', 'activa']
+        # `portada` va pegada a `logo`: son las dos imagenes de identidad de la
+        # liga y conviene que se carguen juntas, no en extremos del formulario.
+        fields = ['nombre', 'logo', 'portada', 'descripcion', 'fecha_inicio', 'fecha_final', 'activa']
         widgets = {
             'descripcion': forms.Textarea(attrs={'rows': 3}),
             'fecha_inicio': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),

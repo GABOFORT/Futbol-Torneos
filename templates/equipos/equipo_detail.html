@@ -22,6 +22,10 @@
                 {% include 'torneos/_trofeos.html' with trofeos=trofeos_equipo tam='xl' %}
             </div>
             <div class="flex shrink-0 flex-wrap items-center gap-2">
+                {# Guarda el equipo en el navegador para verlo en la portada. #}
+                <button type="button" class="estrella estrella-grande" data-seguir="{{ equipo.pk }}"
+                        data-nombre="{{ equipo.nombre }}" aria-pressed="false"
+                        aria-label="Seguir a {{ equipo.nombre }}">★ <span>Seguir</span></button>
                 {% if puede_editar %}
                     <a href="{% url 'equipo-edit' equipo.pk %}" class="inline-flex items-center justify-center rounded-full border border-green-200 bg-white px-5 py-2 text-sm font-semibold text-green-800 hover:bg-green-50">Editar equipo</a>
                 {% endif %}
@@ -91,6 +95,58 @@
                     {% endfor %}
                 </tbody>
             </table>
+        </div>
+
+        {% comment %}
+        Los partidos del equipo. Estaban solo dentro del perfil en modal, que hay
+        que saber que existe para abrirlo; acá los encuentra cualquiera.
+        {% endcomment %}
+        <div class="equipo-fechas">
+            <section>
+                <h2 class="seccion-titulo">Próximos partidos</h2>
+                {% if proximos %}
+                    <div class="resultados">
+                        {% for partido in proximos %}
+                            <a href="{% url 'partido-detalle' partido.pk %}" class="fecha-fila">
+                                <span class="fecha-cuando">{{ partido.fecha|date:'d/m H:i' }}</span>
+                                <span class="fecha-rival">
+                                    {% if partido.equipo_local_id == equipo.pk %}
+                                        vs {{ partido.equipo_visitante.nombre }}
+                                    {% else %}
+                                        en casa de {{ partido.equipo_local.nombre }}
+                                    {% endif %}
+                                </span>
+                                <span class="fecha-donde">
+                                    {{ partido.etiqueta_corta }}{% if partido.sede %} · {{ partido.sede.nombre }}{% endif %}
+                                </span>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="fecha-sin">Sin próximos partidos con fecha asignada.</p>
+                {% endif %}
+            </section>
+
+            <section>
+                <h2 class="seccion-titulo">Últimos resultados</h2>
+                {% if ultimos %}
+                    <div class="resultados">
+                        {% for partido in ultimos %}
+                            <a href="{% url 'partido-detalle' partido.pk %}" class="fecha-fila">
+                                <span class="fecha-cuando">{{ partido.fecha|date:'d/m' }}</span>
+                                <span class="fecha-rival">
+                                    {{ partido.equipo_local.nombre }}
+                                    <strong>{{ partido.goles_local }}-{{ partido.goles_visitante }}</strong>
+                                    {{ partido.equipo_visitante.nombre }}
+                                </span>
+                                <span class="fecha-donde">{{ partido.etiqueta_corta }}</span>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="fecha-sin">Todavía no jugó ningún partido.</p>
+                {% endif %}
+            </section>
         </div>
 
         <a href="{% url 'equipo-list' %}" class="mt-8 inline-flex items-center text-sm font-semibold text-green-700 hover:text-green-900">← Volver a equipos</a>

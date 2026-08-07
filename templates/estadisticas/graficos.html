@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Estadísticas{% endblock %}
+
+{% block descripcion %}Goles por jornada, equipos más ofensivos y menos goleados.{% endblock %}
+{% block og_titulo %}Estadísticas del torneo · BUHO Sports League{% endblock %}
+{% block og_descripcion %}Goles por jornada, equipos más ofensivos y menos goleados.{% endblock %}
+
+{% comment %}
+Los números del torneo en gráficos.
+
+Las barras son CSS, no una librería: el proyecto no tiene ninguna y meter una
+por cuatro gráficos de barras sería pagar cientos de KB por algo que es un ancho
+en porcentaje. Las alturas vienen calculadas de `graficos.py`, porque el
+template de Django no sabe dividir.
+{% endcomment %}
+
+{% block contenido %}
+<div class="ancho-pagina ancho-pagina-arriba">
+    <div class="graf-cabecera">
+        <div>
+            <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">Estadísticas</p>
+            <h1 class="mes-titulo">Los números del torneo</h1>
+            <p class="mes-total">
+                {% if categoria %}{{ categoria.liga.nombre }} · {{ categoria.nombre }}
+                {% else %}Todas las categorías{% endif %}
+                · solo torneo regular
+            </p>
+        </div>
+        <form method="get" class="graf-filtro">
+            <label for="categoria" class="graf-etiqueta">Categoría</label>
+            <select name="categoria" id="categoria" onchange="this.form.submit()">
+                <option value="">Todas</option>
+                {% for c in categorias %}
+                    <option value="{{ c.pk }}" {% if categoria and categoria.pk == c.pk %}selected{% endif %}>
+                        {{ c.liga.nombre }} · {{ c.nombre }}
+                    </option>
+                {% endfor %}
+            </select>
+            <noscript><button type="submit" class="mes-hoy">Ver</button></noscript>
+        </form>
+    </div>
+
+    {% if not datos.hay_datos %}
+        <div class="vacio">
+            <p class="vacio-titulo">Todavía no hay partidos jugados</p>
+            <p class="vacio-texto">
+                Los gráficos aparecen cuando se carga el primer resultado del torneo regular.
+            </p>
+        </div>
+    {% else %}
+        {% comment %} ---- Los tres numeros de arriba ---- {% endcomment %}
+        <div class="cifras cifras-sueltas">
+            <div class="cifra">
+                <span class="cifra-icono"></span>
+                <p class="cifra-numero">{{ datos.goles }}</p>
+                <p class="cifra-texto">Goles</p>
+            </div>
+            <div class="cifra">
+                <span class="cifra-icono"></span>
+                <p class="cifra-numero">{{ datos.partidos }}</p>
+                <p class="cifra-texto">Partidos jugados</p>
+            </div>
+            <div class="cifra">
+                <span class="cifra-icono"></span>
+                <p class="cifra-numero">{{ datos.promedio }}</p>
+                <p class="cifra-texto">Goles por partido</p>
+            </div>
+            <div class="cifra">
+                <span class="cifra-icono"></span>
+                <p class="cifra-numero">{{ datos.resultados.local.porcentaje }}%</p>
+                <p class="cifra-texto">Gana el local</p>
+            </div>
+        </div>
+
+        {% comment %} ---- Goles por jornada ---- {% endcomment %}
+        <section class="graf-caja">
+            <div class="graf-titulo-fila">
+                <h2 class="seccion-titulo">Goles por jornada</h2>
+                <span class="graf-nota">Total de goles de cada fecha</span>
+            </div>
+            <div class="graf-columnas">
+                {% for j in datos.por_jornada %}
+                    <div class="graf-columna" title="Jornada {{ j.jornada }}: {{ j.goles }} goles en {{ j.partidos }} partido{{ j.partidos|pluralize:'s' }} ({{ j.promedio }} por partido)">
+                        <span class="graf-valor">{{ j.goles }}</span>
+                        <div class="graf-barra-vertical alto-{{ j.altura }}"></div>
+                        <span class="graf-eje">{{ j.jornada }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+            <p class="graf-pie">Número de jornada</p>
+        </section>
+
+        {% comment %} ---- Ataque y defensa ---- {% endcomment %}
+        <div class="dos-columnas">
+            <section class="graf-caja">
+                <div class="graf-titulo-fila">
+                    <h2 class="seccion-titulo">Equipos más ofensivos</h2>
+                    <span class="graf-nota">Goles a favor por partido</span>
+                </div>
+                {% for fila in datos.ofensivos %}
+                    <div class="graf-fila">
+                        <span class="graf-nombre">{{ fila.equipo.nombre }}</span>
+                        <div class="graf-pista">
+                            <div class="graf-barra graf-barra-ataque ancho-{{ fila.altura }}"></div>
+                        </div>
+                        <span class="graf-cifra">{{ fila.promedio_gf }}</span>
+                    </div>
+                {% empty %}
+                    <p class="graf-nota">Ningún equipo llegó a {{ minimo }} partidos jugados.</p>
+                {% endfor %}
+            </section>
+
+            <section class="graf-caja">
+                <div class="graf-titulo-fila">
+                    <h2 class="seccion-titulo">Equipos menos goleados</h2>
+                    <span class="graf-nota">Goles en contra por partido</span>
+                </div>
+                {% for fila in datos.defensivos %}
+                    <div class="graf-fila">
+                        <span class="graf-nombre">{{ fila.equipo.nombre }}</span>
+                        <div class="graf-pista">
+                            <div class="graf-barra graf-barra-defensa ancho-{{ fila.altura }}"></div>
+                        </div>
+                        <span class="graf-cifra">{{ fila.promedio_gc }}</span>
+                    </div>
+                {% empty %}
+                    <p class="graf-nota">Ningún equipo llegó a {{ minimo }} partidos jugados.</p>
+                {% endfor %}
+            </section>
+        </div>
+
+        {% comment %} ---- Como terminan los partidos ---- {% endcomment %}
+        <section class="graf-caja">
+            <div class="graf-titulo-fila">
+                <h2 class="seccion-titulo">Cómo terminan los partidos</h2>
+                <span class="graf-nota">De los {{ datos.partidos }} jugados</span>
+            </div>
+            <div class="graf-reparto">
+                <div class="graf-tramo graf-tramo-local ancho-{{ datos.resultados.local.ancho }}">
+                    {{ datos.resultados.local.porcentaje }}%
+                </div>
+                <div class="graf-tramo graf-tramo-empate ancho-{{ datos.resultados.empate.ancho }}">
+                    {{ datos.resultados.empate.porcentaje }}%
+                </div>
+                <div class="graf-tramo graf-tramo-visita ancho-{{ datos.resultados.visitante.ancho }}">
+                    {{ datos.resultados.visitante.porcentaje }}%
+                </div>
+            </div>
+            <div class="graf-leyenda">
+                <span><i class="graf-punto graf-tramo-local"></i> Gana el local · {{ datos.resultados.local.cantidad }}</span>
+                <span><i class="graf-punto graf-tramo-empate"></i> Empate · {{ datos.resultados.empate.cantidad }}</span>
+                <span><i class="graf-punto graf-tramo-visita"></i> Gana el visitante · {{ datos.resultados.visitante.cantidad }}</span>
+            </div>
+        </section>
+
+        <p class="graf-aclaracion">
+            Los promedios toman solo a los equipos con {{ minimo }} partidos jugados o más:
+            con menos, cualquiera encabeza y la comparación no dice nada.
+            Los partidos de liguilla no entran, igual que en la tabla de posiciones.
+        </p>
+    {% endif %}
+</div>
+{% endblock %}

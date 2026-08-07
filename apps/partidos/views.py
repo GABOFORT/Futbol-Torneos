@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.db.models import Max, Q
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from apps.equipos.models import Equipo
@@ -11,7 +12,7 @@ from apps.torneos.models import Categoria, Sede
 from apps.usuarios.filtros import buscar, campo_texto, campo_opciones, campo_oculto
 from apps.usuarios.permissions import admin_liga_required, ligas_administradas, ligas_visibles
 
-from . import actuaciones, ficha, liguilla
+from . import actuaciones, ficha, liguilla, mes
 from .calendario import equipo_que_descansa
 from .forms import PartidoFechaForm, ResultadoForm, SedeForm
 from .models import Partido
@@ -23,6 +24,42 @@ CENTRO_POR_DEFECTO = ('17.989500', '-92.947500')
 # El valor de la pastilla que muestra la liguilla. No es un numero porque la
 # liguilla no es una jornada mas: son los cruces de eliminacion.
 VALOR_LIGUILLA = 'liguilla'
+
+
+def calendario_mes(request):
+    """El calendario en vista mensual, publico.
+
+    El listado por jornadas sirve para seguir una categoria; este sirve para la
+    otra pregunta, la que hace quien no administra nada: **que se juega este
+    sabado**. Por eso mezcla todas las categorias visibles y ordena por fecha.
+    """
+    hoy = timezone.localdate()
+    anio, numero = mes.leer_mes(request.GET.get('mes'), hoy)
+    desde, hasta = mes.limites(anio, numero)
+
+    partidos = (
+        Partido.objects
+        .filter(
+            categoria__liga__in=ligas_visibles(request.user),
+            # Se piden los dias del mes completos: `fecha` es un datetime, asi
+            # que acotar por `date` incluye las 23:59 del ultimo dia.
+            fecha__date__gte=desde,
+            fecha__date__lte=hasta,
+        )
+        .select_related('categoria', 'categoria__liga',
+                        'equipo_local', 'equipo_visitante', 'sede')
+        .order_by('fecha')
+    )
+
+    return render(request, 'partidos/calendario_mes.html', {
+        'titulo_mes': mes.nombre(anio, numero),
+        'semanas': mes.armar(anio, numero, partidos, hoy),
+        'dias': mes.DIAS,
+        'mes_anterior': mes.vecino(anio, numero, -1),
+        'mes_siguiente': mes.vecino(anio, numero, 1),
+        'total': len(partidos),
+        'es_mes_actual': (anio, numero) == (hoy.year, hoy.month),
+    })
 
 
 def partido_list(request):
@@ -67,17 +104,21 @@ def partido_list(request):
         'sede', 'sede_original',
     ).order_by('categoria__liga__nombre', 'categoria__nombre', 'fecha', 'id')
 
-    filtros = []
-    if puede_gestionar:
-        filtros = [
-            campo_texto('q', 'Buscar', termino, 'Equipo, categoría o liga'),
-            campo_opciones('liga', 'Liga', seleccion['liga'],
-                           opciones['ligas'].values_list('id', 'nombre'), vacio='Todas las ligas'),
-            campo_opciones('categoria', 'Categoría', seleccion['categoria'],
-                           opciones['categorias'].values_list('id', 'nombre'), vacio='Todas'),
-            campo_opciones('equipo', 'Equipo', seleccion['equipo'],
-                           opciones['equipos'].values_list('id', 'nombre'), vacio='Todos'),
-        ]
+    # Los filtros son para todos, no solo para quien administra. El visitante es
+    # justamente el que mas los necesita: entra a buscar el partido de SU equipo
+    # y sin ellos tiene que recorrer el calendario entero de doce categorias.
+    #
+    # Se acotan solos: `_cascada` los arma sobre `ligas_visibles`, asi que cada
+    # uno ve las opciones de lo que puede ver.
+    filtros = [
+        campo_texto('q', 'Buscar', termino, 'Equipo, categoría o liga'),
+        campo_opciones('liga', 'Liga', seleccion['liga'],
+                       opciones['ligas'].values_list('id', 'nombre'), vacio='Todas las ligas'),
+        campo_opciones('categoria', 'Categoría', seleccion['categoria'],
+                       opciones['categorias'].values_list('id', 'nombre'), vacio='Todas'),
+        campo_opciones('equipo', 'Equipo', seleccion['equipo'],
+                       opciones['equipos'].values_list('id', 'nombre'), vacio='Todos'),
+    ]
     # La jornada se elige con las pastillas, pero tiene que viajar con el resto.
     filtros.append(campo_oculto('jornada', jornada))
 
@@ -253,14 +294,22 @@ def partido_detalle(request, pk):
     partido = get_object_or_404(
         Partido.objects.filter(categoria__liga__in=ligas_visibles(request.user)).select_related(
             'categoria', 'categoria__liga', 'equipo_local', 'equipo_visitante',
-            'ganador_penales', 'sede', 'sede_original',
+            'ganador_penales', 'sede', 'sede_original', 'no_se_presento',
         ),
         pk=pk,
     )
-    return render(request, 'partidos/partido_detalle.html', {
-        'partido': partido,
-        **ficha.armar(partido),
-    })
+    # Con `?modal=1` se devuelve solo el fragmento, que es lo que el modal
+    # inyecta; sin el, la pagina completa con barra, estilos y pie. Es el mismo
+    # criterio que usan jugadores, categorias, equipos y usuarios.
+    #
+    # Antes esta vista devolvia siempre el fragmento, asi que entrar por un
+    # enlace normal —desde la portada o compartiendo la direccion— mostraba el
+    # HTML crudo, sin nada de diseño.
+    modal = request.GET.get('modal') == '1'
+    contexto = {'partido': partido, 'en_modal': modal, **ficha.armar(partido)}
+    if modal:
+        return render(request, 'partidos/_ficha_partido.html', contexto)
+    return render(request, 'partidos/partido_detalle.html', contexto)
 
 
 @admin_liga_required
@@ -354,16 +403,33 @@ def partido_resultado(request, pk):
         form = ResultadoForm(request.POST, instance=partido)
         filas = actuaciones.leer(request.POST, plantel)
         if form.is_valid():
-            problemas = actuaciones.errores(
-                filas, partido,
-                form.cleaned_data['goles_local'], form.cleaned_data['goles_visitante'],
-            )
+            # En un partido ganado por default no hubo goles que repartir: el
+            # marcador lo puso el sistema, asi que no hay nada que cuadrar.
+            por_default = form.cleaned_data.get('no_se_presento') is not None
+            if por_default:
+                filas = {}
+                problemas = []
+            else:
+                problemas = actuaciones.errores(
+                    filas, partido,
+                    form.cleaned_data['goles_local'], form.cleaned_data['goles_visitante'],
+                )
             if not problemas:
                 resultado = form.save(commit=False)
                 resultado.estado = Partido.ESTADO_FINALIZADO
                 resultado.save()
+                # Tambien corre con filas vacias: si se esta corrigiendo un
+                # partido que antes tenia goleadores y ahora es default, hay que
+                # borrar los que habian quedado.
                 actuaciones.guardar(resultado, filas)
-                messages.success(request, 'Resultado y goleadores registrados.')
+                if por_default:
+                    messages.success(
+                        request,
+                        f'{resultado.equipo_presentado} ganó por default '
+                        f'{Partido.MARCADOR_DEFAULT}-0: {resultado.no_se_presento} no se presentó.',
+                    )
+                else:
+                    messages.success(request, 'Resultado y goleadores registrados.')
                 # Si este resultado cerro una ronda de liguilla, la siguiente
                 # queda armada sola con los ganadores. Si fue una correccion que
                 # cambio quien paso, la ronda siguiente se rehace.
@@ -400,7 +466,7 @@ def partido_resultado(request, pk):
                     )
                 if modal:
                     return JsonResponse({'success': True})
-                return redirect('partido-list')
+                return redirect('partido-detalle', pk=resultado.pk)
     else:
         form = ResultadoForm(instance=partido)
         filas = {}
@@ -418,7 +484,12 @@ def partido_resultado(request, pk):
         'goleadores': _cargados(partido, filas, 'goles', 'goles_en_contra'),
         'asistentes': _cargados(partido, filas, 'asistencias'),
         'problemas': problemas,
+        'en_modal': modal,
     }
+    # Igual que la ficha: con `?modal=1` va el fragmento, sin el la pagina
+    # completa. Entrar por la direccion directa devolvia HTML crudo.
+    if modal:
+        return render(request, 'partidos/_resultado_form.html', context)
     return render(request, 'partidos/resultado_form.html', context)
 
 
@@ -437,7 +508,8 @@ def _cargados(partido, filas, *campos):
     else:
         origen = [
             {'jugador_id': a.jugador_id, 'goles': a.goles,
-             'goles_en_contra': a.goles_en_contra, 'asistencias': a.asistencias}
+             'goles_en_contra': a.goles_en_contra, 'goles_de_penal': a.goles_de_penal,
+             'asistencias': a.asistencias}
             for a in partido.actuaciones.all()
             if any(getattr(a, c) for c in campos)
         ]
@@ -447,9 +519,19 @@ def _cargados(partido, filas, *campos):
             # Un gol normal y uno en contra son dos renglones distintos aunque
             # sean del mismo jugador: se marcan con casillas diferentes.
             if fila.get('goles'):
-                salida.append({'jugador_id': fila['jugador_id'], 'cantidad': fila['goles'], 'en_contra': False})
+                salida.append({
+                    'jugador_id': fila['jugador_id'], 'cantidad': fila['goles'],
+                    'en_contra': False, 'de_penal': fila.get('goles_de_penal', 0),
+                })
             if fila.get('goles_en_contra'):
-                salida.append({'jugador_id': fila['jugador_id'], 'cantidad': fila['goles_en_contra'], 'en_contra': True})
+                # El renglon en contra nunca lleva penales: van con los goles propios.
+                salida.append({
+                    'jugador_id': fila['jugador_id'], 'cantidad': fila['goles_en_contra'],
+                    'en_contra': True, 'de_penal': 0,
+                })
         else:
-            salida.append({'jugador_id': fila['jugador_id'], 'cantidad': fila['asistencias'], 'en_contra': False})
+            salida.append({
+                'jugador_id': fila['jugador_id'], 'cantidad': fila['asistencias'],
+                'en_contra': False, 'de_penal': 0,
+            })
     return salida

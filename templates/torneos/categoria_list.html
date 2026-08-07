@@ -39,7 +39,7 @@
                             {% endif %}
                         </div>
                         {% if categoria.limite_edad %}
-                            <p class="mt-1 text-sm text-gray-500">{{ categoria.limite_edad }} &middot; hasta {{ categoria.edad_maxima }} años</p>
+                            <p class="mt-1 text-sm text-gray-500">{{ categoria.limite_edad }} &middot; {{ categoria.limites_texto }}</p>
                         {% endif %}
                         <p class="mt-1 text-sm text-gray-500">Cupo: {{ categoria.cupo_equipos }} equipos</p>
 

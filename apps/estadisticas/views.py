@@ -6,22 +6,38 @@ from apps.partidos import liguilla
 from apps.partidos.models import Actuacion, Partido
 from apps.torneos import palmares
 from apps.torneos.models import Categoria, Liga
+from apps.usuarios.estaticos import url_estatico
 from apps.usuarios.filtros import buscar, campo_texto, campo_opciones
 from apps.usuarios.permissions import cascada_equipos, ligas_visibles
 
-from . import porteros, tabla
+from . import graficos, porteros, resumen, tabla
 
 
 def estadisticas_ligas(request):
-    # Mismo criterio que en equipos y partidos: el admin de liga solo ve las suyas.
+    """El listado de ligas, cada una con sus numeros y su avance.
+
+    Mismo criterio que en equipos y partidos: el admin de liga solo ve las suyas.
+    `panorama` resuelve todas las ligas juntas, en una cantidad fija de consultas.
+    """
     ligas = ligas_visibles(request.user).order_by('nombre')
-    return render(request, 'estadisticas/estadisticas_ligas.html', {'ligas': ligas})
+    return render(request, 'estadisticas/estadisticas_ligas.html', {
+        'fichas': resumen.panorama(ligas),
+    })
 
 
 def estadisticas_liga_categorias(request, liga_id):
-    liga = get_object_or_404(Liga, pk=liga_id)
-    categorias = liga.categorias.filter(activa=True).order_by('nombre')
-    return render(request, 'estadisticas/estadisticas_liga_categorias.html', {'liga': liga, 'categorias': categorias})
+    """El panorama de la liga: sus numeros y como va cada categoria.
+
+    Acotada por `ligas_visibles`: el admin de liga entra a las suyas y el
+    publico a las activas. Antes usaba `get_object_or_404(Liga, ...)` a secas y
+    se llegaba a cualquier liga escribiendo su id en la URL.
+    """
+    liga = get_object_or_404(ligas_visibles(request.user), pk=liga_id)
+    return render(request, 'estadisticas/estadisticas_liga_categorias.html', {
+        'liga': liga,
+        'panel': resumen.panel(liga),
+        'tarjetas': resumen.tarjetas(liga),
+    })
 
 
 def tabla_posiciones(request, categoria_id):
@@ -41,6 +57,16 @@ def tabla_posiciones(request, categoria_id):
     return render(request, 'estadisticas/tabla_posiciones.html', {
         'categoria': categoria,
         'posiciones': posiciones,
+        # Al lado de la tabla, para no tener que salir de la pantalla para saber
+        # quien mete los goles de esta categoria. Solo los cinco primeros: es un
+        # resumen que acompana a la tabla, no la tabla de goleo completa.
+        'rankings': resumen.rankings(categoria, tope=5),
+        # Los iconos se resuelven aca porque su ruta vive en palmares.py, que es
+        # el unico lugar donde se declara el arte de cada premio.
+        'icono_goleador': url_estatico(palmares.TROFEO_GOLEADOR[1]),
+        'icono_asistidor': url_estatico(palmares.TROFEO_ASISTIDOR[1]),
+        'icono_valla': url_estatico(dict(
+            (clave, imagen) for clave, _, imagen in palmares.TROFEOS_EQUIPO)['valla']),
     })
 
 
@@ -73,10 +99,23 @@ def _ranking(request, campo, titulo, etiqueta):
 
     # Los partidos jugados son los del equipo: hoy no se registra quien entro a
     # la cancha, y en estas ligas juegan todos los inscritos.
+    #
+    # `fase=FASE_REGULAR` igual que en tabla.py y porteros.py: sin eso los
+    # partidos de liguilla inflaban el divisor y todos los promedios de gol
+    # salian mas bajos de lo real.
     jugados = {
         fila['categoria_id']: fila['total']
-        for fila in Partido.objects.filter(estado=Partido.ESTADO_FINALIZADO)
+        for fila in Partido.objects.filter(
+            estado=Partido.ESTADO_FINALIZADO, fase=Partido.FASE_REGULAR)
         .values('categoria_id').annotate(total=Count('id'))
+    }
+
+    # Cuantos equipos tiene cada categoria, en UNA consulta para toda la tabla.
+    # Antes se contaban dentro del bucle, una consulta por renglon: con la tabla
+    # completa eran mas de mil ochocientas para dibujar una columna de promedio.
+    equipos_por_categoria = {
+        fila['categoria_id']: fila['total']
+        for fila in Equipo.objects.values('categoria_id').annotate(total=Count('id'))
     }
 
     # Un solo lote de premios para todas las categorias que aparezcan en la
@@ -99,8 +138,9 @@ def _ranking(request, campo, titulo, etiqueta):
     ):
         # Cada equipo juega la mitad de los partidos de su categoria: en cada
         # uno participan dos equipos.
-        de_la_categoria = jugados.get(datos['jugador__equipo__categoria_id'], 0)
-        pj = _partidos_del_equipo(datos['jugador__equipo__categoria_id'], de_la_categoria)
+        categoria_id = datos['jugador__equipo__categoria_id']
+        pj = _partidos_del_equipo(
+            jugados.get(categoria_id, 0), equipos_por_categoria.get(categoria_id, 0))
         nombre = f"{datos['jugador__nombre']} {datos['jugador__apellido']}"
         de_la_cat = premios.get(datos['jugador__equipo__categoria_id'], {})
         filas.append({
@@ -136,16 +176,19 @@ def _ranking(request, campo, titulo, etiqueta):
     })
 
 
-def _partidos_del_equipo(categoria_id, partidos_de_la_categoria):
+def _partidos_del_equipo(partidos_de_la_categoria, equipos_de_la_categoria):
     """Cuantos partidos jugo un equipo de esa categoria.
 
     En cada partido juegan dos equipos, asi que a cada uno le corresponde
     aproximadamente el doble de partidos dividido la cantidad de equipos.
+
+    Recibe los dos numeros ya calculados en vez de ir a buscar los equipos:
+    llamada desde el bucle de la tabla, cada consulta propia se multiplicaba por
+    la cantidad de renglones.
     """
-    equipos = Equipo.objects.filter(categoria_id=categoria_id).count()
-    if not equipos:
+    if not equipos_de_la_categoria:
         return 0
-    return round(partidos_de_la_categoria * 2 / equipos)
+    return round(partidos_de_la_categoria * 2 / equipos_de_la_categoria)
 
 
 def liguilla_categoria(request, categoria_id):
@@ -242,6 +285,32 @@ def vitrina(request):
         'podios': podios,
         'imagen_bota': url_estatico(palmares.TROFEO_GOLEADOR[1]),
         'imagen_asistidor': url_estatico(palmares.TROFEO_ASISTIDOR[1]),
+    })
+
+
+def pantalla_graficos(request):
+    """Los números del torneo en gráficos: goles por jornada, ataque y defensa.
+
+    Pública como el resto de las estadísticas. Se puede acotar a una categoría;
+    sin filtro se mezclan todas las visibles, que sirve para el panorama aunque
+    la jornada 3 de una categoría no sea el mismo día que la de otra.
+    """
+    ligas = ligas_visibles(request.user)
+    categorias = (Categoria.objects.filter(liga__in=ligas)
+                  .select_related('liga').order_by('liga__nombre', 'nombre'))
+
+    # El id llega por la URL: se comprueba que exista y que sea visible, en vez
+    # de confiar en el parametro.
+    elegida = request.GET.get('categoria', '')
+    categoria = None
+    if elegida.isdigit():
+        categoria = categorias.filter(pk=int(elegida)).first()
+
+    return render(request, 'estadisticas/graficos.html', {
+        'datos': graficos.calcular(ligas, categoria),
+        'categorias': categorias,
+        'categoria': categoria,
+        'minimo': graficos.MINIMO,
     })
 
 

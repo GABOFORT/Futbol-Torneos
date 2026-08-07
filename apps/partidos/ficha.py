@@ -322,6 +322,10 @@ def sucesos(partido):
 
     Los goles en contra se muestran del lado del jugador que los hizo y no del
     equipo que se beneficio: es donde el lector los busca.
+
+    `de_penal` viaja con el renglon del goleador porque un penal convertido en el
+    juego es un gol suyo como cualquier otro; solo se distingue al leerlo. Nada
+    que ver con la tanda que desempata, que se dibuja aparte en la cabecera.
     """
     marcador = {
         'local': {'goles': [], 'asistencias': []},
@@ -333,10 +337,18 @@ def sucesos(partido):
         if actuacion.goles:
             marcador[lado]['goles'].append({
                 'jugador': actuacion.jugador, 'cantidad': actuacion.goles, 'en_contra': False,
+                'de_penal': actuacion.goles_de_penal,
+                # Si TODOS sus goles fueron de penal no hace falta el numero: la
+                # etiqueta sola ya lo dice, y "2 · 2 de penal" se lee peor.
+                'todos_de_penal': actuacion.goles_de_penal == actuacion.goles,
             })
         if actuacion.goles_en_contra:
+            # Lleva las mismas claves que el renglon normal aunque siempre valgan
+            # cero: un gol en contra no puede ser de penal, y asi los dos tipos de
+            # renglon se recorren igual sin tener que preguntar cual es cual.
             marcador[lado]['goles'].append({
                 'jugador': actuacion.jugador, 'cantidad': actuacion.goles_en_contra, 'en_contra': True,
+                'de_penal': 0, 'todos_de_penal': False,
             })
         if actuacion.asistencias:
             marcador[lado]['asistencias'].append({

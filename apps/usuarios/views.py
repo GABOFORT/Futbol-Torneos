@@ -14,7 +14,7 @@ from .forms import (
 )
 from django.db.models import Q
 
-from .eliminar import vista_eliminar
+from .eliminar import entrenadores_sin_equipo_tras_borrar, vista_eliminar
 from .filtros import buscar, campo_texto, campo_opciones, hay_filtros
 from .permissions import superadmin_required, admin_liga_required, ligas_administradas
 from apps.equipos.models import Equipo
@@ -138,8 +138,13 @@ def usuario_create(request):
     if request.method == 'POST':
         form = UsuarioCreateForm(request.POST)
         if form.is_valid():
-            form.save()
-            messages.success(request, 'Usuario creado correctamente.')
+            usuario = form.save(commit=False)
+            # Queda el rastro de quien dio de alta la cuenta, igual que con los
+            # entrenadores. Sin esto los usuarios creados desde aca quedaban
+            # huerfanos y no se sabia quien los habia agregado.
+            usuario.creado_por = request.user
+            usuario.save()
+            messages.success(request, f'{usuario.get_role_display()} creado correctamente.')
             if modal:
                 return JsonResponse({'success': True})
             return redirect('usuarios-list')
@@ -381,6 +386,11 @@ def liga_delete(request, pk):
         return redirect('ligas-list')
 
     equipos = Equipo.objects.filter(liga=liga)
+    # Los entrenadores se van con la liga: dirigian ahi y no les queda nada que
+    # dirigir. Se calcula antes de borrar nada, porque despues ya no se sabe
+    # quienes eran. Los que ademas dirigen en otra liga se conservan.
+    entrenadores = entrenadores_sin_equipo_tras_borrar(equipos)
+
     arrastra = []
     for cantidad, etiqueta in (
         (liga.categorias.count(), 'categoría(s)'),
@@ -389,9 +399,16 @@ def liga_delete(request, pk):
         (Partido.objects.filter(
             Q(categoria__liga=liga) | Q(equipo_local__liga=liga) | Q(equipo_visitante__liga=liga)
         ).distinct().count(), 'partido(s)'),
+        (entrenadores.count(), 'cuenta(s) de entrenador'),
     ):
         if cantidad:
             arrastra.append(f'{cantidad} {etiqueta}')
+
+    def limpiar():
+        # El orden importa: Equipo.entrenador es PROTECT, asi que los equipos
+        # tienen que irse antes que las cuentas.
+        equipos.delete()
+        entrenadores.delete()
 
     return vista_eliminar(
         request,
@@ -403,7 +420,7 @@ def liga_delete(request, pk):
         # Equipo.liga es PROTECT y se deja asi a proposito: protege contra
         # borrados accidentales desde el admin o un script. La cascada se hace
         # explicita solo aca, borrando los equipos antes que la liga.
-        antes_de_borrar=equipos.delete,
+        antes_de_borrar=limpiar,
     )
 
 

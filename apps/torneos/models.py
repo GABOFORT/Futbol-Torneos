@@ -4,7 +4,8 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
-from apps.usuarios.imagenes import achicar_imagen
+from apps.usuarios.imagenes import TOPE_PANTALLA_PX, achicar_imagen
+from apps.usuarios.monograma import iniciales_de
 
 
 class Liga(models.Model):
@@ -12,6 +13,18 @@ class Liga(models.Model):
     logo = models.ImageField(
         'Logo de la liga', upload_to='logos-ligas/', blank=True, null=True,
         help_text='Opcional. Si lo dejas vacío se muestran las iniciales de la liga.',
+    )
+    # La identidad visual de la liga: se pinta detrás de todas sus pantallas, en
+    # lugar del gris neutro del sistema. Va en Liga y no en Categoria porque la
+    # marca es de la liga; una portada por categoria multiplicaria las imagenes
+    # sin que nadie distinga de cual es cual.
+    #
+    # Nunca se muestra tal cual: siempre lleva un velo encima (ver .fondo-liga en
+    # sistema.css). Sin el, una foto oscura o muy cargada deja el texto ilegible,
+    # y el sistema entero esta armado sobre fondo claro con tarjetas blancas.
+    portada = models.ImageField(
+        'Portada de la liga', upload_to='portadas-ligas/', blank=True, null=True,
+        help_text='Opcional. Se muestra de fondo en las pantallas de esta liga horizontal.',
     )
     descripcion = models.TextField('Descripción', blank=True)
     administradores = models.ManyToManyField(
@@ -42,15 +55,29 @@ class Liga(models.Model):
 
     def save(self, *args, **kwargs):
         achicar_imagen(self.logo)
+        # La portada se reduce con su propio tope: se muestra a pantalla completa
+        # y con los 512 px del resto de las imagenes quedaria pixelada.
+        achicar_imagen(self.portada, tope=TOPE_PANTALLA_PX)
         super().save(*args, **kwargs)
 
     @property
+    def portada_url(self):
+        """La portada de la liga, o '' si no cargó ninguna.
+
+        Se resuelve aca y no en la plantilla para que preguntar por la imagen no
+        reviente cuando el campo esta vacio: `self.portada.url` sin archivo lanza
+        ValueError, y eso tumbaria el base.html de todas las pantallas de la liga.
+        """
+        return self.portada.url if self.portada else ''
+
+    @property
     def iniciales(self):
-        """Reemplazo del logo cuando no hay: 'LIGA MX' -> 'LM'."""
-        palabras = [p for p in self.nombre.split() if p]
-        if len(palabras) >= 2:
-            return (palabras[0][:1] + palabras[1][:1]).upper()
-        return self.nombre[:2].upper()
+        """Reemplazo del logo cuando no hay: 'LIGA MX' -> 'LM'.
+
+        Usa el mismo criterio que el escudo de los equipos, para que una liga y
+        un club sin imagen no se abrevien con reglas distintas.
+        """
+        return iniciales_de(self.nombre)
 
     @property
     def fecha_vencimiento(self):
@@ -216,10 +243,47 @@ class Categoria(models.Model):
     def admite_equipos(self):
         return not self.motivo_para_no_recibir_equipos()
 
+    # Las mujeres entran con un año mas que el limite de la categoria: en U17
+    # juega una jugadora de 18, en U15 una de 16. Es un solo año, no dos.
+    #
+    # Va como constante y no como campo configurable por el mismo motivo que
+    # Partido.MARCADOR_DEFAULT: es reglamento, igual en todas las ligas, y un
+    # campo mas seria una decision para nada en cada alta de categoria.
+    #
+    # Todas las categorias son mixtas: no hay rama varonil ni femenil. Lo que
+    # define el limite es el sexo del jugador, no el de la categoria.
+    ANIOS_EXTRA_FEMENINO = 1
+
     @property
     def edad_maxima(self):
-        """De 'U9' saca el 9. None mientras la categoria no tenga limite."""
+        """De 'U9' saca el 9. None mientras la categoria no tenga limite.
+
+        Es el limite base, el de los varones. Para el de una jugadora hay que
+        pedir `edad_maxima_para(sexo)`.
+        """
         return int(self.limite_edad[1:]) if self.limite_edad else None
+
+    @property
+    def edad_maxima_femenino(self):
+        """El limite de las mujeres: el de la categoria mas el año de tolerancia."""
+        if self.edad_maxima is None:
+            return None
+        return self.edad_maxima + self.ANIOS_EXTRA_FEMENINO
+
+    def edad_maxima_para(self, sexo):
+        """Los años que puede tener quien se inscribe, segun su sexo.
+
+        El sexo llega como el valor guardado en Jugador.sexo. Cualquier otra
+        cosa se trata como varon, que es el limite estricto: ante la duda no se
+        regala un año de gracia.
+        """
+        from apps.jugadores.models import Jugador
+
+        if self.edad_maxima is None:
+            return None
+        if sexo == Jugador.SEXO_FEMENINO:
+            return self.edad_maxima_femenino
+        return self.edad_maxima
 
     @property
     def anio_temporada(self):
@@ -228,27 +292,45 @@ class Categoria(models.Model):
             return self.liga.fecha_inicio.year
         return datetime.date.today().year
 
-    @property
-    def nacimiento_minimo(self):
+    def nacimiento_minimo_para(self, sexo):
         """La fecha de nacimiento mas antigua que entra en la categoria.
 
         Como la edad se cuenta por año, es el 1 de enero del año en que nacio
         el jugador de mayor edad permitido. Sirve para poner el tope del
         selector de fecha y que ni siquiera se pueda elegir algo invalido.
+
+        Depende del sexo porque el limite depende del sexo: para una jugadora la
+        fecha se corre un año hacia atras.
         """
-        if not self.limite_edad:
+        maxima = self.edad_maxima_para(sexo)
+        if maxima is None:
             return None
-        return datetime.date(self.anio_temporada - self.edad_maxima, 1, 1)
+        return datetime.date(self.anio_temporada - maxima, 1, 1)
 
     def edad_en_temporada(self, fecha_nacimiento):
         """Los años que cumple el jugador durante la temporada."""
         return self.anio_temporada - fecha_nacimiento.year
 
-    def acepta(self, fecha_nacimiento):
-        """Si el jugador entra en la categoria. Sin limite cargado no se restringe nada."""
+    def acepta(self, fecha_nacimiento, sexo=None):
+        """Si el jugador entra en la categoria. Sin limite cargado no se restringe nada.
+
+        Sin `sexo` se aplica el limite estricto, el de los varones.
+        """
         if not self.limite_edad or not fecha_nacimiento:
             return True
-        return self.edad_en_temporada(fecha_nacimiento) <= self.edad_maxima
+        return self.edad_en_temporada(fecha_nacimiento) <= self.edad_maxima_para(sexo)
+
+    @property
+    def limites_texto(self):
+        """Los dos limites en una linea, para mostrarlos donde se nombra la categoria.
+
+        'hasta 17 años · 18 en mujeres'. Se arma aca y no en cada plantilla para
+        que todas digan lo mismo, y sobre todo para que ninguna siga anunciando
+        un solo limite cuando en realidad hay dos.
+        """
+        if self.edad_maxima is None:
+            return ''
+        return f'hasta {self.edad_maxima} años · {self.edad_maxima_femenino} en mujeres'
 
 
 class Palmares(models.Model):

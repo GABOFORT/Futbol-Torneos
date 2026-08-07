@@ -2,33 +2,155 @@
 
 {% block titulo %}Estadísticas - {{ liga.nombre }}{% endblock %}
 
+{% comment %}
+El panorama de la liga.
+
+Antes esta pantalla era una lista de nombres de categorías y no decía nada: para
+saber quién iba primero había que entrar a cada una. Ahora la tarjeta responde
+sola las tres preguntas con que se llega: quién lidera, cuánto falta para que
+termine, y quién es el goleador.
+
+Cuando a una categoría le falta un dato no se muestra un "sin datos": se dice
+qué hay que hacer para tenerlo, que casi siempre lo puede resolver quien está
+mirando la pantalla.
+{% endcomment %}
+
 {% block contenido %}
-<div class="max-w-4xl mx-auto p-6">
+<div class="max-w-[100rem] mx-auto p-6">
     <div class="mb-8 flex items-center gap-4">
         {% include 'usuarios/_logo_liga.html' with liga=liga clase='logo-liga-lg' %}
         <div>
             <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">Estadísticas</p>
             <h1 class="text-3xl font-bold text-green-900">{{ liga.nombre }}</h1>
-            <p class="text-gray-600 mt-2">Elige una categoría para ver su tabla de posiciones.</p>
+            {% if liga.cerrada %}
+                <span class="insignia insignia-final mt-2 inline-flex">Temporada concluida</span>
+            {% endif %}
         </div>
     </div>
 
-    {# Rankings de la liga entera, sin tener que entrar a una categoria. #}
+    {% comment %} ---- Los números de la liga ---- {% endcomment %}
+    <section class="panel-cifras">
+        <div class="cifra">
+            <p class="cifra-numero">{{ panel.equipos }}<span class="cifra-de">/{{ panel.cupo }}</span></p>
+            <p class="cifra-titulo">Equipos inscritos</p>
+        </div>
+        <div class="cifra">
+            <p class="cifra-numero">{{ panel.jugadores }}</p>
+            <p class="cifra-titulo">Jugadores</p>
+            {% if panel.equipos_sin_plantilla %}
+                <p class="cifra-nota">{{ panel.equipos_sin_plantilla }} equipo{{ panel.equipos_sin_plantilla|pluralize:"s" }} sin plantilla</p>
+            {% endif %}
+        </div>
+        <div class="cifra">
+            <p class="cifra-numero">{{ panel.jugados }}<span class="cifra-de">/{{ panel.partidos }}</span></p>
+            <p class="cifra-titulo">Partidos jugados</p>
+            {% comment %} La barra dice de un vistazo si el torneo va por la mitad o recién arranca. {% endcomment %}
+            <div class="barra" role="img" aria-label="{{ panel.avance }}% del calendario jugado">
+                <span class="ancho-{{ panel.avance }}"></span>
+            </div>
+        </div>
+        <div class="cifra">
+            <p class="cifra-numero">{{ panel.goles }}</p>
+            <p class="cifra-titulo">Goles anotados</p>
+            {% if panel.goles_por_partido %}
+                <p class="cifra-nota">{{ panel.goles_por_partido }} por partido</p>
+            {% endif %}
+        </div>
+    </section>
+
+    {% comment %}
+    Datos que el sistema recién puede contar. Solo aparecen si hay alguno: en
+    cero no aportan y ensucian la cabecera.
+    {% endcomment %}
+    {% if panel.goles_de_penal or panel.por_default or panel.sin_fecha %}
+        <div class="panel-notas">
+            {% if panel.goles_de_penal %}
+                <span class="nota-dato"><b>{{ panel.goles_de_penal }}</b> gol{{ panel.goles_de_penal|pluralize:"es" }} de penal</span>
+            {% endif %}
+            {% if panel.por_default %}
+                <span class="nota-dato"><b>{{ panel.por_default }}</b> ganado{{ panel.por_default|pluralize:"s" }} por default</span>
+            {% endif %}
+            {% if panel.sin_fecha %}
+                <span class="nota-dato nota-pendiente"><b>{{ panel.sin_fecha }}</b> partido{{ panel.sin_fecha|pluralize:"s" }} sin fecha asignada</span>
+            {% endif %}
+        </div>
+    {% endif %}
+
     <div class="mb-6 flex flex-wrap gap-3">
         <a href="{% url 'estadisticas-goleo' %}?liga={{ liga.pk }}" class="btn-accion">Tabla de goleo</a>
         <a href="{% url 'estadisticas-asistencias' %}?liga={{ liga.pk }}" class="btn-accion">Tabla de asistencias</a>
+        <a href="{% url 'estadisticas-porteros' %}?liga={{ liga.pk }}" class="btn-accion">Porterías menos vencidas</a>
     </div>
 
-    <div class="grid gap-4">
-        {% for categoria in categorias %}
-            <a href="{% url 'estadisticas-categoria' categoria.pk %}" class="rounded-2xl bg-white border border-green-100 p-5 shadow-sm hover:border-green-300 transition flex items-center justify-between">
-                <div>
-                    <p class="text-lg font-bold text-gray-900">{{ categoria.nombre }}</p>
-                </div>
-                <span class="text-green-700 font-semibold">Ver tabla →</span>
+    {% comment %} ---- Una tarjeta por categoría ---- {% endcomment %}
+    <div class="rejilla-ligas">
+        {% for ficha in tarjetas %}
+            <a href="{% url 'estadisticas-categoria' ficha.categoria.pk %}" class="tarjeta-categoria">
+                <header class="tarjeta-categoria-cabecera">
+                    <div>
+                        <h2 class="tarjeta-categoria-nombre">{{ ficha.categoria.nombre }}</h2>
+                        <p class="tarjeta-categoria-meta">
+                            {{ ficha.equipos }} de {{ ficha.cupo }} equipos
+                            {% if ficha.categoria.limite_edad %} · {{ ficha.categoria.limite_edad }}{% endif %}
+                        </p>
+                    </div>
+                    <span class="estado-categoria estado-{{ ficha.estado.clave }}">{{ ficha.estado.texto }}</span>
+                </header>
+
+                {% if ficha.lider %}
+                    <div class="tarjeta-categoria-cuerpo">
+                        {% comment %} El líder es lo primero que se busca al entrar. {% endcomment %}
+                        <div class="destacado">
+                            <p class="destacado-etiqueta">Líder</p>
+                            <div class="destacado-fila">
+                                {% if ficha.lider.equipo.escudo %}
+                                    <img src="{{ ficha.lider.equipo.escudo.url }}" alt="" class="destacado-escudo">
+                                {% endif %}
+                                <p class="destacado-nombre">{{ ficha.lider.equipo.nombre }}</p>
+                                <span class="destacado-cifra">{{ ficha.lider.pts }} pts</span>
+                            </div>
+                            <p class="destacado-detalle">
+                                {{ ficha.lider.pj }} PJ · {{ ficha.lider.pg }}G {{ ficha.lider.pe }}E {{ ficha.lider.pp }}P
+                                · DG {{ ficha.lider.dg }}
+                            </p>
+                        </div>
+
+                        {% if ficha.goleador %}
+                            <div class="destacado">
+                                <p class="destacado-etiqueta">Goleador</p>
+                                <div class="destacado-fila">
+                                    <p class="destacado-nombre">{{ ficha.goleador.nombre }}</p>
+                                    <span class="destacado-cifra">{{ ficha.goleador.goles }}</span>
+                                </div>
+                                <p class="destacado-detalle">{{ ficha.goleador.equipo }}</p>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <footer class="tarjeta-categoria-pie">
+                        <div class="barra barra-fina" role="img" aria-label="{{ ficha.avance }}% jugado">
+                            <span class="ancho-{{ ficha.avance }}"></span>
+                        </div>
+                        <p class="tarjeta-categoria-avance">
+                            {{ ficha.jugados }} de {{ ficha.totales }} partidos
+                            {% if ficha.jornadas %} · jornada {{ ficha.jornada }} de {{ ficha.jornadas }}{% endif %}
+                        </p>
+                    </footer>
+                {% else %}
+                    {% comment %}
+                    Sin partidos jugados no hay tabla ni goleador. En vez de dejar
+                    la tarjeta muda se dice cuál es el siguiente paso.
+                    {% endcomment %}
+                    <p class="tarjeta-categoria-vacia">
+                        {% if ficha.pendiente %}{{ ficha.pendiente }}{% else %}Todavía no hay partidos jugados.{% endif %}
+                    </p>
+                {% endif %}
             </a>
         {% empty %}
-            <p class="text-gray-500">Esta liga todavía no tiene categorías activas.</p>
+            <div class="rounded-3xl border border-green-100 bg-white p-10 text-center">
+                <p class="text-gray-500">Esta liga todavía no tiene categorías activas.</p>
+                <p class="mt-2 text-sm text-gray-400">Cuando se cree una categoría, aquí aparecerá su tabla y sus goleadores.</p>
+            </div>
         {% endfor %}
     </div>
 

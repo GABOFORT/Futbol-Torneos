@@ -129,6 +129,23 @@ class Usuario(AbstractUser):
         return self.role == self.ROLE_ENTRENADOR
 
     def save(self, *args, **kwargs):
-        if not self.is_superuser:
-            self.is_staff = self.role == self.ROLE_SUPERADMIN
+        """Mantiene sincronizados el rol de negocio y los flags de Django.
+
+        El rol manda: un Administrador General **es** superusuario. Antes se
+        podia crear uno con `is_superuser=False` y quedaba a medias — la interfaz
+        lo trataba como administrador general, pero los decoradores de permisos
+        miraban el flag y lo dejaban afuera de ligas, categorias y partidos.
+
+        Va en el modelo y no en el formulario para que valga por todos los
+        caminos: el alta desde la pantalla, el admin de Django y el shell.
+
+        No se toca a quien tiene el flag activo con otro rol cargado: hay cuentas
+        marcadas como superusuario con role='entrenador' y bajarles el flag les
+        sacaria acceso que hoy usan.
+        """
+        if self.role == self.ROLE_SUPERADMIN:
+            self.is_superuser = True
+            self.is_staff = True
+        elif not self.is_superuser:
+            self.is_staff = False
         super().save(*args, **kwargs)

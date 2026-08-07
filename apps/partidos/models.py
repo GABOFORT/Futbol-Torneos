@@ -127,6 +127,18 @@ class Partido(models.Model):
     # gol del partido: el marcador sigue siendo el empate.
     penales_local = models.PositiveIntegerField('Penales del local', null=True, blank=True)
     penales_visitante = models.PositiveIntegerField('Penales del visitante', null=True, blank=True)
+    # Se guarda QUE equipo falto y no un simple si/no: con el equipo se sabe
+    # tambien quien gano, y la ficha puede nombrarlo en vez de mostrar un 3-0
+    # pelado que se lee como un partido normal.
+    no_se_presento = models.ForeignKey(
+        'equipos.Equipo',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='ausencias',
+        verbose_name='Equipo que no se presentó',
+        help_text='Si un equipo no llega, el rival gana por default 3-0.',
+    )
     estado = models.CharField('Estado', max_length=20, choices=ESTADO_CHOICES, default=ESTADO_PROGRAMADO)
 
     class Meta:
@@ -138,9 +150,36 @@ class Partido(models.Model):
         fecha = self.fecha.strftime('%Y-%m-%d') if self.fecha else 'sin fecha'
         return f'J{self.jornada}: {self.equipo_local} vs {self.equipo_visitante} - {fecha}'
 
+    # Marcador con el que se resuelve un partido que no se jugo por ausencia.
+    # Es el mismo en todas las ligas: no se configura por liga porque nadie lo
+    # cambia y un campo mas seria una decision para nada.
+    MARCADOR_DEFAULT = 3
+
     @property
     def jugado(self):
         return self.estado == self.ESTADO_FINALIZADO
+
+    @property
+    def ganado_por_default(self):
+        """Si se resolvio 3-0 porque uno de los dos no llego a la cancha."""
+        return self.no_se_presento_id is not None
+
+    @property
+    def equipo_presentado(self):
+        """El que si llego, y por lo tanto se llevo el partido. None si jugaron los dos."""
+        if not self.ganado_por_default:
+            return None
+        if self.no_se_presento_id == self.equipo_local_id:
+            return self.equipo_visitante
+        return self.equipo_local
+
+    @property
+    def aviso_default(self):
+        """El texto que explica el 3-0. Vive aca para que el calendario, la ficha
+        y el perfil del equipo digan exactamente lo mismo."""
+        if not self.ganado_por_default:
+            return ''
+        return f'Ganó por default · {self.no_se_presento.nombre} no se presentó'
 
     @property
     def goles_asignados_local(self):
@@ -373,6 +412,17 @@ class Actuacion(models.Model):
     mucho mas corta. Lo que no permite es saber que asistencia fue de que gol ni
     en que minuto; si algun dia hace falta la cronica del partido, hay que
     cambiar este modelo.
+
+    El minuto se dejo afuera a proposito: no se consulta y partir esta fila en
+    una por evento no se paga con lo que aporta.
+
+    `goles_de_penal` va DENTRO de `goles`, no aparte. Un penal convertido durante
+    el juego es un gol como cualquier otro: suma al marcador, a la tabla de goleo
+    y a la bota de oro. Se guarda solo para poder decirlo en la ficha.
+
+    No confundirlo con `Partido.penales_local` / `penales_visitante`, que son la
+    tanda que desempata: esos no son goles, no crean ninguna Actuacion y solo
+    definen el punto extra en el regular o quien pasa en la liguilla.
     """
 
     partido = models.ForeignKey(
@@ -390,6 +440,12 @@ class Actuacion(models.Model):
         'Goles en contra',
         default=0,
         help_text='Suman al marcador del rival y no cuentan para la tabla de goleo.',
+    )
+    goles_de_penal = models.PositiveIntegerField(
+        'De penal',
+        default=0,
+        help_text='Cuantos de sus goles fueron desde el punto penal. Es un subconjunto '
+                  'de "Goles", no se suma aparte.',
     )
     asistencias = models.PositiveIntegerField('Asistencias', default=0)
 

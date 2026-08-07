@@ -1,0 +1,1984 @@
+/* ============================================================================
+   La portada pública y el marco del sitio (cabecera y pie).
+
+   En archivo propio y no dentro de base.html a propósito. El bloque <style> de
+   base.html pasa las 2 000 líneas, y ya costó un bug: dos componentes distintos
+   terminaron declarando las mismas clases a mil líneas de distancia y se
+   pisaban. Además, así este CSS se cachea aparte en vez de viajar en cada
+   página del sistema.
+
+   Todas las clases empiezan por el nombre de su bloque (hero-, cifra-, hoy-,
+   lider-, torneo-, campeon-) para que no puedan chocar con las de otra pantalla.
+   ============================================================================ */
+
+.ancho-pagina {
+    max-width: 72rem;
+    margin: 0 auto 2.5rem;
+    padding: 0 1.25rem;
+}
+
+/* ============================================================================
+   Barra de navegación, en dos niveles.
+
+   Nivel alto : identidad, buscador y sesión, sobre el verde más oscuro.
+   Nivel bajo : las secciones, sobre el verde de marca.
+
+   Es fija arriba porque en pantallas largas —el calendario de un mes, una tabla
+   de veinte equipos— volver arriba para cambiar de sección obligaba a un scroll
+   entero.
+   ============================================================================ */
+.cabecera {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 8px 24px -12px rgba(5, 46, 22, 0.4);
+}
+
+.cabecera-interior {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    max-width: 80rem;
+    margin: 0 auto;
+    padding: 0 1.25rem;
+}
+
+.cabecera-alta {
+    background-color: #052e16;
+    /* La textura de césped, apenas insinuada: da profundidad sin ruido. */
+    background-image: repeating-linear-gradient(
+        90deg, rgba(255, 255, 255, 0.03) 0 4rem, transparent 4rem 8rem);
+}
+.cabecera-alta .cabecera-interior { min-height: 4rem; justify-content: space-between; }
+
+.cabecera-marca {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+    min-width: 0;
+}
+
+.cabecera-logo {
+    height: 2.5rem;
+    width: 2.5rem;
+    border-radius: 0.625rem;
+    object-fit: cover;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* El nombre en dos pesos: la marca fuerte y el resto tenue. En pantalla chica
+   se esconde el segundo tramo antes que apretar todo. */
+.cabecera-nombre {
+    font-size: 1.0625rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: #fff;
+    white-space: nowrap;
+}
+.cabecera-nombre span { display: none; font-weight: 500; color: #86efac; }
+
+.cabecera-acciones {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    min-width: 0;
+}
+
+/* ---- Buscador ----
+   De ancho fijo. Antes se ensanchaba al enfocarlo y toda la cabecera se movía
+   justo cuando alguien iba a escribir: el peor momento para mover algo. */
+.cabecera-buscar {
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+    width: 17rem;
+    padding: 0.5rem 0.875rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(134, 239, 172, 0.22);
+    background-color: rgba(255, 255, 255, 0.08);
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.cabecera-buscar:focus-within {
+    border-color: #facc15;
+    background-color: rgba(255, 255, 255, 0.14);
+}
+
+.cabecera-buscar-icono { display: flex; flex-shrink: 0; color: #86efac; }
+.cabecera-buscar-icono svg { width: 1rem; height: 1rem; }
+
+.cabecera-buscar input {
+    width: 100%;
+    min-width: 0;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-size: 0.8125rem;
+    color: #fff;
+}
+.cabecera-buscar input::placeholder { color: rgba(187, 247, 208, 0.6); }
+/* La cruz nativa del campo de búsqueda se ve negra sobre el verde. */
+.cabecera-buscar input::-webkit-search-cancel-button { filter: invert(1) opacity(0.5); }
+
+.cabecera-boton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    /* 2.5rem de alto: el mínimo cómodo para tocar con el pulgar. */
+    min-height: 2.5rem;
+    padding: 0 1.125rem;
+    border-radius: 9999px;
+    background-color: #fff;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #14532d;
+    white-space: nowrap;
+    transition: background-color 0.15s ease, transform 0.12s ease;
+}
+.cabecera-boton:hover { background-color: #dcfce7; transform: translateY(-1px); }
+
+.cabecera-boton-tenue { background-color: rgba(255, 255, 255, 0.12); color: #fff; }
+.cabecera-boton-tenue:hover { background-color: rgba(255, 255, 255, 0.22); }
+
+.cabecera-salir { display: none; }
+
+.cabecera-hamburguesa {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 0.75rem;
+    color: #fff;
+    cursor: pointer;
+}
+.cabecera-hamburguesa:hover { background-color: rgba(255, 255, 255, 0.12); }
+.cabecera-hamburguesa svg { width: 1.5rem; height: 1.5rem; }
+
+/* ---- Nivel bajo: la navegación ---- */
+.cabecera-baja {
+    display: none;
+    background-color: #14532d;
+    border-top: 1px solid rgba(134, 239, 172, 0.14);
+}
+.cabecera-baja .cabecera-interior { gap: 0.125rem; }
+
+.nav-enlace {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    min-height: 2.875rem;
+    padding: 0 0.875rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.86);
+    white-space: nowrap;
+    /* El borde inferior transparente reserva el lugar del subrayado activo: sin
+       él, el texto salta 3 px al pasar el mouse. */
+    border-bottom: 3px solid transparent;
+    transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+    cursor: pointer;
+}
+.nav-enlace:hover { color: #fff; background-color: rgba(255, 255, 255, 0.08); }
+.nav-enlace:focus-visible { outline: 2px solid #facc15; outline-offset: -2px; }
+
+/* La sección donde está parado el visitante. */
+.nav-activo {
+    color: #fff;
+    border-bottom-color: #facc15;
+    background-color: rgba(255, 255, 255, 0.06);
+}
+
+.nav-desplegable svg { width: 0.875rem; height: 0.875rem; transition: transform 0.18s ease; }
+
+/* ---- El desplegable ----
+
+   Abrir y cerrar se resuelve acá, al lado del display:none que lo controla, y
+   no con las utilidades group-hover de Tailwind. El motivo es concreto:
+   Tailwind v4 las genera envueltas en un :where(), que pesa cero, así que el
+   selector completo vale lo mismo que una clase suelta — exactamente lo mismo
+   que .nav-menu. Empatados en especificidad gana el que va después, y este
+   archivo se carga después de tailwind.css: el display:none ganaba siempre y el
+   menú no abría nunca.
+
+   Con :focus-within además abre con el teclado. */
+.nav-item { position: relative; }
+
+.nav-menu {
+    display: none;
+    position: absolute;
+    left: 0;
+    top: 100%;
+    min-width: 17rem;
+    padding: 0.5rem;
+    border-radius: 1rem;
+    background-color: #fff;
+    box-shadow: 0 16px 40px rgba(5, 46, 22, 0.28);
+    z-index: 50;
+}
+.nav-menu-der { left: auto; right: 0; }
+
+.nav-item:hover .nav-menu,
+.nav-item:focus-within .nav-menu {
+    display: block;
+    animation: nav-menu-entra 0.16s ease-out;
+}
+
+.nav-item:hover .nav-desplegable svg,
+.nav-item:focus-within .nav-desplegable svg { transform: rotate(180deg); }
+
+@keyframes nav-menu-entra {
+    from { opacity: 0; transform: translateY(-0.375rem); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.nav-opcion {
+    display: block;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.625rem;
+    transition: background-color 0.12s ease;
+}
+.nav-opcion:hover { background-color: #f0fdf4; }
+.nav-opcion strong { display: block; font-size: 0.875rem; font-weight: 600; color: #14532d; }
+.nav-opcion small { display: block; margin-top: 0.0625rem; font-size: 0.6875rem; color: #9ca3af; }
+.nav-opcion-tenue strong { color: #9ca3af; font-weight: 500; }
+
+/* ---- Menú del celular ---- */
+.menu-movil {
+    max-height: calc(100vh - 4rem);
+    overflow-y: auto;
+    padding: 0.5rem 1.25rem 1.5rem;
+    background-color: #052e16;
+}
+
+.nav-movil {
+    display: block;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid rgba(134, 239, 172, 0.1);
+    font-size: 0.9375rem;
+    color: #fff;
+}
+.nav-movil:active { color: #86efac; }
+.nav-movil-hijo { padding-left: 1rem; font-size: 0.875rem; color: #bbf7d0; }
+
+.nav-movil-titulo {
+    margin: 1rem 0 0.25rem;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: #4ade80;
+}
+
+.menu-movil-boton { display: flex; width: 100%; margin-top: 0.75rem; }
+
+/* ============================================================================
+   Accesibilidad y estados
+   ============================================================================ */
+
+/* Enlace de salto: invisible hasta que se lo enfoca con el teclado. Quien
+   navega con Tab o con lector de pantalla se saltea los veinte enlaces de la
+   cabecera en vez de recorrerlos en cada página. */
+.saltar {
+    position: absolute;
+    left: 0.75rem;
+    top: -4rem;
+    z-index: 60;
+    padding: 0.75rem 1.25rem;
+    border-radius: 0 0 0.75rem 0.75rem;
+    background-color: #facc15;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #14532d;
+    transition: top 0.18s ease;
+}
+.saltar:focus { top: 0; }
+
+/* El contenido recibe el foco al saltar, pero no debe dibujar un contorno
+   alrededor de media pantalla. */
+main:focus { outline: none; }
+
+/* El modal mientras viaja la petición. Sin esto se quedaba mudo y, en una
+   conexión lenta, parecía que el clic no había hecho nada. */
+.modal-cargando {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 2.5rem 3rem;
+    border-radius: 1.5rem;
+    background-color: #fff;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+}
+
+.modal-girador {
+    width: 2rem;
+    height: 2rem;
+    border: 3px solid #dcfce7;
+    border-top-color: #15803d;
+    border-radius: 9999px;
+    animation: girar 0.7s linear infinite;
+}
+
+.modal-cargando-texto { font-size: 0.875rem; color: #6b7280; text-align: center; }
+
+@keyframes girar { to { transform: rotate(360deg); } }
+
+/* Quien pidió menos movimiento en su sistema no debería recibir animaciones.
+   Se dejan casi instantáneas en vez de quitarlas: los estados igual tienen que
+   notarse. */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* ============================================================================
+   Seguir equipos.
+
+   La estrella guarda el equipo en el navegador del visitante (ver seguir.js).
+   Apagada es un contorno tenue; encendida, dorada. El cambio tiene un rebote
+   corto para que se note que quedó guardado sin necesidad de un mensaje.
+   ============================================================================ */
+.estrella {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    /* 2.75rem es el mínimo cómodo para tocar con el pulgar (WCAG 2.5.8). */
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    border-radius: 9999px;
+    font-size: 1.125rem;
+    line-height: 1;
+    color: #d1d5db;
+    cursor: pointer;
+    transition: color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+}
+.estrella:hover { color: #f59e0b; background-color: #fffbeb; }
+.estrella:focus-visible { outline: 2px solid #f59e0b; outline-offset: 2px; }
+.estrella.seguido { color: #f59e0b; animation: estrella-rebote 0.32s ease-out; }
+
+@keyframes estrella-rebote {
+    0%   { transform: scale(1); }
+    45%  { transform: scale(1.35); }
+    100% { transform: scale(1); }
+}
+
+/* En la tarjeta del listado va arriba a la derecha, superpuesta. */
+.tarjeta-equipo { position: relative; }
+.tarjeta-equipo .estrella { position: absolute; top: 0.25rem; right: 0.25rem; }
+
+.estrella-grande {
+    gap: 0.375rem;
+    padding: 0 1rem;
+    border: 1px solid #e5e7eb;
+    font-size: 1rem;
+}
+.estrella-grande span { font-size: 0.8125rem; font-weight: 600; color: #374151; }
+.estrella-grande.seguido { border-color: #fde68a; background-color: #fffbeb; }
+
+/* ---- "Tus equipos" en la portada ---- */
+.mis-equipos { margin-top: 2rem; }
+
+.mis-lista {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+    gap: 0.75rem;
+}
+
+.mio {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    border: 1px solid #fde68a;
+    border-radius: 1.125rem;
+    background-image: linear-gradient(160deg, #fffbeb, #fff 55%);
+}
+
+.mio-cabecera { display: flex; align-items: center; gap: 0.625rem; }
+
+.mio-escudo {
+    flex-shrink: 0;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 9999px;
+    object-fit: cover;
+}
+
+.mio-identidad { flex: 1; min-width: 0; }
+.mio-nombre { font-size: 0.9375rem; font-weight: 800; color: #14532d; overflow-wrap: anywhere; }
+.mio-nombre:hover { text-decoration: underline; }
+.mio-torneo { font-size: 0.6875rem; color: #92400e; overflow-wrap: anywhere; }
+.mio-quitar { flex-shrink: 0; min-width: 2.25rem; min-height: 2.25rem; border-radius: 9999px; color: #f59e0b; font-size: 1rem; cursor: pointer; }
+.mio-quitar:hover { background-color: #fef3c7; }
+
+.mio-partidos { margin-top: 0.75rem; padding-top: 0.625rem; border-top: 1px dashed #fde68a; }
+.mio-partidos li + li { margin-top: 0.375rem; }
+.mio-partidos a { display: block; font-size: 0.75rem; }
+.mio-fecha { font-weight: 800; color: #14532d; }
+.mio-rival { color: #374151; overflow-wrap: anywhere; }
+.mio-cancha { display: block; font-size: 0.625rem; color: #9ca3af; }
+.mio-sin { margin-top: 0.75rem; font-size: 0.75rem; color: #9ca3af; }
+
+/* ---- Fechas del equipo, en su página ---- */
+.equipo-fechas {
+    display: grid;
+    gap: 1.5rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #f3f4f6;
+}
+
+.fecha-fila {
+    display: grid;
+    grid-template-columns: 4.5rem 1fr auto;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+}
+.fecha-fila + .fecha-fila { border-top: 1px solid #f3f4f6; }
+.fecha-fila:hover { background-color: #f0fdf4; }
+
+.fecha-cuando { font-weight: 700; color: #14532d; }
+.fecha-rival { color: #374151; overflow-wrap: anywhere; }
+.fecha-rival strong { color: #14532d; }
+.fecha-donde { font-size: 0.6875rem; color: #9ca3af; text-align: right; white-space: nowrap; }
+.fecha-sin { padding: 1rem; font-size: 0.8125rem; color: #9ca3af; }
+
+/* ============================================================================
+   Franja de marcadores.
+   El elemento que hace que un sitio se lea como sitio deportivo: lo que se
+   juega hoy, arriba de todo y de un vistazo.
+   ============================================================================ */
+.franja {
+    background-color: #052e16;
+    border-bottom: 1px solid rgba(134, 239, 172, 0.2);
+}
+
+.franja-interior {
+    display: flex;
+    align-items: stretch;
+    max-width: 90rem;
+    margin: 0 auto;
+}
+
+.franja-titulo {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    padding: 0 1rem;
+    background-color: #14532d;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #fde047;
+}
+
+/* Se desplaza en horizontal en vez de bajar de renglón: así entran veinte
+   partidos sin empujar la página. */
+.franja-lista {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(134, 239, 172, 0.4) transparent;
+}
+.franja-lista::-webkit-scrollbar { height: 4px; }
+.franja-lista::-webkit-scrollbar-thumb {
+    background-color: rgba(134, 239, 172, 0.4);
+    border-radius: 9999px;
+}
+
+.marcador {
+    flex-shrink: 0;
+    width: 11rem;
+    padding: 0.5rem 0.875rem;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    transition: background-color 0.12s ease;
+}
+.marcador:hover { background-color: rgba(255, 255, 255, 0.07); }
+
+.marcador-torneo {
+    display: block;
+    font-size: 0.5625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #4ade80;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.marcador-fila {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 0.1875rem;
+}
+
+.marcador-equipo {
+    font-size: 0.75rem;
+    color: #e5e7eb;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.marcador-gol {
+    flex-shrink: 0;
+    font-size: 0.8125rem;
+    font-weight: 800;
+    color: #fff;
+}
+
+.marcador-pie {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.5625rem;
+    color: #86efac;
+    white-space: nowrap;
+}
+
+/* ============================================================================
+   Pie de página
+   ============================================================================ */
+.pie {
+    margin-top: 3rem;
+    background-color: #052e16;
+    color: #bbf7d0;
+}
+
+.pie-interior {
+    display: grid;
+    gap: 2rem;
+    max-width: 72rem;
+    margin: 0 auto;
+    padding: 3rem 1.25rem 2rem;
+}
+
+.pie-logo { height: 3rem; width: auto; border-radius: 0.5rem; }
+
+.pie-nombre {
+    margin-top: 0.75rem;
+    font-size: 1rem;
+    font-weight: 800;
+    color: #fff;
+}
+
+.pie-lema {
+    margin-top: 0.5rem;
+    max-width: 22rem;
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    color: #86efac;
+}
+
+.pie-columna { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.pie-titulo {
+    margin-bottom: 0.25rem;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: #fde047;
+}
+
+.pie-columna a {
+    font-size: 0.8125rem;
+    color: #bbf7d0;
+    transition: color 0.12s ease;
+}
+.pie-columna a:hover { color: #fff; }
+
+.pie-abajo {
+    border-top: 1px solid rgba(134, 239, 172, 0.18);
+}
+
+.pie-abajo p {
+    max-width: 72rem;
+    margin: 0 auto;
+    padding: 0.25rem 1.25rem;
+    font-size: 0.75rem;
+    color: #4ade80;
+}
+.pie-abajo p:first-child { padding-top: 1.25rem; }
+.pie-abajo p:last-child { padding-bottom: 1.25rem; }
+.pie-nota { color: #16a34a !important; font-size: 0.6875rem !important; }
+
+/* ---- Encabezados de sección ---- */
+.seccion-cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.seccion-titulo {
+    font-size: 1.375rem;
+    font-weight: 800;
+    color: #14532d;
+}
+
+.seccion-enlace {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #15803d;
+}
+.seccion-enlace:hover { color: #14532d; }
+
+/* ---- Hero ----
+   El verde profundo con la textura de cancha detrás: es lo primero que se ve y
+   tiene que decir "esto es fútbol" antes de leer una palabra. */
+.hero {
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 2.5rem;
+    padding: 3rem 1.25rem 3.5rem;
+    background-color: #14532d;
+    background-image:
+        radial-gradient(90% 80% at 15% 0%, rgba(34, 197, 94, 0.35), transparent 60%),
+        radial-gradient(70% 70% at 100% 100%, rgba(250, 204, 21, 0.18), transparent 60%),
+        linear-gradient(160deg, #14532d, #052e16);
+}
+
+/* Las rayas del césped. Muy suaves: es textura, no un dibujo. */
+.hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+        90deg, rgba(255, 255, 255, 0.035) 0 3.5rem, transparent 3.5rem 7rem);
+    pointer-events: none;
+}
+
+.hero-interior {
+    position: relative;
+    display: grid;
+    gap: 2rem;
+    max-width: 72rem;
+    margin: 0 auto;
+}
+
+.hero-marca {
+    font-size: 0.6875rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.24em;
+    color: #86efac;
+}
+
+.hero-titulo {
+    margin-top: 0.75rem;
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1.15;
+    color: #fff;
+}
+
+.hero-bajada {
+    margin-top: 0.875rem;
+    max-width: 34rem;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: #bbf7d0;
+}
+
+.hero-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+.hero-boton {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.75rem 1.5rem;
+    border-radius: 9999px;
+    background-color: #fff;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #14532d;
+    transition: transform 0.12s ease, background-color 0.12s ease;
+}
+.hero-boton:hover { background-color: #dcfce7; transform: translateY(-1px); }
+
+.hero-boton-borde {
+    background-color: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    color: #fff;
+}
+.hero-boton-borde:hover { background-color: rgba(255, 255, 255, 0.12); }
+
+/* ---- Tarjeta del partido destacado ---- */
+.hero-partido {
+    display: block;
+    padding: 1.25rem;
+    border-radius: 1.5rem;
+    border: 1px solid rgba(134, 239, 172, 0.3);
+    background-color: rgba(255, 255, 255, 0.07);
+    /* El desenfoque de atrás hace que la tarjeta flote sobre el césped en vez
+       de taparlo. */
+    backdrop-filter: blur(6px);
+    transition: background-color 0.15s ease;
+}
+.hero-partido:hover { background-color: rgba(255, 255, 255, 0.13); }
+
+.hero-partido-etiqueta {
+    font-size: 0.625rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: #fde047;
+    text-align: center;
+}
+
+.hero-cruce {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.875rem;
+}
+
+.hero-lado { text-align: center; min-width: 0; }
+
+.hero-escudo {
+    height: 3.25rem;
+    width: 3.25rem;
+    margin: 0 auto 0.5rem;
+    border-radius: 9999px;
+    object-fit: cover;
+}
+
+.hero-equipo {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #fff;
+    overflow-wrap: anywhere;
+}
+
+.hero-puesto {
+    margin-top: 0.125rem;
+    font-size: 0.6875rem;
+    color: #86efac;
+}
+
+.hero-versus { text-align: center; }
+.hero-versus span {
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.hero-cuenta {
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #fde047;
+    white-space: nowrap;
+}
+
+.hero-partido-pie {
+    margin-top: 0.875rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    font-size: 0.6875rem;
+    color: #bbf7d0;
+    text-align: center;
+}
+
+/* ---- Las cuatro cifras ---- */
+.cifras {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    /* Suben sobre el hero para coserlo con el resto de la página. */
+    margin-top: -4rem;
+    position: relative;
+}
+
+.cifra {
+    padding: 1.125rem 0.75rem;
+    border-radius: 1.25rem;
+    border: 1px solid #dcfce7;
+    background-color: #fff;
+    box-shadow: 0 6px 20px rgba(20, 83, 45, 0.1);
+    text-align: center;
+}
+
+.cifra-icono { font-size: 1.25rem; }
+
+.cifra-numero {
+    margin-top: 0.25rem;
+    font-size: 1.75rem;
+    font-weight: 800;
+    line-height: 1;
+    color: #14532d;
+}
+
+.cifra-texto {
+    margin-top: 0.25rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #6b7280;
+}
+
+/* ---- Partidos de hoy ---- */
+.lista-hoy {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
+    gap: 0.75rem;
+}
+
+/* La tarjeta es una columna flex y la fila de chips va anclada al fondo
+   (`margin-top: auto`). Sin eso, un nombre largo que ocupa dos renglones
+   —"Wolverhampton Wanderers"— empujaba los chips hacia abajo solo en esa
+   tarjeta, y la fila gris quedaba a distinta altura en cada una.
+
+   Las tarjetas de una misma fila ya miden lo mismo porque el grid las estira;
+   lo que faltaba era repartir ese alto adentro. */
+.hoy {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 1rem;
+    border-radius: 1.125rem;
+    border: 1px solid #e5e7eb;
+    background-color: #fff;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.12s ease;
+}
+.hoy:hover {
+    border-color: #86efac;
+    box-shadow: 0 6px 18px rgba(20, 83, 45, 0.1);
+    transform: translateY(-2px);
+}
+
+.hoy-hora {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+
+.hoy-reloj {
+    font-size: 1.125rem;
+    font-weight: 800;
+    color: #14532d;
+}
+
+.hoy-estado {
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    background-color: #f3f4f6;
+    font-size: 0.625rem;
+    font-weight: 700;
+    color: #6b7280;
+}
+
+.hoy-final { background-color: #dcfce7; color: #15803d; }
+
+/* Ocupa el alto que sobre y centra el cruce: así una tarjeta con nombres de un
+   renglón y otra de dos se ven igual de equilibradas. */
+.hoy-cruce {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+    min-height: 3rem;
+    align-content: center;
+}
+
+.hoy-equipo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.hoy-equipo span { overflow-wrap: anywhere; }
+.hoy-equipo-der { justify-content: flex-end; text-align: right; }
+
+.hoy-escudo {
+    height: 1.75rem;
+    width: 1.75rem;
+    flex-shrink: 0;
+    border-radius: 9999px;
+    object-fit: cover;
+}
+
+.hoy-vs { font-size: 0.6875rem; font-weight: 700; color: #9ca3af; }
+
+.hoy-marcador {
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.5rem;
+    background-color: #14532d;
+    font-size: 0.875rem;
+    font-weight: 800;
+    color: #fff;
+    white-space: nowrap;
+}
+
+/* `margin-top: auto` es lo que empareja la fila gris entre todas las tarjetas:
+   la empuja al fondo de la suya, sin importar cuánto ocupe el cruce de arriba. */
+.hoy-datos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-top: auto;
+    padding-top: 0.625rem;
+    border-top: 1px solid #f3f4f6;
+}
+
+.hoy-chip {
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    background-color: #f0fdf4;
+    font-size: 0.625rem;
+    font-weight: 600;
+    color: #15803d;
+}
+
+.hoy-cancha { background-color: #eff6ff; color: #1d4ed8; }
+
+/* ---- Figura de la semana y últimos resultados ---- */
+.dos-columnas { display: grid; gap: 1.5rem; }
+
+/* La tarjeta de la figura de la semana.
+
+   Responde tres preguntas en este orden: quién es, qué hizo, y en qué partido.
+   Antes mostraba un número grande con la palabra "participaciones", que no
+   contaba nada: un 4 no dice si fueron cuatro goles o cuatro pases. */
+.figura {
+    padding: 1.25rem;
+    border-radius: 1.25rem;
+    border: 1px solid #fde68a;
+    background-image:
+        radial-gradient(80% 60% at 100% 0%, rgba(251, 191, 36, 0.16), transparent 70%),
+        linear-gradient(135deg, #fffbeb, #fff 60%);
+}
+
+.figura-quien {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+}
+
+.figura-escudo {
+    flex-shrink: 0;
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 9999px;
+    object-fit: cover;
+    box-shadow: 0 3px 10px rgba(180, 83, 9, 0.22);
+}
+
+.figura-identidad { min-width: 0; }
+
+.figura-nombre {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    font-size: 1.125rem;
+    font-weight: 800;
+    color: #14532d;
+    overflow-wrap: anywhere;
+}
+
+.figura-dorsal {
+    padding: 0 0.375rem;
+    border-radius: 0.25rem;
+    background-color: #fef3c7;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: #92400e;
+}
+
+.figura-club { font-size: 0.875rem; font-weight: 600; color: #374151; overflow-wrap: anywhere; }
+.figura-torneo { font-size: 0.6875rem; color: #9ca3af; overflow-wrap: anywhere; }
+
+/* Las tres cifras, cada una con su etiqueta: se lee qué es cada número sin
+   tener que deducirlo. Va como <dl> porque eso es: pares de término y dato. */
+.figura-cifras {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.figura-cifra {
+    padding: 0.625rem 0.25rem;
+    border-radius: 0.75rem;
+    background-color: rgba(255, 255, 255, 0.75);
+    border: 1px solid #fef3c7;
+    text-align: center;
+}
+
+.figura-cifra dt {
+    font-size: 0.5625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #a16207;
+}
+
+.figura-cifra dd {
+    margin-top: 0.125rem;
+    font-size: 1.375rem;
+    font-weight: 800;
+    line-height: 1;
+    color: #14532d;
+}
+
+/* El dato que hace que la sección cuente algo: qué hizo, contra quién, y el
+   enlace a ese partido. */
+.figura-logro {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 0.875rem;
+    padding: 0.75rem 0.875rem;
+    border-radius: 0.875rem;
+    background-color: #14532d;
+    transition: background-color 0.12s ease;
+}
+.figura-logro:hover { background-color: #166534; }
+
+.figura-logro-que { font-size: 0.8125rem; font-weight: 600; color: #fff; }
+.figura-logro-ir { font-size: 0.6875rem; font-weight: 600; color: #86efac; white-space: nowrap; }
+
+.figura-plantilla {
+    display: block;
+    margin-top: 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #b45309;
+}
+.figura-plantilla:hover { color: #92400e; text-decoration: underline; }
+
+.seccion-nota { font-size: 0.75rem; color: #9ca3af; }
+
+/* Si el icono queda vacío no debe dejar un hueco fantasma. */
+.cifra-icono:empty { display: none; }
+
+.resultados {
+    border: 1px solid #e5e7eb;
+    border-radius: 1.125rem;
+    overflow: hidden;
+    background-color: #fff;
+}
+
+.resultado {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 0.875rem;
+    font-size: 0.8125rem;
+}
+.resultado + .resultado { border-top: 1px solid #f3f4f6; }
+.resultado:hover { background-color: #f0fdf4; }
+
+.resultado-equipo { color: #374151; overflow-wrap: anywhere; }
+.resultado-equipo-der { text-align: right; }
+
+.resultado-marcador {
+    padding: 0.0625rem 0.5rem;
+    border-radius: 0.375rem;
+    background-color: #f3f4f6;
+    font-weight: 800;
+    color: #14532d;
+    white-space: nowrap;
+}
+
+/* ---- Líderes ---- */
+.tres-columnas { display: grid; gap: 1rem; }
+
+.lideres {
+    border: 1px solid #e5e7eb;
+    border-radius: 1.125rem;
+    overflow: hidden;
+    background-color: #fff;
+}
+
+.lideres-cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.75rem 0.875rem;
+    font-size: 0.8125rem;
+    font-weight: 800;
+    color: #fff;
+}
+
+.lideres-cabecera a {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+    text-decoration: underline;
+}
+.lideres-cabecera a:hover { color: #fff; }
+
+/* Un color por ranking, para distinguirlos de un vistazo cuando están los tres
+   uno al lado del otro. */
+.lideres-goles { background-image: linear-gradient(135deg, #15803d, #166534); }
+.lideres-asistencias { background-image: linear-gradient(135deg, #b45309, #92400e); }
+.lideres-vallas { background-image: linear-gradient(135deg, #0369a1, #075985); }
+
+.lider {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.5rem 0.875rem;
+}
+.lider + .lider { border-top: 1px solid #f9fafb; }
+
+.lider-puesto {
+    flex-shrink: 0;
+    width: 1.5rem;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    background-color: #f3f4f6;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    color: #6b7280;
+}
+
+/* Podio: los tres primeros con su metal. */
+.lider-puesto-1 { background-image: linear-gradient(160deg, #fde68a, #f59e0b); color: #78350f; }
+.lider-puesto-2 { background-image: linear-gradient(160deg, #f3f4f6, #9ca3af); color: #374151; }
+.lider-puesto-3 { background-image: linear-gradient(160deg, #fed7aa, #b45309); color: #fff; }
+
+.lider-quien { flex: 1; min-width: 0; }
+.lider-nombre {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #1f2937;
+    overflow-wrap: anywhere;
+}
+.lider-equipo { font-size: 0.6875rem; color: #9ca3af; overflow-wrap: anywhere; }
+
+.lider-total {
+    flex-shrink: 0;
+    font-size: 1.125rem;
+    font-weight: 800;
+    color: #14532d;
+}
+.lider-total-chico { font-size: 0.9375rem; }
+
+.lideres-pie {
+    padding: 0.5rem 0.875rem;
+    border-top: 1px solid #f3f4f6;
+    font-size: 0.625rem;
+    color: #9ca3af;
+}
+
+/* ---- Torneos en juego ---- */
+.torneos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+    gap: 0.75rem;
+}
+
+.torneo {
+    display: block;
+    padding: 1rem;
+    border-radius: 1.125rem;
+    border: 1px solid #e5e7eb;
+    background-color: #fff;
+    transition: border-color 0.15s ease, transform 0.12s ease;
+}
+.torneo:hover { border-color: #86efac; transform: translateY(-2px); }
+
+.torneo-cabecera {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+}
+
+/* El tamaño chico del logo de liga. Existían -md y -lg, pero no este, y lo
+   estaban usando tres pantallas: el logo salía del tamaño por defecto. */
+.logo-liga-sm { height: 2rem; width: 2rem; font-size: 0.625rem; }
+
+.torneo-identidad { flex: 1; min-width: 0; }
+
+.torneo-liga {
+    font-size: 0.625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #15803d;
+    overflow-wrap: anywhere;
+}
+
+.torneo-nombre { font-size: 1rem; font-weight: 800; color: #14532d; }
+
+.torneo-estado {
+    flex-shrink: 0;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.5625rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background-color: #dcfce7;
+    color: #15803d;
+}
+.torneo-por-comenzar { background-color: #f3f4f6; color: #6b7280; }
+.torneo-terminando { background-color: #fef3c7; color: #92400e; }
+
+.torneo-cifras {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
+.torneo-barra {
+    margin-top: 0.5rem;
+    height: 0.375rem;
+    border-radius: 9999px;
+    background-color: #f3f4f6;
+    overflow: hidden;
+}
+.torneo-barra span {
+    display: block;
+    height: 100%;
+    border-radius: 9999px;
+    background-image: linear-gradient(90deg, #22c55e, #15803d);
+}
+
+.torneo-nota { margin-top: 0.5rem; font-size: 0.6875rem; color: #9ca3af; }
+
+/* ---- Últimos campeones ---- */
+.campeones {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+    gap: 0.75rem;
+}
+
+.campeon {
+    display: block;
+    padding: 1.25rem 1rem;
+    border-radius: 1.125rem;
+    border: 1px solid #fde68a;
+    background-image: linear-gradient(160deg, #fffbeb, #fff 70%);
+    text-align: center;
+    transition: transform 0.12s ease, box-shadow 0.15s ease;
+}
+.campeon:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(180, 83, 9, 0.15); }
+
+/* La copa de verdad, la misma imagen que la vitrina, en vez del emoji 🏆: cada
+   sistema lo dibuja distinto y al lado del resto se veía como un carácter
+   suelto, no como un trofeo. */
+.campeon-copa {
+    height: 3.5rem;
+    width: auto;
+    margin: 0 auto;
+    filter: drop-shadow(0 4px 8px rgba(180, 83, 9, 0.25));
+}
+.campeon-nombre {
+    margin-top: 0.375rem;
+    font-size: 1rem;
+    font-weight: 800;
+    color: #14532d;
+    overflow-wrap: anywhere;
+}
+.campeon-torneo { margin-top: 0.125rem; font-size: 0.6875rem; color: #92400e; }
+
+/* ============================================================================
+   Buscador
+   ============================================================================ */
+.buscador-cabecera {
+    margin-bottom: 2rem;
+    padding: 2.5rem 0;
+    background-image: linear-gradient(160deg, #14532d, #052e16);
+}
+
+.buscador-titulo {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #fff;
+}
+
+.buscador-caja {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    max-width: 40rem;
+}
+
+.buscador-campo {
+    flex: 1;
+    min-width: 0;
+    padding: 0.875rem 1.125rem;
+    border: 1px solid rgba(134, 239, 172, 0.35);
+    border-radius: 9999px;
+    background-color: rgba(255, 255, 255, 0.95);
+    font-size: 0.9375rem;
+    color: #111827;
+}
+.buscador-campo:focus {
+    outline: none;
+    border-color: #facc15;
+    box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.25);
+}
+
+.buscador-boton {
+    flex-shrink: 0;
+    padding: 0.875rem 1.5rem;
+    border-radius: 9999px;
+    background-color: #facc15;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #14532d;
+    cursor: pointer;
+}
+.buscador-boton:hover { background-color: #fde047; }
+
+.buscador-aviso { margin-top: 0.75rem; font-size: 0.8125rem; color: #86efac; }
+
+.grupo { margin-bottom: 2rem; }
+
+.grupo-titulo {
+    margin-bottom: 0.75rem;
+    font-size: 1.0625rem;
+    font-weight: 800;
+    color: #14532d;
+}
+
+.grupo-lista {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+    gap: 0.625rem;
+}
+
+.hallazgo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 0.875rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.875rem;
+    background-color: #fff;
+    transition: border-color 0.15s ease, transform 0.12s ease;
+}
+.hallazgo:hover { border-color: #86efac; transform: translateY(-1px); }
+
+.hallazgo-escudo {
+    height: 2.25rem;
+    width: 2.25rem;
+    flex-shrink: 0;
+    border-radius: 9999px;
+    object-fit: cover;
+}
+
+.hallazgo-pin { font-size: 1.25rem; flex-shrink: 0; }
+
+.hallazgo-datos { flex: 1; min-width: 0; }
+
+.hallazgo-nombre {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #1f2937;
+    overflow-wrap: anywhere;
+}
+
+.hallazgo-dorsal {
+    padding: 0 0.375rem;
+    border-radius: 0.25rem;
+    background-color: #f3f4f6;
+    font-size: 0.625rem;
+    color: #6b7280;
+}
+
+.hallazgo-detalle {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    overflow-wrap: anywhere;
+}
+
+.hallazgo-ir {
+    flex-shrink: 0;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: #15803d;
+}
+
+/* Estado vacío compartido por buscador y sedes. */
+.vacio {
+    padding: 3rem 1.5rem;
+    border: 1px dashed #d1d5db;
+    border-radius: 1.25rem;
+    background-color: #fff;
+    text-align: center;
+}
+.vacio-titulo { font-size: 1rem; font-weight: 700; color: #374151; }
+.vacio-texto { margin-top: 0.5rem; font-size: 0.875rem; color: #6b7280; }
+.vacio-texto a { color: #15803d; font-weight: 600; text-decoration: underline; }
+
+/* ============================================================================
+   Mapa de canchas
+   ============================================================================ */
+.mapa-sedes {
+    height: 24rem;
+    margin-bottom: 1.5rem;
+    border-radius: 1.25rem;
+    border: 1px solid #dcfce7;
+    /* Leaflet dibuja los mosaicos en cuadrados: sin esto sobresalen del borde
+       redondeado en las cuatro esquinas. */
+    overflow: hidden;
+    z-index: 0;
+}
+
+.sedes-lista {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+    gap: 0.75rem;
+}
+
+.sede {
+    padding: 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 1.125rem;
+    background-color: #fff;
+    cursor: pointer;
+    transition: border-color 0.15s ease, transform 0.12s ease;
+}
+.sede:hover { border-color: #86efac; transform: translateY(-2px); }
+
+.sede-cabecera { display: flex; align-items: center; gap: 0.625rem; }
+.sede-identidad { min-width: 0; }
+
+.sede-liga {
+    font-size: 0.625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #15803d;
+}
+
+.sede-nombre { font-size: 0.9375rem; font-weight: 800; color: #14532d; overflow-wrap: anywhere; }
+.sede-direccion { margin-top: 0.5rem; font-size: 0.75rem; color: #6b7280; }
+.sede-partidos { margin-top: 0.25rem; font-size: 0.75rem; color: #9ca3af; }
+
+.sede-ir {
+    display: inline-block;
+    margin-top: 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #15803d;
+}
+.sede-ir:hover { color: #14532d; }
+
+/* ============================================================================
+   Calendario mensual
+   ============================================================================ */
+.mes-cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.mes-titulo { font-size: 1.75rem; font-weight: 800; color: #14532d; }
+.mes-total { margin-top: 0.25rem; font-size: 0.875rem; color: #6b7280; }
+
+.mes-navegacion { display: flex; align-items: center; gap: 0.5rem; }
+
+.mes-flecha,
+.mes-hoy,
+.mes-jornadas {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 2.25rem;
+    padding: 0 0.875rem;
+    border: 1px solid #dcfce7;
+    border-radius: 9999px;
+    background-color: #fff;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #15803d;
+}
+.mes-flecha { width: 2.25rem; padding: 0; font-size: 1rem; }
+.mes-flecha:hover, .mes-hoy:hover, .mes-jornadas:hover {
+    background-color: #f0fdf4;
+    border-color: #86efac;
+}
+.mes-jornadas { background-color: #14532d; border-color: #14532d; color: #fff; }
+.mes-jornadas:hover { background-color: #166534; border-color: #166534; }
+
+.mes-grilla { display: grid; gap: 0.375rem; }
+
+/* Los nombres de los días sólo tienen sentido con la grilla de siete columnas:
+   en la lista del celular cada día ya lleva su fecha. */
+.mes-encabezado { display: none; }
+
+.mes-dia {
+    min-height: 3rem;
+    padding: 0.5rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    background-color: #fff;
+}
+
+.mes-dia-fuera { background-color: #fafafa; }
+.mes-dia-fuera .mes-numero { color: #d1d5db; }
+.mes-dia-hoy { border-color: #16a34a; box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.18); }
+
+/* En el celular la grilla no entra: se muestran sólo los días con partidos y
+   quedan como una lista. */
+.mes-dia-vacio { display: none; }
+
+.mes-numero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #6b7280;
+}
+
+.mes-cuenta {
+    padding: 0 0.375rem;
+    border-radius: 9999px;
+    background-color: #dcfce7;
+    font-size: 0.625rem;
+    color: #15803d;
+}
+
+.mes-partido {
+    display: block;
+    margin-top: 0.375rem;
+    padding: 0.375rem 0.5rem;
+    border-radius: 0.5rem;
+    background-color: #f0fdf4;
+    border-left: 3px solid #22c55e;
+    font-size: 0.6875rem;
+    line-height: 1.3;
+}
+.mes-partido:hover { background-color: #dcfce7; }
+
+.mes-hora { font-weight: 800; color: #14532d; }
+.mes-cruce { display: block; color: #374151; overflow-wrap: anywhere; }
+.mes-cruce strong { color: #14532d; }
+.mes-torneo { display: block; font-size: 0.5625rem; color: #9ca3af; }
+
+/* ============================================================================
+   La ficha del partido y el formulario de resultado como página completa.
+
+   El mismo fragmento se usa adentro del modal y como página. Lo que cambia es
+   el marco: acá se le quitan las medidas propias del modal (alto máximo, scroll
+   interno, sombra fuerte) y se le pone el aire de una pantalla.
+
+   Los selectores llevan el contenedor delante (`.ficha-pagina .ficha-modal`)
+   para ganar por especificidad: la regla original vive en el bloque de estilos
+   de base.html, que se carga después de este archivo.
+   ============================================================================ */
+.ficha-pagina {
+    padding-top: 1.25rem;
+    /* Llevaba un degradado verde claro arriba (#ecfdf5 -> transparente en 12rem)
+       para despegar la ficha de la barra verde cuando el fondo era el gris del
+       sistema. Se quito el 07/08/2026: con la portada de liga detras, ese
+       degradado se veia como una mancha blanca sobre la imagen. */
+}
+
+.ficha-pagina .ficha-modal,
+.formulario-pagina > div {
+    max-height: none;
+    overflow: visible;
+    margin: 0 auto;
+    box-shadow: 0 4px 20px rgba(20, 83, 45, 0.08);
+    border: 1px solid #dcfce7;
+}
+
+/* Migas de pan: de dónde vengo y dónde estoy. */
+.ficha-migas {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+    margin-bottom: 1rem;
+}
+
+.ficha-volver {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.4375rem 0.875rem;
+    border-radius: 9999px;
+    border: 1px solid #dcfce7;
+    background-color: #fff;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #15803d;
+    white-space: nowrap;
+}
+.ficha-volver:hover { background-color: #f0fdf4; border-color: #86efac; }
+
+.ficha-ruta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+.ficha-ruta a { color: #15803d; font-weight: 600; }
+.ficha-ruta a:hover { color: #14532d; text-decoration: underline; }
+.ficha-ruta-sep { color: #d1d5db; }
+
+/* Atajos del pie de la ficha: a dónde se va desde acá. Solo en la página; en el
+   modal no hacen falta porque quien lo abrió ya venía de una de esas pantallas. */
+.ficha-atajos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+    padding-bottom: 2rem;
+}
+
+.ficha-atajo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 1rem;
+    background-color: #fff;
+    transition: border-color 0.15s ease, transform 0.12s ease;
+}
+.ficha-atajo:hover { border-color: #86efac; transform: translateY(-2px); }
+
+.ficha-atajo-icono {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 9999px;
+    background-color: #f0fdf4;
+    font-size: 1.125rem;
+}
+.ficha-atajo-icono img {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 9999px;
+    object-fit: cover;
+}
+
+.ficha-atajo strong {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #14532d;
+}
+.ficha-atajo small {
+    display: block;
+    font-size: 0.6875rem;
+    color: #9ca3af;
+    overflow-wrap: anywhere;
+}
+
+.formulario-pagina { padding-bottom: 2rem; }
+.formulario-pagina > div { max-width: 48rem; }
+
+/* ============================================================================
+   Gráficos.
+   Barras de CSS, sin librería: el proyecto no tiene ninguna y meter uno de
+   200 KB por cuatro gráficos de barras no se paga. Las alturas y los anchos
+   vienen calculados de graficos.py, porque el template no sabe dividir.
+   ============================================================================ */
+.graf-cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.graf-filtro { display: flex; align-items: center; gap: 0.5rem; }
+.graf-etiqueta { font-size: 0.75rem; font-weight: 600; color: #6b7280; }
+
+.graf-filtro select {
+    padding: 0.5rem 0.875rem;
+    border: 1px solid #dcfce7;
+    border-radius: 9999px;
+    background-color: #fff;
+    font-size: 0.8125rem;
+    color: #14532d;
+}
+
+.graf-caja {
+    margin-top: 1.5rem;
+    padding: 1.25rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 1.25rem;
+    background-color: #fff;
+}
+
+.graf-titulo-fila {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.graf-nota { font-size: 0.75rem; color: #9ca3af; }
+
+/* ---- Columnas verticales: goles por jornada ---- */
+.graf-columnas {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.25rem;
+    height: 12rem;
+    /* Con veinte jornadas no entran: se desplaza en horizontal en vez de
+       aplastarlas hasta que no se distinga una de otra. */
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+}
+
+.graf-columna {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 1 0 1.75rem;
+    height: 100%;
+}
+
+.graf-valor { font-size: 0.625rem; font-weight: 700; color: #14532d; }
+
+.graf-barra-vertical {
+    width: 100%;
+    min-height: 2px;
+    margin-top: 0.125rem;
+    border-radius: 0.25rem 0.25rem 0 0;
+    background-image: linear-gradient(180deg, #22c55e, #15803d);
+}
+
+.graf-eje { margin-top: 0.25rem; font-size: 0.5625rem; color: #9ca3af; }
+.graf-pie { margin-top: 0.5rem; font-size: 0.6875rem; color: #9ca3af; text-align: center; }
+
+/* ---- Barras horizontales: ataque y defensa ---- */
+.graf-fila {
+    display: grid;
+    grid-template-columns: 7rem 1fr 2.5rem;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.3125rem 0;
+}
+
+.graf-nombre {
+    font-size: 0.75rem;
+    color: #374151;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.graf-pista {
+    height: 0.875rem;
+    border-radius: 9999px;
+    background-color: #f3f4f6;
+    overflow: hidden;
+}
+
+.graf-barra {
+    height: 100%;
+    min-width: 2px;
+    border-radius: 9999px;
+}
+.graf-barra-ataque { background-image: linear-gradient(90deg, #fb923c, #ea580c); }
+.graf-barra-defensa { background-image: linear-gradient(90deg, #38bdf8, #0369a1); }
+
+.graf-cifra {
+    font-size: 0.8125rem;
+    font-weight: 800;
+    color: #14532d;
+    text-align: right;
+}
+
+/* ---- Una sola cabecera partida en tres: cómo terminan los partidos ---- */
+.graf-reparto {
+    display: flex;
+    height: 2.25rem;
+    border-radius: 0.625rem;
+    overflow: hidden;
+}
+
+.graf-tramo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    color: #fff;
+    /* Un tramo del 2 % no puede mostrar su número: se lo esconde en vez de
+       dejar un texto cortado a la mitad. */
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.graf-tramo-local { background-color: #15803d; }
+.graf-tramo-empate { background-color: #9ca3af; }
+.graf-tramo-visita { background-color: #b45309; }
+
+.graf-leyenda {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.25rem;
+    margin-top: 0.75rem;
+    font-size: 0.75rem;
+    color: #4b5563;
+}
+
+.graf-punto {
+    display: inline-block;
+    width: 0.625rem;
+    height: 0.625rem;
+    margin-right: 0.25rem;
+    border-radius: 9999px;
+}
+
+.graf-aclaracion {
+    margin-top: 1rem;
+    font-size: 0.75rem;
+    line-height: 1.6;
+    color: #9ca3af;
+}
+
+/* ============================================================================
+   Adaptativo. Se sube de una columna a varias recién cuando hay lugar de
+   verdad, no por el número mágico del celular.
+   ============================================================================ */
+@media (min-width: 40rem) {
+    .cifras { grid-template-columns: repeat(4, 1fr); }
+    .hero-titulo { font-size: 2.5rem; }
+    .hero-escudo { height: 4rem; width: 4rem; }
+    .pie-interior { grid-template-columns: repeat(2, 1fr); }
+    /* Recién acá entra el nombre completo al lado del logo. */
+    .cabecera-nombre span { display: inline; }
+}
+
+@media (min-width: 48rem) {
+    /* El buscador aparece cuando hay ancho para sus 17rem sin apretar el resto.
+       Debajo de esto se llega por el menú del celular, que tiene su enlace. */
+    .cabecera-buscar { display: flex; }
+}
+
+@media (min-width: 64rem) {
+    /* Los dos niveles: la navegación se muda del menú del celular a su propia
+       fila, y la hamburguesa desaparece. */
+    .cabecera-baja { display: block; }
+    .cabecera-hamburguesa { display: none; }
+    .cabecera-salir { display: block; }
+    .menu-movil { display: none !important; }
+}
+
+@media (min-width: 56rem) {
+    /* Recién acá entra la grilla de siete columnas sin que cada día quede del
+       ancho de un dedo. Debajo de esto es una lista de los días con partidos. */
+    .mes-grilla { grid-template-columns: repeat(7, 1fr); }
+    .mes-dia-vacio { display: block; }
+    .mes-dia { min-height: 7rem; }
+    .mes-encabezado {
+        display: block;
+        padding-bottom: 0.25rem;
+        font-size: 0.6875rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #9ca3af;
+        text-align: center;
+    }
+}
+
+@media (min-width: 64rem) {
+    .hero { padding: 4rem 1.25rem 5rem; }
+    /* El texto a la izquierda y el partido destacado a la derecha: recién acá
+       entran los dos sin que ninguno quede apretado. */
+    .hero-interior { grid-template-columns: 1.35fr 1fr; align-items: center; gap: 3rem; }
+    .hero-titulo { font-size: 2.75rem; }
+    .dos-columnas { grid-template-columns: 1fr 1fr; align-items: start; }
+    .tres-columnas { grid-template-columns: repeat(3, 1fr); }
+    .equipo-fechas { grid-template-columns: 1fr 1fr; }
+    /* La marca ocupa el doble que cada columna de enlaces: es el bloque que
+       lleva el logo y el texto largo. */
+    .pie-interior { grid-template-columns: 2fr 1fr 1fr 1fr; gap: 3rem; }
+}
+
+/* ============================================================================
+   Alturas y separaciones con clase, no con `style` inline.
+
+   La regla del proyecto —escrita en .vscode/settings.json— es que una plantilla
+   no lleva etiquetas de Django dentro de un atributo `style`: hace tropezar al
+   validador de CSS del editor, y la respuesta fue arreglar las plantillas en vez
+   de apagar la validación. Los anchos ya tenían sus `.ancho-N` en base.html;
+   estas son las alturas equivalentes, para las barras verticales de los
+   gráficos. El redondeo al paso de 5 lo hace `apps/usuarios/barras.py`.
+   ============================================================================ */
+.alto-0   { height: 0%; }
+.alto-5   { height: 5%; }
+.alto-10  { height: 10%; }
+.alto-15  { height: 15%; }
+.alto-20  { height: 20%; }
+.alto-25  { height: 25%; }
+.alto-30  { height: 30%; }
+.alto-35  { height: 35%; }
+.alto-40  { height: 40%; }
+.alto-45  { height: 45%; }
+.alto-50  { height: 50%; }
+.alto-55  { height: 55%; }
+.alto-60  { height: 60%; }
+.alto-65  { height: 65%; }
+.alto-70  { height: 70%; }
+.alto-75  { height: 75%; }
+.alto-80  { height: 80%; }
+.alto-85  { height: 85%; }
+.alto-90  { height: 90%; }
+.alto-95  { height: 95%; }
+.alto-100 { height: 100%; }
+
+.ancho-pagina-arriba { padding-top: 2rem; }
+.cifras-sueltas { margin-top: 0; }
+.vacio-separado { margin-top: 1.5rem; }

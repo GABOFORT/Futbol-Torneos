@@ -10,28 +10,95 @@ from apps.partidos.calendario import armar_jornadas
 from apps.partidos.models import Partido
 from apps.usuarios.eliminar import vista_eliminar
 from apps.usuarios.filtros import buscar, campo_texto, campo_opciones, hay_filtros
-from apps.usuarios.permissions import admin_liga_required, ligas_administradas
+from apps.usuarios.permissions import (
+    admin_liga_required, ligas_administradas, ligas_visibles,
+)
 
+from . import busqueda, portada
 from .forms import CategoriaForm
-from .models import Categoria, Liga
+from .models import Categoria, Liga, Sede
 
 
 def inicio(request):
-    context = {
-        # Los reprogramados tambien son proximos partidos: si se filtrara solo
-        # por 'programado' desaparecerian de la portada al moverles la fecha.
-        'proximos_partidos': Partido.objects.filter(estado__in=Partido.ESTADOS_POR_JUGARSE)
-            .select_related('categoria', 'categoria__liga', 'equipo_local', 'equipo_visitante').order_by('fecha')[:5],
-        'ligas_activas': Liga.objects.filter(activa=True)[:6],
-        # Antes se ordenaba por fecha_inicio, que era la fecha del torneo. Ese
-        # campo ahora es un rango de edad, asi que se muestran las mas recientes.
-        'categorias_vigentes': Categoria.objects.filter(activa=True).select_related('liga').order_by('-id')[:6],
-    }
-    return render(request, 'inicio.html', context)
+    """La portada, pensada para quien entra sin cuenta.
+
+    Un padre que quiere ver a que hora juega su hijo, como va su equipo y quien
+    mete los goles. Todo lo que se muestra sale de `portada.py`, acotado a las
+    ligas activas y calculado en una cantidad fija de consultas.
+
+    Antes esta vista armaba tres listas sueltas a mano, y una de ellas ordenaba
+    por fecha sin excluir los nulos: los partidos sin fecha aparecian como
+    "proximos partidos".
+    """
+    return render(request, 'inicio.html', portada.todo())
 
 
 def roles(request):
     return render(request, 'roles.html')
+
+
+def buscar_vista(request):
+    """El buscador del sitio. Publico, acotado por `ligas_visibles`.
+
+    Una sola caja para jugador, equipo, torneo y cancha: quien busca no sabe en
+    que tabla esta lo que quiere, escribe un nombre y espera resultados.
+    """
+    termino = request.GET.get('q', '')
+    return render(request, 'busqueda.html', {
+        'termino': termino,
+        'hay_termino': busqueda.hay_termino(termino),
+        'minimo': busqueda.MINIMO,
+        'resultados': busqueda.buscar_todo(request.user, termino),
+    })
+
+
+def mis_equipos(request):
+    """Los próximos partidos de los equipos que el visitante sigue.
+
+    Devuelve **un fragmento**, no una página: lo pide `seguir.js` desde la
+    portada con los ids que guardó el navegador y lo inserta arriba de todo.
+
+    Se hace así, y no dibujando la lista con JavaScript, para que el HTML lo
+    siga armando el servidor: el estilo, las fechas y los permisos quedan en un
+    solo lugar y no hay que repetirlos en el navegador.
+
+    El visitante no tiene cuenta, así que lo que sigue vive en su dispositivo.
+    Acá no se guarda nada de nadie.
+    """
+    ids = request.GET.get('ids', '').split(',')
+    return render(request, '_mis_equipos.html', {
+        'bloques': portada.de_mis_equipos(ids),
+    })
+
+
+def sedes_vista(request):
+    """El mapa de canchas de las ligas visibles.
+
+    Las coordenadas ya estaban cargadas y el mapa construido para elegir la
+    cancha de un partido, pero no habia ninguna pantalla que las mostrara todas
+    juntas: quien viene a ver donde juega su hijo no tenia a donde ir.
+    """
+    sedes = (Sede.objects
+             .filter(liga__in=ligas_visibles(request.user))
+             .select_related('liga')
+             .annotate(n_partidos=Count('partidos'))
+             .order_by('liga__nombre', 'nombre'))
+    return render(request, 'sedes.html', {
+        'sedes': sedes,
+        # El mapa arranca centrado en el promedio de las canchas cargadas, para
+        # que no abra en medio del oceano ni haya que elegir una a dedo.
+        'centro': _centro_de(sedes),
+    })
+
+
+def _centro_de(sedes):
+    puntos = [(float(s.latitud), float(s.longitud)) for s in sedes]
+    if not puntos:
+        return None
+    return {
+        'lat': sum(p[0] for p in puntos) / len(puntos),
+        'lon': sum(p[1] for p in puntos) / len(puntos),
+    }
 
 
 def categoria_list(request):

@@ -5,6 +5,36 @@ from django.http import JsonResponse
 from django.shortcuts import redirect, render
 
 
+def entrenadores_sin_equipo_tras_borrar(equipos):
+    """Los entrenadores que se quedarian sin ningun equipo al borrar `equipos`.
+
+    Un entrenador existe para dirigir: si se elimina la liga donde dirigia, su
+    cuenta no tiene para que seguir. Antes quedaba viva y sin equipos, juntando
+    cuentas fantasma en el listado (llegaron a ser 197).
+
+    **Se borra por lo que le queda, no por lo que se va.** Un mismo entrenador
+    puede dirigir en dos ligas distintas: si tiene equipos fuera de los que se
+    estan borrando, la cuenta se conserva. Ademas, `Equipo.entrenador` es
+    PROTECT, asi que borrarlo igual habria reventado.
+
+    Tampoco alcanza a los recien creados: solo entran los que hoy dirigen alguno
+    de los equipos que se van. Un entrenador dado de alta y todavia sin equipo
+    asignado no se toca.
+    """
+    from .models import Usuario
+
+    ids = list(equipos.values_list('pk', flat=True))
+    if not ids:
+        return Usuario.objects.none()
+
+    candidatos = Usuario.objects.filter(
+        role=Usuario.ROLE_ENTRENADOR, equipos__pk__in=ids,
+    ).distinct()
+    # Los que conservan algun equipo fuera de la tanda que se borra se quedan.
+    sin_nada = [u.pk for u in candidatos if not u.equipos.exclude(pk__in=ids).exists()]
+    return Usuario.objects.filter(pk__in=sin_nada)
+
+
 def vista_eliminar(request, instancia, etiqueta, url_listado, mensaje_ok, arrastra=(), bloqueo='',
                    antes_de_borrar=None):
     """Flujo comun de borrado para liga, categoria, equipo y usuario.

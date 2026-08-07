@@ -1,0 +1,54 @@
+{% comment %}
+Los próximos partidos de los equipos que sigue el visitante.
+
+Es un fragmento: lo pide `seguir.js` y lo inserta arriba de la portada. Si no
+sigue a ninguno, o los que seguía ya no existen, devuelve vacío y la sección no
+aparece — mejor que un recuadro diciendo "no hay nada".
+{% endcomment %}
+{% if bloques %}
+    <section class="ancho-pagina mis-equipos">
+        <div class="seccion-cabecera">
+            <h2 class="seccion-titulo">Tus equipos</h2>
+            <span class="seccion-nota">Guardado en este dispositivo</span>
+        </div>
+        <div class="mis-lista">
+            {% for bloque in bloques %}
+                <article class="mio">
+                    <header class="mio-cabecera">
+                        <img src="{{ bloque.equipo.escudo_url }}" alt="" class="mio-escudo">
+                        <div class="mio-identidad">
+                            <a href="{% url 'equipo-detail' bloque.equipo.pk %}" class="mio-nombre">{{ bloque.equipo.nombre }}</a>
+                            <p class="mio-torneo">{{ bloque.equipo.liga.nombre }} · {{ bloque.equipo.categoria.nombre }}</p>
+                        </div>
+                        <button type="button" class="mio-quitar" data-seguir="{{ bloque.equipo.pk }}"
+                                aria-label="Dejar de seguir a {{ bloque.equipo.nombre }}">★</button>
+                    </header>
+
+                    {% if bloque.partidos %}
+                        <ul class="mio-partidos">
+                            {% for partido in bloque.partidos %}
+                                <li>
+                                    <a href="{% url 'partido-detalle' partido.pk %}">
+                                        <span class="mio-fecha">{{ partido.fecha|date:'d/m' }} · {{ partido.fecha|date:'H:i' }}</span>
+                                        <span class="mio-rival">
+                                            {% if partido.equipo_local_id == bloque.equipo.pk %}
+                                                vs {{ partido.equipo_visitante.nombre }}
+                                            {% else %}
+                                                en casa de {{ partido.equipo_local.nombre }}
+                                            {% endif %}
+                                        </span>
+                                        {% if partido.sede %}
+                                            <span class="mio-cancha">{{ partido.sede.nombre }}</span>
+                                        {% endif %}
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="mio-sin">Sin próximos partidos con fecha asignada.</p>
+                    {% endif %}
+                </article>
+            {% endfor %}
+        </div>
+    </section>
+{% endif %}

@@ -124,6 +124,7 @@ class ResultadoForm(StyledFormMixin, forms.ModelForm):
     class Meta:
         model = Partido
         fields = [
+            'no_se_presento',
             'goles_local', 'goles_visitante',
             'ganador_penales', 'penales_local', 'penales_visitante',
         ]
@@ -135,6 +136,22 @@ class ResultadoForm(StyledFormMixin, forms.ModelForm):
         # recordar cual de los dos era el local.
         self.fields['goles_local'].label = f'Goles de {partido.equipo_local.nombre}'
         self.fields['goles_visitante'].label = f'Goles de {partido.equipo_visitante.nombre}'
+
+        # Va primero en el formulario: es lo que decide si hay resultado que
+        # cargar o no, y preguntarlo despues del marcador seria al reves.
+        ausente = self.fields['no_se_presento']
+        ausente.queryset = Equipo.objects.filter(
+            pk__in=[partido.equipo_local_id, partido.equipo_visitante_id]
+        )
+        ausente.required = False
+        ausente.empty_label = 'Se presentaron los dos'
+        ausente.label = '¿Alguno no se presentó?'
+        ausente.help_text = (
+            f'Si un equipo no llega, el rival gana {Partido.MARCADOR_DEFAULT}-0 por default '
+            f'y no se cargan goleadores.'
+        )
+        # El JS oculta el marcador y las secciones de goles cuando se elige uno.
+        ausente.widget.attrs['data-ausente'] = '1'
 
         penales = self.fields['ganador_penales']
         penales.queryset = Equipo.objects.filter(
@@ -219,6 +236,25 @@ class ResultadoForm(StyledFormMixin, forms.ModelForm):
 
     def clean(self):
         datos = super().clean()
+
+        # Un partido que no se jugo no tiene marcador que discutir: el 3-0 lo
+        # pone el sistema y se descarta cualquier cosa que haya venido en los
+        # campos de goles o de penales. Se sale antes de todo lo demas porque
+        # ninguna de esas reglas aplica a un partido que no se jugo.
+        ausente = datos.get('no_se_presento')
+        if ausente:
+            gana_el_local = ausente.pk == self.instance.equipo_visitante_id
+            datos['goles_local'] = Partido.MARCADOR_DEFAULT if gana_el_local else 0
+            datos['goles_visitante'] = 0 if gana_el_local else Partido.MARCADOR_DEFAULT
+            datos['ganador_penales'] = None
+            datos['penales_local'] = None
+            datos['penales_visitante'] = None
+            # Si el marcador venia con errores propios dejarian de tener sentido.
+            for campo in ('goles_local', 'goles_visitante', 'ganador_penales',
+                          'penales_local', 'penales_visitante'):
+                self.errors.pop(campo, None)
+            return datos
+
         locales = datos.get('goles_local')
         visitantes = datos.get('goles_visitante')
         ganador = datos.get('ganador_penales')

@@ -2,76 +2,433 @@
 
 {% block titulo %}BUHO Sports League{% endblock %}
 
+{% block descripcion %}Partidos de hoy, tablas de posiciones, goleadores y campeones de todas las categorías. Consulta libre, sin registro.{% endblock %}
+{% block og_titulo %}BUHO Sports League · BUHO Sports League{% endblock %}
+{% block og_descripcion %}Partidos de hoy, tablas de posiciones, goleadores y campeones de todas las categorías. Consulta libre, sin registro.{% endblock %}
+
+{% comment %}
+La portada, para quien entra sin cuenta.
+
+El orden de las secciones sigue lo que esa persona viene a buscar: primero
+cuando y donde se juega hoy, despues como va su equipo, y recien al final los
+premios y las temporadas terminadas.
+
+Todo sale de `portada.py`. Ningun bloque se muestra vacio: si no hay partidos
+hoy, la seccion no aparece en vez de decir "sin datos".
+{% endcomment %}
+
 {% block contenido %}
-<div class="bg-gradient-to-br from-green-800 to-green-900">
-    <div class="max-w-6xl mx-auto py-16 px-4 text-center text-white">
-        <h1 class="text-4xl md:text-5xl font-bold mb-4">Bienvenido a BUHO Sports League</h1>
-        <p class="text-green-100 text-lg mb-8 max-w-2xl mx-auto">Sigue tus ligas, categorías y equipos favoritos: calendario, resultados y tabla de posiciones en un solo lugar.</p>
-        <div class="flex flex-col sm:flex-row justify-center gap-4">
-            <a href="{% url 'categoria-list' %}" class="bg-white text-green-800 px-6 py-3 rounded-full font-semibold hover:bg-green-50 transition">Ver categorías</a>
-            <a href="{% url 'estadisticas-ligas' %}" class="border border-white text-white px-6 py-3 rounded-full font-semibold hover:bg-white/10 transition">Ver estadísticas</a>
+
+{% comment %}
+---- Franja de marcadores ----
+Va arriba de todo, como en cualquier sitio deportivo: es lo primero que mira
+quien entra. Se desplaza en horizontal para que entren muchos partidos sin
+empujar la página hacia abajo.
+{% endcomment %}
+{% if franja %}
+    <div class="franja">
+        <div class="franja-interior">
+            <span class="franja-titulo">{{ franja_titulo }}</span>
+            <div class="franja-lista">
+                {% for partido in franja %}
+                    <a href="{% url 'partido-detalle' partido.pk %}" class="marcador">
+                        <span class="marcador-torneo">{{ partido.categoria.liga.nombre }} · {{ partido.categoria.nombre }}</span>
+                        <span class="marcador-fila">
+                            <span class="marcador-equipo">{{ partido.equipo_local.nombre }}</span>
+                            {% if partido.jugado %}
+                                <span class="marcador-gol">{{ partido.goles_local }}</span>
+                            {% endif %}
+                        </span>
+                        <span class="marcador-fila">
+                            <span class="marcador-equipo">{{ partido.equipo_visitante.nombre }}</span>
+                            {% if partido.jugado %}
+                                <span class="marcador-gol">{{ partido.goles_visitante }}</span>
+                            {% endif %}
+                        </span>
+                        <span class="marcador-pie">
+                            {% if partido.jugado %}
+                                Final{% if partido.ganado_por_default %} · default{% endif %}
+                            {% else %}
+                                {{ partido.fecha|date:'d/m H:i' }}
+                            {% endif %}
+                        </span>
+                    </a>
+                {% endfor %}
+            </div>
         </div>
     </div>
-</div>
+{% endif %}
 
-<div class="max-w-6xl mx-auto px-4 py-12 space-y-12">
-
-    <section>
-        <div class="flex items-center justify-between mb-4">
-            <h2 class="text-2xl font-bold text-green-900">Próximos partidos</h2>
-            <a href="{% url 'partido-list' %}" class="text-sm font-semibold text-green-700 hover:text-green-900">Ver calendario completo →</a>
+{% comment %} ---- Encabezado con el proximo partido ---- {% endcomment %}
+<section class="hero">
+    <div class="hero-interior">
+        <div class="hero-texto">
+            <p class="hero-marca">BUHO Sports League</p>
+            <h1 class="hero-titulo">El Fútbol, Partido a Partido</h1>
+            <p class="hero-bajada">
+                Calendario, tablas, goleadores y campeones de todas las categorías.
+            </p>
+            <div class="hero-acciones">
+                <a href="{% url 'partido-calendario' %}" class="hero-boton">Ver el calendario</a>
+                <a href="{% url 'estadisticas-ligas' %}" class="hero-boton hero-boton-borde">Tablas de posiciones</a>
+            </div>
         </div>
-        <div class="grid gap-4 md:grid-cols-2">
-            {% for partido in proximos_partidos %}
-                <div class="rounded-2xl bg-white border border-green-100 p-5 shadow-sm">
-                    <p class="text-xs uppercase tracking-wide text-green-700 font-semibold">{{ partido.categoria.liga.nombre }} · {{ partido.categoria.nombre }}</p>
-                    <p class="mt-2 text-lg font-bold text-gray-900">{{ partido.equipo_local.nombre }} vs {{ partido.equipo_visitante.nombre }}</p>
-                    <p class="mt-1 text-sm text-gray-500">{{ partido.fecha|date:'d/m/Y H:i' }}</p>
+
+        {% if destacado %}
+            {% comment %}
+            El partido destacado no lo marca nadie a mano: es el cruce con los
+            dos equipos mejor ubicados de su tabla entre los que se vienen.
+            {% endcomment %}
+            <a href="{% url 'partido-detalle' destacado.pk %}" class="hero-partido">
+                <p class="hero-partido-etiqueta">Partido destacado</p>
+                <div class="hero-cruce">
+                    <div class="hero-lado">
+                        <img src="{{ destacado.equipo_local.escudo_url }}" alt="" class="hero-escudo">
+                        <p class="hero-equipo">{{ destacado.equipo_local.nombre }}</p>
+                        <p class="hero-puesto">{{ destacado.puesto_local }}º</p>
+                    </div>
+                    <div class="hero-versus">
+                        <span>VS</span>
+                        {% if destacado.fecha %}
+                            <p class="hero-cuenta" data-cuenta="{{ destacado.fecha|date:'c' }}">
+                                {{ destacado.fecha|date:'d/m · H:i' }}
+                            </p>
+                        {% endif %}
+                    </div>
+                    <div class="hero-lado">
+                        <img src="{{ destacado.equipo_visitante.escudo_url }}" alt="" class="hero-escudo">
+                        <p class="hero-equipo">{{ destacado.equipo_visitante.nombre }}</p>
+                        <p class="hero-puesto">{{ destacado.puesto_visitante }}º</p>
+                    </div>
                 </div>
-            {% empty %}
-                <p class="text-gray-500">No hay partidos programados por el momento.</p>
+                <p class="hero-partido-pie">
+                    {{ destacado.categoria.liga.nombre }} · {{ destacado.categoria.nombre }}
+                    {% if destacado.sede %} · {{ destacado.sede.nombre }}{% endif %}
+                </p>
+            </a>
+        {% endif %}
+    </div>
+</section>
+
+{% comment %} ---- Las cuatro cifras ---- {% endcomment %}
+<section class="ancho-pagina">
+    <div class="cifras">
+        <div class="cifra">
+            <span class="cifra-icono"></span>
+            <p class="cifra-numero">{{ cifras.partidos_hoy }}</p>
+            <p class="cifra-texto">Partido{{ cifras.partidos_hoy|pluralize:"s" }} hoy</p>
+        </div>
+        <div class="cifra">
+            <span class="cifra-icono"></span>
+            <p class="cifra-numero">{{ cifras.torneos_activos }}</p>
+            <p class="cifra-texto">Torneo{{ cifras.torneos_activos|pluralize:"s" }} activo{{ cifras.torneos_activos|pluralize:"s" }}</p>
+        </div>
+        <div class="cifra">
+            <span class="cifra-icono"></span>
+            <p class="cifra-numero">{{ cifras.equipos }}</p>
+            <p class="cifra-texto">Equipos registrados</p>
+        </div>
+        <div class="cifra">
+            <span class="cifra-icono"></span>
+            <p class="cifra-numero">{{ cifras.jugadores }}</p>
+            <p class="cifra-texto">Jugadores inscritos</p>
+        </div>
+    </div>
+</section>
+
+{% comment %}
+---- Tus equipos ----
+El hueco donde `seguir.js` inserta los próximos partidos de los equipos que el
+visitante sigue. Llega vacío: lo que sigue está guardado en su navegador, no en
+el servidor, así que el HTML de la portada no puede saberlo de antemano.
+{% endcomment %}
+<div id="mis-equipos"></div>
+
+{% comment %} ---- Torneos en juego ---- {% endcomment %}
+{% if torneos %}
+    <section class="ancho-pagina">
+        <div class="seccion-cabecera">
+            <h2 class="seccion-titulo">Torneos en juego</h2>
+            <a href="{% url 'estadisticas-ligas' %}" class="seccion-enlace">Ver todas las ligas →</a>
+        </div>
+        <div class="torneos">
+            {% for t in torneos %}
+                <a href="{% url 'estadisticas-categoria' t.categoria.pk %}" class="torneo">
+                    <div class="torneo-cabecera">
+                        {% include 'usuarios/_logo_liga.html' with liga=t.categoria.liga clase='logo-liga-sm' %}
+                        <div class="torneo-identidad">
+                            <p class="torneo-liga">{{ t.categoria.liga.nombre }}</p>
+                            <p class="torneo-nombre">{{ t.categoria.nombre }}</p>
+                        </div>
+                        <span class="torneo-estado torneo-{{ t.estado|slugify }}">{{ t.estado }}</span>
+                    </div>
+                    <div class="torneo-cifras">
+                        <span>{{ t.equipos }} equipos</span>
+                        {% if t.total %}<span>{{ t.jugados }} de {{ t.total }} partidos</span>{% endif %}
+                    </div>
+                    {% if t.total %}
+                        <div class="torneo-barra"><span class="ancho-{{ t.avance }}"></span></div>
+                    {% else %}
+                        <p class="torneo-nota">Todavía no se generó el calendario</p>
+                    {% endif %}
+                </a>
             {% endfor %}
         </div>
     </section>
+{% endif %}
 
-    <section>
-        <div class="flex items-center justify-between mb-4">
-            <h2 class="text-2xl font-bold text-green-900">Ligas activas</h2>
-            <a href="{% url 'estadisticas-ligas' %}" class="text-sm font-semibold text-green-700 hover:text-green-900">Ver todas →</a>
+{% comment %} ---- Partidos de hoy ---- {% endcomment %}
+{% if partidos_hoy %}
+    <section class="ancho-pagina">
+        <div class="seccion-cabecera">
+            <h2 class="seccion-titulo">Partidos de hoy</h2>
+            <a href="{% url 'partido-list' %}" class="seccion-enlace">Ver todo el calendario →</a>
         </div>
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {% for liga in ligas_activas %}
-                <a href="{% url 'estadisticas-liga-categorias' liga.pk %}" class="rounded-2xl bg-white border border-green-100 p-5 shadow-sm hover:border-green-300 transition">
-                    <div class="flex items-center gap-3">
-                        {% include 'usuarios/_logo_liga.html' %}
-                        <div>
-                            <p class="text-lg font-bold text-gray-900">{{ liga.nombre }}</p>
-                            <p class="mt-1 text-sm text-gray-500">{{ liga.categorias.count }} categoría(s)</p>
+        <div class="lista-hoy">
+            {% for partido in partidos_hoy %}
+                <a href="{% url 'partido-detalle' partido.pk %}" class="hoy">
+                    <div class="hoy-hora">
+                        <span class="hoy-reloj">{{ partido.fecha|date:'H:i' }}</span>
+                        {% if partido.jugado %}
+                            <span class="hoy-estado hoy-final">Final</span>
+                        {% else %}
+                            <span class="hoy-estado">{{ partido.fecha|date:'d/m' }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="hoy-cruce">
+                        <div class="hoy-equipo">
+                            <img src="{{ partido.equipo_local.escudo_url }}" alt="" class="hoy-escudo">
+                            <span>{{ partido.equipo_local.nombre }}</span>
+                        </div>
+                        {% if partido.jugado %}
+                            <span class="hoy-marcador">{{ partido.goles_local }} - {{ partido.goles_visitante }}</span>
+                        {% else %}
+                            <span class="hoy-vs">vs</span>
+                        {% endif %}
+                        <div class="hoy-equipo hoy-equipo-der">
+                            <span>{{ partido.equipo_visitante.nombre }}</span>
+                            <img src="{{ partido.equipo_visitante.escudo_url }}" alt="" class="hoy-escudo">
                         </div>
                     </div>
+                    <div class="hoy-datos">
+                        <span class="hoy-chip">{{ partido.categoria.liga.nombre }}</span>
+                        <span class="hoy-chip">{{ partido.categoria.nombre }}</span>
+                        {% if partido.sede %}<span class="hoy-chip hoy-cancha">{{ partido.sede.nombre }}</span>{% endif %}
+                    </div>
                 </a>
-            {% empty %}
-                <p class="text-gray-500">Todavía no hay ligas registradas.</p>
             {% endfor %}
         </div>
     </section>
-
-    <section>
-        <div class="flex items-center justify-between mb-4">
-            <h2 class="text-2xl font-bold text-green-900">Categorías vigentes</h2>
-            <a href="{% url 'categoria-list' %}" class="text-sm font-semibold text-green-700 hover:text-green-900">Ver todas →</a>
+{% elif proximos %}
+    {% comment %} Sin partidos hoy se muestran los que vienen: la portada nunca queda muda. {% endcomment %}
+    <section class="ancho-pagina">
+        <div class="seccion-cabecera">
+            <h2 class="seccion-titulo">Próximos partidos</h2>
+            <a href="{% url 'partido-list' %}" class="seccion-enlace">Ver todo el calendario →</a>
         </div>
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {% for categoria in categorias_vigentes %}
-                <div class="rounded-2xl bg-white border border-green-100 p-5 shadow-sm">
-                    <p class="text-xs uppercase tracking-wide text-green-700 font-semibold">{{ categoria.liga.nombre }}</p>
-                    <p class="mt-2 text-lg font-bold text-gray-900">{{ categoria.nombre }}</p>
+        <div class="lista-hoy">
+            {% for partido in proximos %}
+                <a href="{% url 'partido-detalle' partido.pk %}" class="hoy">
+                    <div class="hoy-hora">
+                        <span class="hoy-reloj">{{ partido.fecha|date:'H:i' }}</span>
+                        <span class="hoy-estado">{{ partido.fecha|date:'d/m' }}</span>
+                    </div>
+                    <div class="hoy-cruce">
+                        <div class="hoy-equipo">
+                            <img src="{{ partido.equipo_local.escudo_url }}" alt="" class="hoy-escudo">
+                            <span>{{ partido.equipo_local.nombre }}</span>
+                        </div>
+                        <span class="hoy-vs">vs</span>
+                        <div class="hoy-equipo hoy-equipo-der">
+                            <span>{{ partido.equipo_visitante.nombre }}</span>
+                            <img src="{{ partido.equipo_visitante.escudo_url }}" alt="" class="hoy-escudo">
+                        </div>
+                    </div>
+                    <div class="hoy-datos">
+                        <span class="hoy-chip">{{ partido.categoria.liga.nombre }}</span>
+                        <span class="hoy-chip">{{ partido.categoria.nombre }}</span>
+                        {% if partido.sede %}<span class="hoy-chip hoy-cancha">{{ partido.sede.nombre }}</span>{% endif %}
+                    </div>
+                </a>
+            {% endfor %}
+        </div>
+    </section>
+{% endif %}
+
+{% comment %} ---- Figura de la semana y ultimos resultados ---- {% endcomment %}
+{% if figura or resultados %}
+    <section class="ancho-pagina">
+        <div class="dos-columnas">
+            {% if figura %}
+                {% comment %}
+                Antes esto era un número grande y la palabra "participaciones",
+                que no cuenta nada: 4 no dice si metió cuatro goles o dio cuatro
+                pases. Ahora la tarjeta responde las tres preguntas que uno se
+                hace —quién es, qué hizo y en qué partido— y cada dato lleva a
+                algún lado.
+                {% endcomment %}
+                <div>
+                    <div class="seccion-cabecera">
+                        <h2 class="seccion-titulo">Jugador del momento</h2>
+                        <span class="seccion-nota">Últimos {{ dias_semana }} días</span>
+                    </div>
+                    <article class="figura">
+                    <div class="figura-quien">
+                        <img src="{{ figura.club.escudo_url }}" alt="" class="figura-escudo">
+                        <div class="figura-identidad">
+                            <h3 class="figura-nombre">
+                                {{ figura.jugador }}
+                                {% if figura.numero %}<span class="figura-dorsal">{{ figura.numero }}</span>{% endif %}
+                            </h3>
+                            <p class="figura-club">{{ figura.equipo }}</p>
+                            <p class="figura-torneo">{{ figura.liga }} · {{ figura.categoria }}</p>
+                        </div>
+                    </div>
+
+                    <dl class="figura-cifras">
+                        <div class="figura-cifra">
+                            <dt>Goles</dt>
+                            <dd>{{ figura.goles }}</dd>
+                        </div>
+                        <div class="figura-cifra">
+                            <dt>Asistencias</dt>
+                            <dd>{{ figura.asistencias }}</dd>
+                        </div>
+                        <div class="figura-cifra">
+                            <dt>Partidos</dt>
+                            <dd>{{ figura.partidos }}</dd>
+                        </div>
+                    </dl>
+
+                    {% if figura.destacado %}
+                        <a href="{% url 'partido-detalle' figura.destacado.partido_id %}" class="figura-logro">
+                            <span class="figura-logro-que">
+                                {% if figura.destacado.goles %}
+                                    {{ figura.destacado.goles }} gol{{ figura.destacado.goles|pluralize:"es" }}
+                                {% endif %}
+                                {% if figura.destacado.goles and figura.destacado.asistencias %} y {% endif %}
+                                {% if figura.destacado.asistencias %}
+                                    {{ figura.destacado.asistencias }} asistencia{{ figura.destacado.asistencias|pluralize:"s" }}
+                                {% endif %}
+                                ante {{ figura.destacado.rival }}
+                            </span>
+                            <span class="figura-logro-ir">Ver el partido →</span>
+                        </a>
+                    {% endif %}
+
+                    <a href="{% url 'jugador-list' figura.equipo_id %}" class="figura-plantilla">
+                        Ver la plantilla de {{ figura.equipo }}
+                    </a>
+                    </article>
                 </div>
-            {% empty %}
-                <p class="text-gray-500">Todavía no hay categorías vigentes.</p>
+            {% endif %}
+
+            {% if resultados %}
+                <div>
+                    <h2 class="seccion-titulo">Últimos resultados</h2>
+                    <div class="resultados">
+                        {% for partido in resultados %}
+                            <a href="{% url 'partido-detalle' partido.pk %}" class="resultado">
+                                <span class="resultado-equipo">{{ partido.equipo_local.nombre }}</span>
+                                <span class="resultado-marcador">{{ partido.goles_local }}-{{ partido.goles_visitante }}</span>
+                                <span class="resultado-equipo resultado-equipo-der">{{ partido.equipo_visitante.nombre }}</span>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </section>
+{% endif %}
+
+{% comment %} ---- Los lideres: goleo, asistencias y vallas ---- {% endcomment %}
+{% if goleadores or asistidores or vallas %}
+    <section class="ancho-pagina">
+        <div class="seccion-cabecera">
+            <h2 class="seccion-titulo">Los que mandan</h2>
+        </div>
+        <div class="tres-columnas">
+            {% if goleadores %}
+                <div class="lideres">
+                    <div class="lideres-cabecera lideres-goles">
+                        <span>Goleadores</span>
+                        <a href="{% url 'estadisticas-goleo' %}">ver tabla</a>
+                    </div>
+                    {% for fila in goleadores %}
+                        <div class="lider">
+                            <span class="lider-puesto lider-puesto-{{ forloop.counter }}">{{ forloop.counter }}</span>
+                            <div class="lider-quien">
+                                <p class="lider-nombre">{{ fila.jugador }}</p>
+                                <p class="lider-equipo">{{ fila.equipo }} · {{ fila.categoria }}</p>
+                            </div>
+                            <span class="lider-total">{{ fila.total }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {% if asistidores %}
+                <div class="lideres">
+                    <div class="lideres-cabecera lideres-asistencias">
+                        <span>Asistencias</span>
+                        <a href="{% url 'estadisticas-asistencias' %}">ver tabla</a>
+                    </div>
+                    {% for fila in asistidores %}
+                        <div class="lider">
+                            <span class="lider-puesto lider-puesto-{{ forloop.counter }}">{{ forloop.counter }}</span>
+                            <div class="lider-quien">
+                                <p class="lider-nombre">{{ fila.jugador }}</p>
+                                <p class="lider-equipo">{{ fila.equipo }} · {{ fila.categoria }}</p>
+                            </div>
+                            <span class="lider-total">{{ fila.total }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {% if vallas %}
+                <div class="lideres">
+                    <div class="lideres-cabecera lideres-vallas">
+                        <span>Vallas menos vencidas</span>
+                        <a href="{% url 'estadisticas-porteros' %}">ver tabla</a>
+                    </div>
+                    {% for fila in vallas %}
+                        <div class="lider">
+                            <span class="lider-puesto lider-puesto-{{ forloop.counter }}">{{ forloop.counter }}</span>
+                            <div class="lider-quien">
+                                <p class="lider-nombre">{{ fila.equipo.nombre }}</p>
+                                <p class="lider-equipo">
+                                    {{ fila.equipo.categoria.nombre }} ·
+                                    {{ fila.porterias_cero }} valla{{ fila.porterias_cero|pluralize:"s" }} invicta{{ fila.porterias_cero|pluralize:"s" }}
+                                </p>
+                            </div>
+                            <span class="lider-total lider-total-chico">{{ fila.promedio }}</span>
+                        </div>
+                    {% endfor %}
+                    <p class="lideres-pie">Goles recibidos por partido · mínimo 4 jugados</p>
+                </div>
+            {% endif %}
+        </div>
+    </section>
+{% endif %}
+
+{% comment %} ---- Ultimos campeones ---- {% endcomment %}
+{% if campeones %}
+    <section class="ancho-pagina">
+        <div class="seccion-cabecera">
+            <h2 class="seccion-titulo">Últimos campeones</h2>
+            <a href="{% url 'vitrina' %}" class="seccion-enlace">Ver el palmarés →</a>
+        </div>
+        <div class="campeones">
+            {% for p in campeones %}
+                <a href="{% url 'vitrina' %}" class="campeon">
+                    <img src="{{ imagen_copa }}" alt="" class="campeon-copa">
+                    <p class="campeon-nombre">{{ p.campeon }}</p>
+                    <p class="campeon-torneo">{{ p.liga_nombre }} · {{ p.categoria_nombre }}</p>
+                </a>
             {% endfor %}
         </div>
     </section>
+{% endif %}
 
-</div>
 {% endblock %}

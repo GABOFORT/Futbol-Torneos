@@ -47,7 +47,20 @@
     });
   }
 
+  // Mientras viaja la peticion la ventana se abre con un indicador. Sin esto
+  // el modal se quedaba mudo: en una conexion lenta parecia que el clic no
+  // habia hecho nada y la gente volvia a pulsar.
+  function abrirCargando() {
+    const root = document.getElementById('modal-root');
+    root.innerHTML = '<div class="modal-cargando" role="status" aria-live="polite">' +
+                     '<span class="modal-girador"></span>' +
+                     '<span class="modal-cargando-texto">Cargando…</span></div>';
+    root.classList.remove('hidden');
+    root.classList.add('flex');
+  }
+
   function openModal(url) {
+    abrirCargando();
     // no-store: el HTML del modal se pide por fetch, y sin esto el navegador
     // devuelve la version cacheada aunque el template ya haya cambiado.
     fetch(url, { cache: 'no-store' })
@@ -56,12 +69,16 @@
         // La vista no siempre devuelve el modal: si niega el acceso (por ejemplo
         // al topar el limite de ligas) responde JSON pidiendo recargar, y el
         // mensaje sale como toast en vez de abrirse una ventana vacia.
-        if (recargarSiCorresponde(html)) return;
+        if (recargarSiCorresponde(html)) { closeModal(); return; }
         const root = document.getElementById('modal-root');
         root.innerHTML = html;
-        root.classList.remove('hidden');
-        root.classList.add('flex');
         bindModal(url);
+      })
+      .catch(function () {
+        // Un error de red no puede dejar la ventana girando para siempre.
+        const root = document.getElementById('modal-root');
+        root.innerHTML = '<div class="modal-cargando" role="alert">' +
+                         '<span class="modal-cargando-texto">No se pudo cargar. Revisá tu conexión e intentá de nuevo.</span></div>';
       });
   }
 

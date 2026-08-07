@@ -1,8 +1,8 @@
 from django.conf import settings
 from django.db import models
 
-from apps.usuarios.estaticos import url_estatico
 from apps.usuarios.imagenes import achicar_imagen
+from apps.usuarios.monograma import color_de, iniciales_de, monograma
 
 
 class Equipo(models.Model):
@@ -54,12 +54,28 @@ class Equipo(models.Model):
         super().save(*args, **kwargs)
 
     @property
-    def escudo_url(self):
-        """El escudo del equipo, o el neutro cuando no cargaron ninguno.
+    def iniciales(self):
+        """'Bayern Munchen' -> 'BM'. Lo que va dentro del escudo generado."""
+        return iniciales_de(self.nombre)
 
-        Se resuelve aca y no en cada template para que el placeholder sea uno
-        solo: si algun dia cambia la imagen, se cambia en un unico lugar.
+    @property
+    def color(self):
+        """El color propio del club, derivado de su nombre. Siempre el mismo."""
+        return color_de(self.nombre)
+
+    @property
+    def escudo_url(self):
+        """El escudo del equipo, o un monograma con sus iniciales si no tiene.
+
+        Se resuelve aca y no en cada template para que el reemplazo sea uno solo:
+        las trece pantallas que muestran un escudo piden esto.
+
+        Antes devolvia una imagen gris igual para todos. Con 211 equipos sin
+        escudo cargado, el calendario y las tablas quedaban llenos de manchas
+        identicas y no se distinguia un club de otro. El monograma le da a cada
+        uno sus iniciales y su color, y el dia que se suba un escudo de verdad
+        pasa a mostrarse ese sin tocar nada.
         """
         if self.escudo:
             return self.escudo.url
-        return url_estatico('img/escudo-vacio.jpg')
+        return monograma(self.nombre)

@@ -18,6 +18,14 @@
     var visitante = contenedor.querySelector('[name="goles_visitante"]');
     if (!local || !visitante) return;
 
+    // Si un equipo no se presento no se patean penales: el partido se resuelve
+    // 3-0 en el escritorio. Sin esta guarda los dos scripts se peleaban por el
+    // mismo `hidden` (el marcador oculto queda en 0-0, que aca se leia como
+    // empate) y los campos de la tanda volvian a aparecer solos.
+    if (typeof window.hayEquipoAusente === 'function' && window.hayEquipoAusente(contenedor)) {
+      return;
+    }
+
     var hayEmpate = local.value !== '' && visitante.value !== '' &&
                     Number(local.value) === Number(visitante.value);
 
@@ -43,6 +51,10 @@
     var contenedor = campo.closest('form') || document;
     actualizar(contenedor);
   });
+
+  // Lo llama default.js cuando se deja de ganar por default: ahi vuelve a haber
+  // marcador, y los penales tienen que recalcularse con el.
+  window.revisarPenales = actualizar;
 
   // Al abrir el modal el formulario ya viene con valores cargados (por ejemplo
   // al corregir un resultado), asi que hay que evaluarlo de entrada.
