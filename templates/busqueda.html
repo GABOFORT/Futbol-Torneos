@@ -28,7 +28,7 @@ No busca árbitros: el sistema no los registra.
             <button type="submit" class="buscador-boton">Buscar</button>
         </form>
         {% if termino and not hay_termino %}
-            <p class="buscador-aviso">Escribí al menos {{ minimo }} letras.</p>
+            <p class="buscador-aviso">Escribe al menos {{ minimo }} letras.</p>
         {% elif hay_termino %}
             <p class="buscador-aviso">
                 {{ resultados.total }} resultado{{ resultados.total|pluralize:"s" }} para «{{ termino }}»
@@ -42,8 +42,8 @@ No busca árbitros: el sistema no los registra.
         <div class="vacio">
             <p class="vacio-titulo">No encontramos nada con «{{ termino }}»</p>
             <p class="vacio-texto">
-                Probá con el apellido del jugador, el nombre del club o el de la cancha.
-                También podés mirar el <a href="{% url 'equipo-list' %}">listado de equipos</a>
+                Prueba con el apellido del jugador, el nombre del club o el de la cancha.
+                También puedes ver el <a href="{% url 'equipo-list' %}">listado de equipos</a>
                 o el <a href="{% url 'partido-list' %}">calendario</a>.
             </p>
         </div>
@@ -51,7 +51,7 @@ No busca árbitros: el sistema no los registra.
         <div class="vacio">
             <p class="vacio-titulo">¿Qué estás buscando?</p>
             <p class="vacio-texto">
-                Escribí un nombre y te mostramos jugadores, equipos, torneos y canchas
+                Escribe un nombre y te mostramos jugadores, equipos, torneos y canchas
                 que coincidan. No hace falta poner los acentos.
             </p>
         </div>

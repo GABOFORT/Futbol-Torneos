@@ -47,7 +47,7 @@ class Command(BaseCommand):
 
         if not opciones['confirmar']:
             self.stdout.write(self.style.WARNING(
-                '\nNo se borró nada. Volvé a correrlo con --confirmar para eliminarlas.'))
+                '\nNo se borró nada. Vuelve a ejecutarlo con --confirmar para eliminarlas.'))
             return
 
         with transaction.atomic():

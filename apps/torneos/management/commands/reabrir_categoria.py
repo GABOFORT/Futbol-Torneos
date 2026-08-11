@@ -59,7 +59,7 @@ class Command(BaseCommand):
 
         if not opciones['aplicar']:
             self.stdout.write(self.style.WARNING(
-                '\nEsto es solo una vista previa. Volvé a correrlo con --aplicar para hacerlo.'
+                '\nEsto es solo una vista previa. Vuelve a ejecutarlo con --aplicar para hacerlo.'
             ))
             return
 
@@ -76,5 +76,5 @@ class Command(BaseCommand):
             palmares.reabrir(categoria)
 
         self.stdout.write(self.style.SUCCESS(
-            f'\nListo. "{categoria.nombre}" volvió a estar en juego y ya podés cargar la final otra vez.'
+            f'\nListo. "{categoria.nombre}" volvió a estar en juego y ya puedes cargar la final otra vez.'
         ))
