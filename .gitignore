@@ -21,3 +21,7 @@ media/
 # Generados por collectstatic / por correr el servidor: no van al repositorio
 staticfiles/
 waitress-*.log
+
+# Bitacoras de seguridad y de errores (ver LOGGING en futbol/settings.py).
+# Nunca al repositorio: llevan nombres de usuario, IPs y trazas de error.
+logs/

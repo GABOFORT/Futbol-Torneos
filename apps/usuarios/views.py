@@ -77,6 +77,56 @@ def logout_view(request):
     return redirect('login')
 
 
+@require_POST
+def sesion_renovar(request):
+    """Renueva la sesion sin recargar la pagina. La llama static/js/sesion.js.
+
+    No hace nada explicito y esa es la gracia: con SESSION_SAVE_EVERY_REQUEST en
+    True (ver settings.py), el solo hecho de que llegue una peticion reinicia el
+    reloj de los 20 minutos. Esto es, literalmente, tocar la puerta.
+
+    Existe porque el aviso de la pantalla y el vencimiento del servidor tienen
+    que ir sincronizados. El navegador puede detectar que el usuario movio el
+    mouse, pero mover el mouse NO renueva nada del lado del servidor: sin este
+    endpoint, alguien leyendo un informe media hora sin pulsar ningun enlace veia
+    la pagina normal y descubria que estaba afuera al intentar guardar.
+
+    Sin @login_required a proposito: ese decorador responderia con un redirect
+    de 302 a la pantalla de login, o sea HTML, y el JS tendria que adivinar si lo
+    que llego es "renovada" o "se vencio". Devolviendo 401 la respuesta es
+    inequivoca.
+
+    @require_POST y con CSRF: es una peticion que cambia estado del servidor
+    (corre el vencimiento hacia adelante). Por GET, cualquier sitio ajeno podria
+    mantener viva la sesion de un usuario indefinidamente con un <img>.
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({'activa': False}, status=401)
+    # Los segundos los manda el servidor y no los supone el navegador: si manana
+    # se cambia SESION_MINUTOS en el .env, el contador de la pantalla se entera
+    # solo, sin tocar el JS.
+    return JsonResponse({'activa': True, 'segundos': request.session.get_expiry_age()})
+
+
+def sesion_expirada(request):
+    """La pantalla que se ve cuando la sesion se cerro por inactividad.
+
+    A proposito NO llama a logout() ni pide login: quien llega aca ya no tiene
+    sesion —se vencio sola en el servidor— asi que no hay nada que cerrar.
+
+    Y sobre todo, no puede cerrarla: si esta vista destruyera la sesion por GET,
+    cualquier sitio ajeno echaria a un usuario del sistema con solo incrustar un
+    <img src="https://buhosport.ddns.net/usuarios/sesion/expirada/">. Es
+    exactamente el agujero que se cerro poniendole @require_POST a logout_view, y
+    seria absurdo reabrirlo por la puerta de al lado.
+
+    En el caso raro de que alguien llegue con la sesion todavia viva (volvio con
+    el boton atras), el boton lleva al login, que al verlo autenticado lo manda
+    derecho al panel. No se pierde nada.
+    """
+    return render(request, 'usuarios/sesion_expirada.html')
+
+
 @login_required
 def dashboard(request):
     user = request.user

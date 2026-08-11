@@ -4,6 +4,8 @@ from django.db.models import ProtectedError
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
 
+from .auditoria import ip_de, registro as auditoria
+
 
 def entrenadores_sin_equipo_tras_borrar(equipos):
     """Los entrenadores que se quedarian sin ningun equipo al borrar `equipos`.
@@ -53,6 +55,9 @@ def vista_eliminar(request, instancia, etiqueta, url_listado, mensaje_ok, arrast
         if bloqueo:
             messages.error(request, bloqueo)
         else:
+            # Se guardan ANTES de borrar: despues del delete() la instancia se
+            # queda sin pk y la linea de la bitacora saldria con "None".
+            identificador, quien, desde = instancia.pk, request.user, ip_de(request)
             try:
                 # Todo junto o nada: sin la transaccion, un error a mitad de
                 # camino dejaria la liga sin parte de sus equipos.
@@ -60,8 +65,20 @@ def vista_eliminar(request, instancia, etiqueta, url_listado, mensaje_ok, arrast
                     if antes_de_borrar:
                         antes_de_borrar()
                     instancia.delete()
+                # WARNING y no INFO: un borrado es irreversible y arrastra en
+                # cascada (una liga se lleva equipos, jugadores y partidos). Es
+                # la linea que se va a buscar el dia que alguien pregunte "quien
+                # borro esto", asi que tiene que destacar entre el resto.
+                auditoria.warning(
+                    'BORRADO %s (id=%s) por usuario=%s (id=%s) desde ip=%s',
+                    etiqueta, identificador, quien.username, quien.pk, desde,
+                )
                 messages.success(request, mensaje_ok)
             except ProtectedError:
+                auditoria.info(
+                    'BORRADO RECHAZADO %s (id=%s) por usuario=%s desde ip=%s: registros asociados',
+                    etiqueta, identificador, quien.username, desde,
+                )
                 # Red de seguridad: el chequeo previo ya deberia haberlo frenado,
                 # pero si alguien crea un equipo justo entre el GET y el POST
                 # conviene un mensaje y no la pantalla de error de Django.

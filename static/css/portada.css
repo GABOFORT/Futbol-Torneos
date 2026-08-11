@@ -1527,6 +1527,181 @@ main:focus { outline: none; }
     .bloqueo-boton { width: 100%; }
 }
 
+/* ----------------------------------------------------------------------------
+   Aviso de sesión por vencer.
+
+   Se dibuja sobre todo lo demás, incluido un modal abierto: es lo único de la
+   pantalla que importa en ese momento. De ahí el z-index 80 — el modal de las
+   fichas usa 50 y los avisos flotantes 60.
+
+   Comparte la paleta con `.bloqueo` (la pantalla de acceso pausado) porque son
+   la misma familia: algo se interrumpió y esto es lo que pasa ahora.
+   -------------------------------------------------------------------------- */
+.sesion-fondo {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background-color: rgba(2, 20, 10, 0.55);
+    /* El desenfoque del fondo no es decoración: separa el aviso del contenido y
+       deja claro que la página de atrás está en pausa. */
+    backdrop-filter: blur(3px);
+}
+
+/* Sin esto el aviso se vería siempre: el atributo `hidden` del HTML pone
+   display:none, pero la regla de arriba lo pisa con display:flex. */
+.sesion-fondo[hidden] { display: none; }
+
+/* El fondo no debe poder scrollearse mientras el aviso está abierto. */
+body.sesion-quieta { overflow: hidden; }
+
+.sesion-tarjeta {
+    width: 100%;
+    max-width: 26rem;
+    padding: 2rem 1.75rem 1.5rem;
+    border: 1px solid #dcfce7;
+    border-radius: 1.5rem;
+    background-color: #fff;
+    box-shadow: 0 25px 50px -12px rgba(2, 20, 10, 0.45);
+    text-align: center;
+    animation: sesion-entrar 0.22s ease-out;
+}
+
+@keyframes sesion-entrar {
+    from { opacity: 0; transform: translateY(0.75rem) scale(0.97); }
+    to   { opacity: 1; transform: none; }
+}
+
+/* El reloj: el anillo que se vacía y el número en el centro. */
+.sesion-reloj {
+    position: relative;
+    width: 7.5rem;
+    height: 7.5rem;
+    margin: 0 auto 1.25rem;
+}
+
+.sesion-anillo {
+    width: 100%;
+    height: 100%;
+    /* Girado un cuarto de vuelta para que el anillo empiece a vaciarse desde
+       arriba y no desde la derecha, que es donde arranca un SVG por defecto. */
+    transform: rotate(-90deg);
+}
+
+.sesion-anillo-fondo {
+    fill: none;
+    stroke: #dcfce7;
+    stroke-width: 8;
+}
+
+.sesion-anillo-avance {
+    fill: none;
+    stroke: #166534;
+    stroke-width: 8;
+    stroke-linecap: round;
+    /* Igual que el pulso del reloj en sesion.js: sin la transición el anillo
+       avanza a saltos de un segundo y se ve como si se trabara. */
+    transition: stroke-dashoffset 1s linear;
+}
+
+.sesion-reloj-texto {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.875rem;
+    font-weight: 800;
+    color: #14532d;
+    /* Cifras de ancho fijo: sin esto el número entero se mueve a cada segundo,
+       porque el "1" es más angosto que el resto. */
+    font-variant-numeric: tabular-nums;
+}
+
+.sesion-etiqueta {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #b45309;
+}
+
+.sesion-titulo {
+    margin-top: 0.375rem;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #14532d;
+}
+
+.sesion-texto {
+    margin-top: 0.75rem;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: #4b5563;
+}
+.sesion-texto strong { color: #14532d; }
+
+.sesion-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+/* El <form> de cerrar sesión no debe imponer su propio ancho: se comporta como
+   un botón más de la fila. */
+.sesion-forma-salir { display: contents; }
+
+.sesion-boton {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 9999px;
+    background-color: #166534;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+}
+.sesion-boton:hover { background-color: #15803d; }
+.sesion-boton:focus-visible { outline: 3px solid #86efac; outline-offset: 2px; }
+.sesion-boton:disabled { opacity: 0.65; cursor: progress; }
+
+.sesion-boton-tenue {
+    background-color: #f0fdf4;
+    color: #14532d;
+    border: 1px solid #bbf7d0;
+}
+.sesion-boton-tenue:hover { background-color: #dcfce7; }
+
+.sesion-pie {
+    margin-top: 1.25rem;
+    font-size: 0.8125rem;
+    color: #6b7280;
+}
+
+/* En un teléfono cada botón ocupa todo el ancho: son el destino de la pantalla
+   y a 320 px uno a medio ancho es difícil de acertar con el dedo. */
+@media (max-width: 26rem) {
+    .sesion-tarjeta { padding: 1.5rem 1.25rem 1.25rem; }
+    .sesion-reloj { width: 6rem; height: 6rem; }
+    .sesion-reloj-texto { font-size: 1.5rem; }
+    .sesion-titulo { font-size: 1.25rem; }
+    .sesion-acciones { flex-direction: column; }
+    .sesion-boton { width: 100%; }
+}
+
+/* Quien pidió menos movimiento en su sistema no debería recibir una tarjeta que
+   salta ni un anillo animado. El dato sigue estando: es el número del centro. */
+@media (prefers-reduced-motion: reduce) {
+    .sesion-tarjeta { animation: none; }
+    .sesion-anillo-avance { transition: none; }
+}
+
 /* ============================================================================
    Mapa de canchas
    ============================================================================ */

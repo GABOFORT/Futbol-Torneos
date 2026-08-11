@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% load sesion %}
+
+{% comment %}
+Lo que ve quien dejo la maquina sola y se le cerro la sesion.
+
+Hermana de bloqueado.html y con las mismas clases de bloque (`bloqueo-*`): son
+la misma familia de pantallas —algo se interrumpio, esto es lo que pasa ahora—
+y conviene que se vean iguales, ademas de no duplicar CSS para lo mismo.
+
+El tono importa: quien llega aca casi siempre es un entrenador que fue por un
+cafe, no un atacante. Tiene que entender que no rompio nada y que no perdio lo
+que ya habia guardado.
+
+Usa `ancho-pagina` y NO `min-h-screen`: el body de base.html ya es
+`min-h-screen flex flex-col`, y pedir otra pantalla completa aca adentro
+empujaba la barra y el pie.
+{% endcomment %}
+
+{% block titulo %}Sesión cerrada{% endblock %}
+
+{% comment %}
+noindex: es una pantalla de estado, no contenido. Sin esto Google podria
+indexarla y alguien llegaria al sitio por "sesion cerrada buho sport".
+{% endcomment %}
+{% block cabecera_extra %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block contenido %}
+<div class="ancho-pagina ancho-pagina-arriba">
+    <div class="bloqueo">
+        <p class="bloqueo-etiqueta">Sesión finalizada</p>
+        <h1 class="bloqueo-titulo">Tu sesión se cerró</h1>
+
+        <p class="bloqueo-texto">
+            Pasaron <strong>{% minutos_sesion %} minutos</strong> sin actividad, así que cerramos la sesión sola.
+            Es a propósito: si alguien más usa esta computadora, no puede entrar a tu cuenta.
+        </p>
+        <p class="bloqueo-texto">
+            No perdiste nada de lo que ya habías guardado. Vuelve a entrar y sigue donde ibas.
+        </p>
+
+        <div class="bloqueo-acciones">
+            <a href="{% url 'login' %}" class="bloqueo-boton">Volver a entrar</a>
+            <a href="{% url 'inicio' %}" class="bloqueo-boton bloqueo-boton-tenue">Ir al inicio</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

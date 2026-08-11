@@ -14,13 +14,29 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from decouple import config
 from django.contrib import admin
 from django.urls import path, include, re_path
 from django.conf import settings
 from django.views.static import serve as servir_estatico
 
+# Donde vive el panel de Django. Se saca del .env porque en /admin/ lo encuentra
+# cualquier escaneo automatico en el primer intento, y ahi adentro NO aplican los
+# permisos de este proyecto: los filtros por `ligas_administradas()` que protegen
+# las vistas no existen en el admin, asi que una sola cuenta de Administrador
+# General comprometida borra la base entera desde ahi.
+#
+# Que quede claro: esto NO es seguridad de verdad, la ruta secreta se filtra
+# sola con el tiempo. Lo que hace es sacar al panel del radar de los bots y
+# quitarle ruido a la bitacora. Lo que protege sigue siendo la contrasena.
+#
+# Con `default` a proposito, al reves que los secretos de settings.py: si falta
+# la variable el sitio tiene que arrancar igual, solo que con la ruta de fabrica.
+# Una ruta de admin no es un secreto que justifique no levantar el servidor.
+RUTA_ADMIN = config('RUTA_ADMIN', default='admin').strip('/')
+
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path(f'{RUTA_ADMIN}/', admin.site.urls),
     path('__reload__/', include('django_browser_reload.urls')),
     path('', include('apps.torneos.urls')),         # Pagina principal
     path('usuarios/', include('apps.usuarios.urls')),

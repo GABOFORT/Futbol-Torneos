@@ -27,6 +27,11 @@
     <script defer src="{% static_v 'js/sexo-edad.js' %}"></script>
     <script defer src="{% static_v 'js/cuenta-regresiva.js' %}"></script>
     <script defer src="{% static_v 'js/seguir.js' %}"></script>
+    {% comment %}
+    El aviso de sesión solo se carga si hay sesión: a un visitante sin cuenta no
+    se le manda un temporizador a correr en el teléfono para nada.
+    {% endcomment %}
+    {% if user.is_authenticated %}<script defer src="{% static_v 'js/sesion.js' %}"></script>{% endif %}
     {% block cabecera_extra %}{% endblock %}
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col{% if portada_liga %} con-portada{% endif %}"
@@ -61,6 +66,8 @@
     </main>
 
     {% include 'footer.html' %}
+
+    {% if user.is_authenticated %}{% include '_aviso_sesion.html' %}{% endif %}
 
     {% block scripts %}{% endblock %}
 </body>
