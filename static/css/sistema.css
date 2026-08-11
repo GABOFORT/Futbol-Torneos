@@ -3922,9 +3922,17 @@
            La imagen que sube el Admin de Liga y que se pinta detras de todas las
            pantallas de su liga, en lugar del gris neutro del sistema.
 
-           Va como fondo del <main> y no como capa a pantalla completa: asi
-           queda recortada exactamente entre la barra y el pie, sin pasar por
-           detras de ninguno de los dos.
+           Va en el fondo del <body> (no del <main>) para que se pinte de una
+           sola vez a pantalla completa, y queda recortada visualmente entre la
+           barra y el pie porque los dos son opacos y la tapan por encima.
+           Antes vivia en el <main>: como el <main> es un item de flexbox cuyo
+           alto final se calcula en un segundo paso (flex-grow), el fondo
+           quedaba a veces mal pintado hasta el final de esa caja y dejaba ver
+           una franja del gris de <body> justo antes del pie, sobre todo en
+           pantallas con poco contenido (categorias vacias). El <body> no es
+           un item de flexbox de nadie mas — es el contenedor — asi que su
+           alto no depende de ese segundo calculo y el fondo pinta entero
+           siempre. (Corregido 07/08/2026)
 
            Se muestra LIMPIA: sin velo y sin desenfoque, con sus colores tal
            como se subio. Llevaba los dos y se quitaron por pedido expreso
@@ -3937,18 +3945,15 @@
            de leer — la portada conviene elegirla clara.
            ==================================================================== */
 
-        main.con-portada {
+        body.con-portada {
             background-image: var(--portada);
             background-position: center;
             background-repeat: no-repeat;
-            /* La clave del efecto: `fixed` ancla la imagen a la pantalla, pero
-               el navegador la pinta SOLO dentro de la caja del <main>. Resultado:
-               la imagen se queda quieta y el contenido pasa por encima, sin salirse
-               de la franja entre la barra y el pie.
-
-               Con `cover` + `fixed`, el tamano se calcula contra la pantalla y no
-               contra el alto del contenido: la imagen se ve entera y con sus
-               proporciones, en vez de estirarse en una tabla larga. */
+            /* `fixed` ancla la imagen a la pantalla y no se mueve con el
+               scroll; el contenido pasa por encima. La barra (`.cabecera`,
+               sticky) y el pie (`.pie`) son opacos y quedan siempre por
+               encima en el documento, asi que tapan la imagen arriba y abajo
+               sin necesidad de recortarla con CSS. */
             background-attachment: fixed;
             background-size: cover;
         }
@@ -3958,12 +3963,12 @@
            scroll. Con `scroll` la imagen acompana al contenido: se pierde el
            efecto, pero se ve bien, que es lo que importa en un celular. */
         @media (hover: none) {
-            main.con-portada {
+            body.con-portada {
                 background-attachment: scroll;
             }
         }
 
         /* Impresion: la portada solo gasta tinta y ensucia la tabla. */
         @media print {
-            main.con-portada { background-image: none; }
+            body.con-portada { background-image: none; }
         }

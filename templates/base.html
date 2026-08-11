@@ -29,7 +29,8 @@
     <script defer src="{% static_v 'js/seguir.js' %}"></script>
     {% block cabecera_extra %}{% endblock %}
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col">
+<body class="bg-gray-100 min-h-screen flex flex-col{% if portada_liga %} con-portada{% endif %}"
+      {% if portada_liga %}style="--portada: url('{{ portada_liga }}')"{% endif %}>
 
     <a href="#contenido" class="saltar">Saltar al contenido</a>
 
@@ -54,9 +55,7 @@
         </script>
     {% endif %}
 
-    <main id="contenido" class="flex-1{% if portada_liga %} con-portada{% endif %}"
-          {% if portada_liga %}style="--portada: url('{{ portada_liga }}')"{% endif %}
-          tabindex="-1">
+    <main id="contenido" class="flex-1" tabindex="-1">
         {% block contenido %}
         {% endblock %}
     </main>
