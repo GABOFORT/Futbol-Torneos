@@ -1,4 +1,6 @@
 from django import forms
+from django.contrib.auth.password_validation import validate_password
+
 from .models import Usuario
 from apps.torneos.models import Liga
 
@@ -57,6 +59,46 @@ class StyledFormMixin:
         return cleaned_data
 
 
+class PasswordValidadoMixin:
+    """Pasa la contrasena por AUTH_PASSWORD_VALIDATORS antes de aceptarla.
+
+    Los validadores estan declarados en settings desde el principio, pero Django
+    **no los aplica solo**: solo corren si alguien llama a `validate_password`.
+    Eso lo hace `UserCreationForm`, y estos formularios no lo son —son ModelForm
+    con el campo puesto a mano para poder ordenar y estilar el resto—, asi que la
+    configuracion estaba ahi sin efecto: se aceptaba '123' como contrasena.
+
+    `set_password()` hashea, no valida. Son dos pasos distintos, y el que faltaba
+    era este.
+
+    Vive en un mixin y no repetido en cada form para que valga igual en el alta y
+    en la edicion, de usuarios y de entrenadores.
+    """
+
+    def _post_clean(self):
+        """Valida la contrasena recien poblada la instancia.
+
+        Va aca y no en `clean_password` porque uno de los validadores
+        —UserAttributeSimilarityValidator— compara la contrasena contra el
+        usuario, el nombre y el correo, y para eso necesita la instancia ya
+        cargada con lo que se acaba de escribir. Durante `clean_password` todavia
+        esta vacia: Django la llena en `_post_clean`, que corre despues. Poniendolo
+        antes, una cuenta 'jperez' aceptaba 'jperez' como contrasena.
+
+        Es el mismo punto donde lo hace el `UserCreationForm` de Django.
+        """
+        super()._post_clean()
+        password = self.cleaned_data.get('password')
+        # En los formularios de edicion el campo es opcional: vacio significa
+        # "no cambiar la actual", asi que no hay nada que validar.
+        if not password:
+            return
+        try:
+            validate_password(password, self.instance)
+        except forms.ValidationError as error:
+            self.add_error('password', error)
+
+
 class CuotaSegunRolMixin:
     """El límite de ligas solo existe para el Administrador de Liga.
 
@@ -86,7 +128,7 @@ class CuotaSegunRolMixin:
         return datos
 
 
-class UsuarioCreateForm(CuotaSegunRolMixin, StyledFormMixin, forms.ModelForm):
+class UsuarioCreateForm(PasswordValidadoMixin, CuotaSegunRolMixin, StyledFormMixin, forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput, label='Contraseña')
     CAMPOS_OBLIGATORIOS = ('first_name', 'last_name', 'phone')
 
@@ -116,7 +158,7 @@ class UsuarioCreateForm(CuotaSegunRolMixin, StyledFormMixin, forms.ModelForm):
         return usuario
 
 
-class EntrenadorCreateForm(StyledFormMixin, forms.ModelForm):
+class EntrenadorCreateForm(PasswordValidadoMixin, StyledFormMixin, forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput, label='Contraseña')
     CAMPOS_OBLIGATORIOS = ('first_name', 'last_name', 'phone')
 
@@ -141,7 +183,7 @@ class EntrenadorCreateForm(StyledFormMixin, forms.ModelForm):
         return usuario
 
 
-class EntrenadorUpdateForm(StyledFormMixin, forms.ModelForm):
+class EntrenadorUpdateForm(PasswordValidadoMixin, StyledFormMixin, forms.ModelForm):
     password = forms.CharField(
         widget=forms.PasswordInput, label='Nueva contraseña', required=False,
         help_text='Déjalo vacío para no cambiar la contraseña actual.',
@@ -169,7 +211,7 @@ class EntrenadorUpdateForm(StyledFormMixin, forms.ModelForm):
         return usuario
 
 
-class UsuarioUpdateForm(CuotaSegunRolMixin, StyledFormMixin, forms.ModelForm):
+class UsuarioUpdateForm(PasswordValidadoMixin, CuotaSegunRolMixin, StyledFormMixin, forms.ModelForm):
     password = forms.CharField(
         widget=forms.PasswordInput, label='Nueva contraseña', required=False,
         help_text='Déjalo vacío para no cambiar la contraseña actual.',

@@ -21,7 +21,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-replace-me')
+# Sin `default` a proposito: es un secreto y no puede vivir en el codigo, que si
+# se versiona. Si falta en el .env el arranque revienta con UndefinedValueError,
+# que es lo que se busca: mejor no arrancar que arrancar con una clave conocida
+# —con ella se firman las sesiones, asi que se podrian falsificar.
+SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
@@ -40,6 +44,37 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='', cast=Csv())
 
+# Marca las cookies de sesion y de CSRF como "solo por HTTPS": asi el navegador
+# se niega a mandarlas si alguien entra por http:// sin la ese. Sin esto, esa
+# visita manda el identificador de sesion en claro y quien comparta la red se
+# queda con ella sin necesitar la contrasena.
+#
+# Sale del .env y no de DEBUG para no diferenciar entornos en el codigo: en
+# produccion va True, y en desarrollo False, porque ahi se entra por http://
+# localhost y con True el login no guardaria la sesion —seria imposible entrar.
+COOKIES_SEGURAS = config('COOKIES_SEGURAS', default=False, cast=bool)
+SESSION_COOKIE_SECURE = COOKIES_SEGURAS
+CSRF_COOKIE_SECURE = COOKIES_SEGURAS
+
+# Manda a https:// a quien entre por http://. El puerto 80 esta abierto, asi que
+# sin esto el sitio se sirve igual en texto plano: las cookies marcadas arriba
+# no viajarian, pero el usuario y la contrasena que se escriben en el formulario
+# de login si, porque van en el cuerpo del POST.
+#
+# Depende de que el proxy avise por que esquema entro la peticion original (ver
+# SECURE_PROXY_SSL_HEADER arriba). El web.config de IIS lo manda —regla
+# ReverseProxyInboundRule1, variable HTTP_X_FORWARDED_PROTO—; si eso se rompiera,
+# Django creeria que toda peticion es HTTP y redirigiria en bucle. Por eso sale
+# del .env: se apaga sin tocar el codigo ni volver a desplegar.
+FORZAR_HTTPS = config('FORZAR_HTTPS', default=False, cast=bool)
+SECURE_SSL_REDIRECT = FORZAR_HTTPS
+
+# El desafio de Let's Encrypt tiene que poder responderse por http:// simple.
+# Hoy no llega hasta aca —IIS lo sirve del disco antes, ver web.config—, pero si
+# esa regla se perdiera en un cambio futuro, sin esta excepcion la renovacion del
+# certificado empezaria a fallar sin que nadie se entere hasta que vence.
+SECURE_REDIRECT_EXEMPT = [r'^\.well-known/acme-challenge/']
+
 
 # Application definition
 
@@ -56,6 +91,10 @@ INSTALLED_APPS = [
     'django.forms',
 
     'django_browser_reload',
+    # Cuenta los intentos fallidos de login y bloquea al que insiste. Sin esto
+    # se pueden probar contrasenas sin limite: el sitio esta en internet y una
+    # cuenta con clave floja cae sola con tiempo.
+    'axes',
     # Apps del proyecto
     'apps.usuarios',
     'apps.torneos',
@@ -77,6 +116,9 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # Va al final y despues de AuthenticationMiddleware: necesita request.user
+    # ya resuelto para poder anotar quien fallo el intento.
+    'axes.middleware.AxesMiddleware',
 ]
 
 ROOT_URLCONF = 'futbol.urls'
@@ -111,13 +153,49 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': config('DB_NAME', default='SISTEMA-FUTBOL'),
         'USER': config('DB_USER', default='sistema_user'),
-        'PASSWORD': config('DB_PASSWORD', default='Sistemas-Ticket-2026'),
+        # Sin `default`, igual que SECRET_KEY: la contrasena de la base es un
+        # secreto y el default quedaba escrito en un archivo versionado. Ademas,
+        # si faltaba la variable el proyecto arrancaba igual contra esa clave en
+        # vez de avisar. Nombre, host y puerto si conservan default: no son
+        # secretos y dejan que un clon nuevo levante sin configurar nada.
+        'PASSWORD': config('DB_PASSWORD'),
         'HOST': config('DB_HOST', default='localhost'),
         'PORT': config('DB_PORT', default='5432'),
     }
 }
 
 AUTH_USER_MODEL = 'usuarios.Usuario'
+
+# Axes tiene que ir PRIMERO: es el que corta el intento cuando la cuenta esta
+# bloqueada, antes de que el backend de siempre se ponga a comparar el hash.
+# Si fuera segundo, el bloqueo no serviria de nada.
+AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesStandaloneBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+# Cuantos intentos fallidos se toleran antes de bloquear.
+AXES_FAILURE_LIMIT = config('AXES_FAILURE_LIMIT', default=5, cast=int)
+
+# Cuanto dura el bloqueo, en horas. Se cuenta desde el ultimo intento fallido.
+# Un cuarto de hora frena de sobra un ataque automatizado —que necesita miles
+# de intentos por minuto para servir de algo— sin dejar afuera media tarde a
+# quien simplemente se equivoco de contrasena.
+AXES_COOLOFF_TIME = config('AXES_COOLOFF_HORAS', default=0.25, cast=float)
+
+# Se bloquea la combinacion usuario+IP, no el usuario solo ni la IP sola.
+# Solo el usuario dejaria que cualquiera bloquee la cuenta del administrador
+# fallando aposta cinco veces. Solo la IP dejaria afuera a toda una liga que
+# comparte la conexion del club porque uno se equivoco.
+AXES_LOCKOUT_PARAMETERS = ['username', 'ip_address']
+
+# Entrar bien borra los fallos acumulados: si alguien se equivoco tres veces y
+# a la cuarta acerto, no tiene por que arrastrar el contador.
+AXES_RESET_ON_SUCCESS = True
+
+# Lo que ve quien queda bloqueado. Sin esto Axes devuelve un 403 pelado, que no
+# le explica nada a un entrenador que solo se equivoco de contrasena.
+AXES_LOCKOUT_TEMPLATE = 'usuarios/bloqueado.html'
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators

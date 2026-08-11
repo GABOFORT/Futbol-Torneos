@@ -32,11 +32,20 @@
       var lon = parseFloat(ficha.getAttribute('data-lon'));
       if (isNaN(lat) || isNaN(lon)) return;
 
+      // Nombre y liga van como nodos de texto, no como string armado a mano:
+      // "nombre" lo escribe el Admin de Liga y viaja de vuelta al DOM ya
+      // decodificado (getAttribute deshace el escape que hizo el template),
+      // asi que si se concatenara como HTML, algo como <img onerror=...>
+      // se ejecutaria en el navegador de cualquiera que abra el popup.
+      var contenido = document.createElement('div');
+      var nombre = document.createElement('strong');
+      nombre.textContent = ficha.getAttribute('data-nombre');
+      contenido.appendChild(nombre);
+      contenido.appendChild(document.createElement('br'));
+      contenido.appendChild(document.createTextNode(ficha.getAttribute('data-liga')));
+
       var pin = L.marker([lat, lon]).addTo(mapa);
-      pin.bindPopup(
-        '<strong>' + ficha.getAttribute('data-nombre') + '</strong><br>' +
-        ficha.getAttribute('data-liga')
-      );
+      pin.bindPopup(contenido);
       puntos.push([lat, lon]);
       pines[indice] = pin;
 

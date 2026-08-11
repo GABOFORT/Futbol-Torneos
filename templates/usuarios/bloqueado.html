@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% comment %}
+Lo que ve quien agoto los intentos de login (ver AXES_* en settings.py).
+
+Sin esta plantilla Axes devuelve un 429 pelado, y quien la mayoria de las veces
+llega aca no es un atacante sino un entrenador que se equivoco de contrasena:
+tiene que entender que no esta roto, que es temporal y a quien pedirle ayuda.
+
+**No dice si el usuario existe.** El mensaje es el mismo se haya escrito una
+cuenta real o inventada: decir "esa cuenta esta bloqueada" confirmaria que
+existe, y eso le sirve a quien esta probando nombres a ver cual pega.
+
+Usa `ancho-pagina`, como el resto de las pantallas, y NO `min-h-screen`: el
+body de base.html ya es `min-h-screen flex flex-col`, asi que pedir otra
+pantalla completa aca adentro empujaba la barra y el pie y se encimaba todo.
+{% endcomment %}
+
+{% block titulo %}Demasiados intentos{% endblock %}
+
+{% block contenido %}
+<div class="ancho-pagina ancho-pagina-arriba">
+    <div class="bloqueo">
+        <p class="bloqueo-etiqueta">Acceso pausado</p>
+        <h1 class="bloqueo-titulo">Demasiados intentos</h1>
+
+        <p class="bloqueo-texto">
+            Se recibieron varios intentos de inicio de sesión fallidos, así que el acceso
+            quedó pausado un rato por seguridad.
+        </p>
+        <p class="bloqueo-texto">
+            Volvé a intentarlo en <strong>15 minutos</strong>. Si no recordás tu contraseña,
+            pedile al administrador de tu liga que te asigne una nueva.
+        </p>
+
+        <div class="bloqueo-acciones">
+            <a href="{% url 'inicio' %}" class="bloqueo-boton">Volver al inicio</a>
+            <a href="{% url 'login' %}" class="bloqueo-boton bloqueo-boton-tenue">Intentar de nuevo</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -3,3 +3,5 @@ Pillow>=10.0
 python-decouple>=3.8
 psycopg2-binary>=2.9
 django-browser-reload>=1.12
+# Bloquea el login tras varios intentos fallidos. Ver AXES_* en settings.py.
+django-axes>=8.3
