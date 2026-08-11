@@ -4,6 +4,12 @@ db.sqlite3
 venv/
 futbol-ligas/
 .env
+# Tambien cualquier copia o respaldo del .env: `.env` a secas solo cubre ese
+# nombre exacto, asi que un `.env.respaldo-...` o un `.env.bak` se habrian
+# subido con la SECRET_KEY y la contrasena de la base adentro.
+# `.env.example` se salva aparte: ese SI va al repositorio, con valores falsos.
+.env.*
+!.env.example
 tools/tailwindcss.exe
 .vscode/
 # Credenciales generadas: nunca al repositorio
