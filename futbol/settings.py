@@ -42,7 +42,18 @@ ALLOWED_HOSTS = config(
 # ReverseProxyInboundRule1). Sin esto Django cree que toda peticion es HTTP,
 # lo que rompe la verificacion de CSRF cuando se entra por HTTPS (el Origin
 # que manda el navegador es https:// pero Django arma http:// para comparar).
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# El nombre NO es el convencional X-Forwarded-Proto, y es a proposito: Waitress
+# borra toda cabecera que empiece por "X-Forwarded-" salvo que se le declare un
+# proxy de confianza al arrancar. O sea que esta linea, con el nombre de siempre,
+# NUNCA funciono: Django creyo que toda peticion era HTTP desde el primer dia.
+#
+# Eso explica el bucle infinito de redirecciones del 11/08/2026 al intentar
+# activar SECURE_SSL_REDIRECT desde Django, que en su momento se atribuyo al
+# proxy y quedo apagado (FORZAR_HTTPS=False). El motivo real era este.
+#
+# Se comprobo interceptando lo que Waitress le entrega a Django. El nombre nuevo
+# lo escribe IIS en web.config, y sobrevive porque no empieza por X-Forwarded.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_ESQUEMA_ORIGINAL', 'https')
 
 CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='', cast=Csv())
 
@@ -273,11 +284,35 @@ AXES_FAILURE_LIMIT = config('AXES_FAILURE_LIMIT', default=5, cast=int)
 # quien simplemente se equivoco de contrasena.
 AXES_COOLOFF_TIME = config('AXES_COOLOFF_HORAS', default=0.25, cast=float)
 
-# Se bloquea la combinacion usuario+IP, no el usuario solo ni la IP sola.
+# Se bloquea la COMBINACION usuario+IP, no el usuario solo ni la IP sola.
 # Solo el usuario dejaria que cualquiera bloquee la cuenta del administrador
 # fallando aposta cinco veces. Solo la IP dejaria afuera a toda una liga que
 # comparte la conexion del club porque uno se equivoco.
-AXES_LOCKOUT_PARAMETERS = ['username', 'ip_address']
+#
+# La lista ANIDADA es lo que significa "combinacion", y la diferencia no es
+# cosmetica. Escrito plano —['username', 'ip_address']— axes entiende dos reglas
+# INDEPENDIENTES: bloquea por usuario O por IP. Estuvo asi desde que se instalo
+# y el 11/08/2026 dejo el sitio entero sin poder entrar: alguien fallo 8 veces
+# con el usuario 'PREMIER' y eso bloqueo la IP, que detras de IIS es la misma
+# para todo el mundo. Cualquiera podia tumbar el acceso de todos con cinco
+# intentos fallidos y un usuario inventado.
+AXES_LOCKOUT_PARAMETERS = [['username', 'ip_address']]
+
+# De donde saca axes la IP del cliente.
+#
+# Sin esto mira REMOTE_ADDR, que detras de IIS es SIEMPRE 127.0.0.1: la conexion
+# la abre el proxy, no el visitante. O sea que la mitad "IP" del bloqueo de
+# arriba no distinguia a nadie: todos los usuarios compartian la misma.
+#
+# Se apunta a nuestra propia funcion en vez de usar las opciones AXES_IPWARE_*
+# porque esas SOLO funcionan si esta instalado el paquete django-ipware, y no lo
+# esta: axes las ignora en silencio y se queda con REMOTE_ADDR. Se probo, y por
+# eso esta escrito aca. Ademas asi la bitacora y el bloqueo resuelven la IP con
+# el mismo criterio, que antes no pasaba.
+#
+# La funcion explica por que se puede confiar en la cabecera; el resumen es que
+# el web.config la sobreescribe, asi que el cliente no la puede inventar.
+AXES_CLIENT_IP_CALLABLE = 'apps.usuarios.auditoria.ip_de'
 
 # Entrar bien borra los fallos acumulados: si alguien se equivoco tres veces y
 # a la cuarta acerto, no tiene por que arrastrar el contador.
