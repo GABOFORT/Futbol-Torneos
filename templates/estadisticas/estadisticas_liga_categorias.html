@@ -104,7 +104,7 @@ mirando la pantalla.
                             <p class="destacado-etiqueta">Líder</p>
                             <div class="destacado-fila">
                                 {% if ficha.lider.equipo.escudo %}
-                                    <img src="{{ ficha.lider.equipo.escudo.url }}" alt="" class="destacado-escudo">
+                                    <img src="{{ ficha.lider.equipo.escudo.url }}" alt="" class="destacado-escudo" loading="lazy" decoding="async">
                                 {% endif %}
                                 <p class="destacado-nombre">{{ ficha.lider.equipo.nombre }}</p>
                                 <span class="destacado-cifra">{{ ficha.lider.pts }} pts</span>

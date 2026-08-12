@@ -15,7 +15,7 @@ aparece — mejor que un recuadro diciendo "no hay nada".
             {% for bloque in bloques %}
                 <article class="mio">
                     <header class="mio-cabecera">
-                        <img src="{{ bloque.equipo.escudo_url }}" alt="" class="mio-escudo">
+                        <img src="{{ bloque.equipo.escudo_url }}" alt="" class="mio-escudo" loading="lazy" decoding="async">
                         <div class="mio-identidad">
                             <a href="{% url 'equipo-detail' bloque.equipo.pk %}" class="mio-nombre">{{ bloque.equipo.nombre }}</a>
                             <p class="mio-torneo">{{ bloque.equipo.liga.nombre }} · {{ bloque.equipo.categoria.nombre }}</p>

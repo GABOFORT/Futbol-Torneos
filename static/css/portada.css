@@ -31,7 +31,7 @@
     position: sticky;
     top: 0;
     z-index: 40;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 8px 24px -12px rgba(5, 46, 22, 0.4);
+    box-shadow: var(--sombra-marca-lg);
 }
 
 .cabecera-interior {
@@ -44,7 +44,7 @@
 }
 
 .cabecera-alta {
-    background-color: #052e16;
+    background-color: var(--verde-950);
     /* La textura de césped, apenas insinuada: da profundidad sin ruido. */
     background-image: repeating-linear-gradient(
         90deg, rgba(255, 255, 255, 0.03) 0 4rem, transparent 4rem 8rem);
@@ -62,21 +62,21 @@
 .cabecera-logo {
     height: 2.5rem;
     width: 2.5rem;
-    border-radius: 0.625rem;
+    border-radius: var(--radio-md);
     object-fit: cover;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--sombra-oscura);
 }
 
 /* El nombre en dos pesos: la marca fuerte y el resto tenue. En pantalla chica
    se esconde el segundo tramo antes que apretar todo. */
 .cabecera-nombre {
-    font-size: 1.0625rem;
+    font-size: var(--texto-lg);
     font-weight: 800;
     letter-spacing: -0.01em;
-    color: #fff;
+    color: var(--blanco);
     white-space: nowrap;
 }
-.cabecera-nombre span { display: none; font-weight: 500; color: #86efac; }
+.cabecera-nombre span { display: none; font-weight: 500; color: var(--verde-300); }
 
 .cabecera-acciones {
     display: flex;
@@ -94,17 +94,17 @@
     gap: 0.5rem;
     width: 17rem;
     padding: 0.5rem 0.875rem;
-    border-radius: 9999px;
+    border-radius: var(--radio-full);
     border: 1px solid rgba(134, 239, 172, 0.22);
     background-color: rgba(255, 255, 255, 0.08);
     transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 .cabecera-buscar:focus-within {
-    border-color: #facc15;
+    border-color: var(--oro-claro);
     background-color: rgba(255, 255, 255, 0.14);
 }
 
-.cabecera-buscar-icono { display: flex; flex-shrink: 0; color: #86efac; }
+.cabecera-buscar-icono { display: flex; flex-shrink: 0; color: var(--verde-300); }
 .cabecera-buscar-icono svg { width: 1rem; height: 1rem; }
 
 .cabecera-buscar input {
@@ -113,8 +113,8 @@
     background: transparent;
     border: none;
     outline: none;
-    font-size: 0.8125rem;
-    color: #fff;
+    font-size: var(--texto-sm);
+    color: var(--blanco);
 }
 .cabecera-buscar input::placeholder { color: rgba(187, 247, 208, 0.6); }
 /* La cruz nativa del campo de búsqueda se ve negra sobre el verde. */
@@ -125,19 +125,19 @@
     align-items: center;
     justify-content: center;
     /* 2.5rem de alto: el mínimo cómodo para tocar con el pulgar. */
-    min-height: 2.5rem;
+    min-height: var(--toque);
     padding: 0 1.125rem;
-    border-radius: 9999px;
-    background-color: #fff;
-    font-size: 0.8125rem;
+    border-radius: var(--radio-full);
+    background-color: var(--blanco);
+    font-size: var(--texto-sm);
     font-weight: 700;
-    color: #14532d;
+    color: var(--verde-900);
     white-space: nowrap;
     transition: background-color 0.15s ease, transform 0.12s ease;
 }
-.cabecera-boton:hover { background-color: #dcfce7; transform: translateY(-1px); }
+.cabecera-boton:hover { background-color: var(--verde-100); transform: translateY(-1px); }
 
-.cabecera-boton-tenue { background-color: rgba(255, 255, 255, 0.12); color: #fff; }
+.cabecera-boton-tenue { background-color: rgba(255, 255, 255, 0.12); color: var(--blanco); }
 .cabecera-boton-tenue:hover { background-color: rgba(255, 255, 255, 0.22); }
 
 .cabecera-salir { display: none; }
@@ -148,8 +148,8 @@
     justify-content: center;
     width: 2.75rem;
     height: 2.75rem;
-    border-radius: 0.75rem;
-    color: #fff;
+    border-radius: var(--radio-md);
+    color: var(--blanco);
     cursor: pointer;
 }
 .cabecera-hamburguesa:hover { background-color: rgba(255, 255, 255, 0.12); }
@@ -158,7 +158,7 @@
 /* ---- Nivel bajo: la navegación ---- */
 .cabecera-baja {
     display: none;
-    background-color: #14532d;
+    background-color: var(--verde-900);
     border-top: 1px solid rgba(134, 239, 172, 0.14);
 }
 .cabecera-baja .cabecera-interior { gap: 0.125rem; }
@@ -169,7 +169,7 @@
     gap: 0.375rem;
     min-height: 2.875rem;
     padding: 0 0.875rem;
-    font-size: 0.875rem;
+    font-size: var(--texto-md);
     font-weight: 600;
     color: rgba(255, 255, 255, 0.86);
     white-space: nowrap;
@@ -179,13 +179,13 @@
     transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
     cursor: pointer;
 }
-.nav-enlace:hover { color: #fff; background-color: rgba(255, 255, 255, 0.08); }
-.nav-enlace:focus-visible { outline: 2px solid #facc15; outline-offset: -2px; }
+.nav-enlace:hover { color: var(--blanco); background-color: rgba(255, 255, 255, 0.08); }
+.nav-enlace:focus-visible { outline: 2px solid var(--oro-claro); outline-offset: -2px; }
 
 /* La sección donde está parado el visitante. */
 .nav-activo {
-    color: #fff;
-    border-bottom-color: #facc15;
+    color: var(--blanco);
+    border-bottom-color: var(--oro-claro);
     background-color: rgba(255, 255, 255, 0.06);
 }
 
@@ -211,9 +211,9 @@
     top: 100%;
     min-width: 17rem;
     padding: 0.5rem;
-    border-radius: 1rem;
-    background-color: #fff;
-    box-shadow: 0 16px 40px rgba(5, 46, 22, 0.28);
+    border-radius: var(--radio-lg);
+    background-color: var(--blanco);
+    box-shadow: var(--sombra-marca-xl);
     z-index: 50;
 }
 .nav-menu-der { left: auto; right: 0; }
@@ -233,41 +233,42 @@
 }
 
 .nav-opcion {
+    min-height: var(--toque);
     display: block;
     padding: 0.5rem 0.75rem;
-    border-radius: 0.625rem;
+    border-radius: var(--radio-md);
     transition: background-color 0.12s ease;
 }
-.nav-opcion:hover { background-color: #f0fdf4; }
-.nav-opcion strong { display: block; font-size: 0.875rem; font-weight: 600; color: #14532d; }
-.nav-opcion small { display: block; margin-top: 0.0625rem; font-size: 0.6875rem; color: #9ca3af; }
-.nav-opcion-tenue strong { color: #9ca3af; font-weight: 500; }
+.nav-opcion:hover { background-color: var(--verde-50); }
+.nav-opcion strong { display: block; font-size: var(--texto-md); font-weight: 600; color: var(--verde-900); }
+.nav-opcion small { display: block; margin-top: 0.0625rem; font-size: var(--texto-xs); color: var(--texto-debil); }
+.nav-opcion-tenue strong { color: var(--texto-debil); font-weight: 500; }
 
 /* ---- Menú del celular ---- */
 .menu-movil {
     max-height: calc(100vh - 4rem);
     overflow-y: auto;
     padding: 0.5rem 1.25rem 1.5rem;
-    background-color: #052e16;
+    background-color: var(--verde-950);
 }
 
 .nav-movil {
     display: block;
     padding: 0.75rem 0;
     border-bottom: 1px solid rgba(134, 239, 172, 0.1);
-    font-size: 0.9375rem;
-    color: #fff;
+    font-size: var(--texto-md);
+    color: var(--blanco);
 }
-.nav-movil:active { color: #86efac; }
-.nav-movil-hijo { padding-left: 1rem; font-size: 0.875rem; color: #bbf7d0; }
+.nav-movil:active { color: var(--verde-300); }
+.nav-movil-hijo { padding-left: 1rem; font-size: var(--texto-md); color: var(--verde-200); }
 
 .nav-movil-titulo {
     margin: 1rem 0 0.25rem;
-    font-size: 0.6875rem;
+    font-size: var(--texto-xs);
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.14em;
-    color: #4ade80;
+    color: var(--verde-brillo);
 }
 
 .menu-movil-boton { display: flex; width: 100%; margin-top: 0.75rem; }
@@ -285,11 +286,11 @@
     top: -4rem;
     z-index: 60;
     padding: 0.75rem 1.25rem;
-    border-radius: 0 0 0.75rem 0.75rem;
-    background-color: #facc15;
-    font-size: 0.875rem;
+    border-radius: 0 0 var(--radio-md) var(--radio-md);
+    background-color: var(--oro-claro);
+    font-size: var(--texto-md);
     font-weight: 700;
-    color: #14532d;
+    color: var(--verde-900);
     transition: top 0.18s ease;
 }
 .saltar:focus { top: 0; }
@@ -306,21 +307,21 @@ main:focus { outline: none; }
     align-items: center;
     gap: 0.875rem;
     padding: 2.5rem 3rem;
-    border-radius: 1.5rem;
-    background-color: #fff;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+    border-radius: var(--radio-xl);
+    background-color: var(--blanco);
+    box-shadow: var(--sombra-xl);
 }
 
 .modal-girador {
     width: 2rem;
     height: 2rem;
-    border: 3px solid #dcfce7;
-    border-top-color: #15803d;
-    border-radius: 9999px;
+    border: 3px solid var(--verde-100);
+    border-top-color: var(--verde-700);
+    border-radius: var(--radio-full);
     animation: girar 0.7s linear infinite;
 }
 
-.modal-cargando-texto { font-size: 0.875rem; color: #6b7280; text-align: center; }
+.modal-cargando-texto { font-size: var(--texto-md); color: var(--gris-500); text-align: center; }
 
 @keyframes girar { to { transform: rotate(360deg); } }
 
@@ -352,16 +353,16 @@ main:focus { outline: none; }
     /* 2.75rem es el mínimo cómodo para tocar con el pulgar (WCAG 2.5.8). */
     min-width: 2.75rem;
     min-height: 2.75rem;
-    border-radius: 9999px;
-    font-size: 1.125rem;
+    border-radius: var(--radio-full);
+    font-size: var(--texto-lg);
     line-height: 1;
-    color: #d1d5db;
+    color: var(--gris-500);
     cursor: pointer;
     transition: color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
 }
-.estrella:hover { color: #f59e0b; background-color: #fffbeb; }
-.estrella:focus-visible { outline: 2px solid #f59e0b; outline-offset: 2px; }
-.estrella.seguido { color: #f59e0b; animation: estrella-rebote 0.32s ease-out; }
+.estrella:hover { color: var(--oro); background-color: var(--oro-fondo); }
+.estrella:focus-visible { outline: 2px solid var(--oro); outline-offset: 2px; }
+.estrella.seguido { color: var(--oro); animation: estrella-rebote 0.32s ease-out; }
 
 @keyframes estrella-rebote {
     0%   { transform: scale(1); }
@@ -376,11 +377,11 @@ main:focus { outline: none; }
 .estrella-grande {
     gap: 0.375rem;
     padding: 0 1rem;
-    border: 1px solid #e5e7eb;
-    font-size: 1rem;
+    border: 1px solid var(--gris-200);
+    font-size: var(--texto-base);
 }
-.estrella-grande span { font-size: 0.8125rem; font-weight: 600; color: #374151; }
-.estrella-grande.seguido { border-color: #fde68a; background-color: #fffbeb; }
+.estrella-grande span { font-size: var(--texto-sm); font-weight: 600; color: var(--gris-700); }
+.estrella-grande.seguido { border-color: var(--aviso-borde); background-color: var(--oro-fondo); }
 
 /* ---- "Tus equipos" en la portada ---- */
 .mis-equipos { margin-top: 2rem; }
@@ -395,9 +396,9 @@ main:focus { outline: none; }
     display: flex;
     flex-direction: column;
     padding: 1rem;
-    border: 1px solid #fde68a;
-    border-radius: 1.125rem;
-    background-image: linear-gradient(160deg, #fffbeb, #fff 55%);
+    border: 1px solid var(--aviso-borde);
+    border-radius: var(--radio-lg);
+    background-image: linear-gradient(160deg, var(--oro-fondo), var(--blanco) 55%);
 }
 
 .mio-cabecera { display: flex; align-items: center; gap: 0.625rem; }
@@ -406,24 +407,24 @@ main:focus { outline: none; }
     flex-shrink: 0;
     width: 2.25rem;
     height: 2.25rem;
-    border-radius: 9999px;
+    border-radius: var(--radio-full);
     object-fit: cover;
 }
 
 .mio-identidad { flex: 1; min-width: 0; }
-.mio-nombre { font-size: 0.9375rem; font-weight: 800; color: #14532d; overflow-wrap: anywhere; }
+.mio-nombre { font-size: var(--texto-md); font-weight: 800; color: var(--verde-900); overflow-wrap: anywhere; }
 .mio-nombre:hover { text-decoration: underline; }
-.mio-torneo { font-size: 0.6875rem; color: #92400e; overflow-wrap: anywhere; }
-.mio-quitar { flex-shrink: 0; min-width: 2.25rem; min-height: 2.25rem; border-radius: 9999px; color: #f59e0b; font-size: 1rem; cursor: pointer; }
-.mio-quitar:hover { background-color: #fef3c7; }
+.mio-torneo { font-size: var(--texto-xs); color: var(--aviso-texto); overflow-wrap: anywhere; }
+.mio-quitar { flex-shrink: 0; min-width: 2.25rem; min-height: 2.25rem; border-radius: var(--radio-full); color: var(--oro); font-size: var(--texto-base); cursor: pointer; }
+.mio-quitar:hover { background-color: var(--aviso-fondo); }
 
-.mio-partidos { margin-top: 0.75rem; padding-top: 0.625rem; border-top: 1px dashed #fde68a; }
+.mio-partidos { margin-top: 0.75rem; padding-top: 0.625rem; border-top: 1px dashed var(--aviso-borde); }
 .mio-partidos li + li { margin-top: 0.375rem; }
-.mio-partidos a { display: block; font-size: 0.75rem; }
-.mio-fecha { font-weight: 800; color: #14532d; }
-.mio-rival { color: #374151; overflow-wrap: anywhere; }
-.mio-cancha { display: block; font-size: 0.625rem; color: #9ca3af; }
-.mio-sin { margin-top: 0.75rem; font-size: 0.75rem; color: #9ca3af; }
+.mio-partidos a { display: block; font-size: var(--texto-xs); }
+.mio-fecha { font-weight: 800; color: var(--verde-900); }
+.mio-rival { color: var(--gris-700); overflow-wrap: anywhere; }
+.mio-cancha { display: block; font-size: var(--texto-xs); color: var(--texto-debil); }
+.mio-sin { margin-top: 0.75rem; font-size: var(--texto-xs); color: var(--texto-debil); }
 
 /* ---- Fechas del equipo, en su página ---- */
 .equipo-fechas {
@@ -431,7 +432,7 @@ main:focus { outline: none; }
     gap: 1.5rem;
     margin-top: 2rem;
     padding-top: 1.5rem;
-    border-top: 1px solid #f3f4f6;
+    border-top: 1px solid var(--gris-100);
 }
 
 .fecha-fila {
@@ -440,16 +441,16 @@ main:focus { outline: none; }
     align-items: center;
     gap: 0.625rem;
     padding: 0.5rem 0.75rem;
-    font-size: 0.8125rem;
+    font-size: var(--texto-sm);
 }
-.fecha-fila + .fecha-fila { border-top: 1px solid #f3f4f6; }
-.fecha-fila:hover { background-color: #f0fdf4; }
+.fecha-fila + .fecha-fila { border-top: 1px solid var(--gris-100); }
+.fecha-fila:hover { background-color: var(--verde-50); }
 
-.fecha-cuando { font-weight: 700; color: #14532d; }
-.fecha-rival { color: #374151; overflow-wrap: anywhere; }
-.fecha-rival strong { color: #14532d; }
-.fecha-donde { font-size: 0.6875rem; color: #9ca3af; text-align: right; white-space: nowrap; }
-.fecha-sin { padding: 1rem; font-size: 0.8125rem; color: #9ca3af; }
+.fecha-cuando { font-weight: 700; color: var(--verde-900); }
+.fecha-rival { color: var(--gris-700); overflow-wrap: anywhere; }
+.fecha-rival strong { color: var(--verde-900); }
+.fecha-donde { font-size: var(--texto-xs); color: var(--texto-debil); text-align: right; white-space: nowrap; }
+.fecha-sin { padding: 1rem; font-size: var(--texto-sm); color: var(--texto-debil); }
 
 /* ============================================================================
    Franja de marcadores.
@@ -457,7 +458,7 @@ main:focus { outline: none; }
    juega hoy, arriba de todo y de un vistazo.
    ============================================================================ */
 .franja {
-    background-color: #052e16;
+    background-color: var(--verde-950);
     border-bottom: 1px solid rgba(134, 239, 172, 0.2);
 }
 
@@ -473,12 +474,12 @@ main:focus { outline: none; }
     align-items: center;
     flex-shrink: 0;
     padding: 0 1rem;
-    background-color: #14532d;
-    font-size: 0.6875rem;
+    background-color: var(--verde-900);
+    font-size: var(--texto-xs);
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.12em;
-    color: #fde047;
+    color: var(--amarillo-300);
 }
 
 /* Se desplaza en horizontal en vez de bajar de renglón: así entran veinte
@@ -493,31 +494,31 @@ main:focus { outline: none; }
 .franja-lista::-webkit-scrollbar { height: 4px; }
 .franja-lista::-webkit-scrollbar-thumb {
     background-color: rgba(134, 239, 172, 0.4);
-    border-radius: 9999px;
+    border-radius: var(--radio-full);
 }
 
-.marcador {
+.franja-marcador {
     flex-shrink: 0;
     width: 11rem;
     padding: 0.5rem 0.875rem;
     border-right: 1px solid rgba(255, 255, 255, 0.08);
     transition: background-color 0.12s ease;
 }
-.marcador:hover { background-color: rgba(255, 255, 255, 0.07); }
+.franja-marcador:hover { background-color: rgba(255, 255, 255, 0.07); }
 
-.marcador-torneo {
+.franja-marcador-torneo {
     display: block;
-    font-size: 0.5625rem;
+    font-size: var(--texto-xs);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: #4ade80;
+    color: var(--verde-brillo);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.marcador-fila {
+.franja-marcador-fila {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -525,26 +526,26 @@ main:focus { outline: none; }
     margin-top: 0.1875rem;
 }
 
-.marcador-equipo {
-    font-size: 0.75rem;
-    color: #e5e7eb;
+.franja-marcador-equipo {
+    font-size: var(--texto-xs);
+    color: var(--gris-200);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.marcador-gol {
+.franja-marcador-gol {
     flex-shrink: 0;
-    font-size: 0.8125rem;
+    font-size: var(--texto-sm);
     font-weight: 800;
-    color: #fff;
+    color: var(--blanco);
 }
 
-.marcador-pie {
+.franja-marcador-pie {
     display: block;
     margin-top: 0.25rem;
-    font-size: 0.5625rem;
-    color: #86efac;
+    font-size: var(--texto-xs);
+    color: var(--verde-300);
     white-space: nowrap;
 }
 
@@ -553,8 +554,8 @@ main:focus { outline: none; }
    ============================================================================ */
 .pie {
     margin-top: 3rem;
-    background-color: #052e16;
-    color: #bbf7d0;
+    background-color: var(--verde-950);
+    color: var(--verde-200);
 }
 
 .pie-interior {
@@ -565,40 +566,40 @@ main:focus { outline: none; }
     padding: 3rem 1.25rem 2rem;
 }
 
-.pie-logo { height: 3rem; width: auto; border-radius: 0.5rem; }
+.pie-logo { height: 3rem; width: auto; border-radius: var(--radio-sm); }
 
 .pie-nombre {
     margin-top: 0.75rem;
-    font-size: 1rem;
+    font-size: var(--texto-base);
     font-weight: 800;
-    color: #fff;
+    color: var(--blanco);
 }
 
 .pie-lema {
     margin-top: 0.5rem;
     max-width: 22rem;
-    font-size: 0.8125rem;
+    font-size: var(--texto-sm);
     line-height: 1.6;
-    color: #86efac;
+    color: var(--verde-300);
 }
 
 .pie-columna { display: flex; flex-direction: column; gap: 0.5rem; }
 
 .pie-titulo {
     margin-bottom: 0.25rem;
-    font-size: 0.6875rem;
+    font-size: var(--texto-xs);
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.14em;
-    color: #fde047;
+    color: var(--amarillo-300);
 }
 
 .pie-columna a {
-    font-size: 0.8125rem;
-    color: #bbf7d0;
+    font-size: var(--texto-sm);
+    color: var(--verde-200);
     transition: color 0.12s ease;
 }
-.pie-columna a:hover { color: #fff; }
+.pie-columna a:hover { color: var(--blanco); }
 
 .pie-abajo {
     border-top: 1px solid rgba(134, 239, 172, 0.18);
@@ -608,12 +609,12 @@ main:focus { outline: none; }
     max-width: 72rem;
     margin: 0 auto;
     padding: 0.25rem 1.25rem;
-    font-size: 0.75rem;
-    color: #4ade80;
+    font-size: var(--texto-xs);
+    color: var(--verde-brillo);
 }
 .pie-abajo p:first-child { padding-top: 1.25rem; }
 .pie-abajo p:last-child { padding-bottom: 1.25rem; }
-.pie-nota { color: #16a34a !important; font-size: 0.6875rem !important; }
+.pie-nota { color: var(--verde-600) !important; font-size: var(--texto-xs) !important; }
 
 /* ---- Encabezados de sección ---- */
 .seccion-cabecera {
@@ -626,17 +627,17 @@ main:focus { outline: none; }
 }
 
 .seccion-titulo {
-    font-size: 1.375rem;
+    font-size: var(--texto-2xl);
     font-weight: 800;
-    color: #14532d;
+    color: var(--verde-900);
 }
 
 .seccion-enlace {
-    font-size: 0.8125rem;
+    font-size: var(--texto-sm);
     font-weight: 600;
-    color: #15803d;
+    color: var(--verde-700);
 }
-.seccion-enlace:hover { color: #14532d; }
+.seccion-enlace:hover { color: var(--verde-900); }
 
 /* ---- Hero ----
    El verde profundo con la textura de cancha detrás: es lo primero que se ve y
@@ -646,11 +647,11 @@ main:focus { outline: none; }
     overflow: hidden;
     margin-bottom: 2.5rem;
     padding: 3rem 1.25rem 3.5rem;
-    background-color: #14532d;
+    background-color: var(--verde-900);
     background-image:
         radial-gradient(90% 80% at 15% 0%, rgba(34, 197, 94, 0.35), transparent 60%),
         radial-gradient(70% 70% at 100% 100%, rgba(250, 204, 21, 0.18), transparent 60%),
-        linear-gradient(160deg, #14532d, #052e16);
+        linear-gradient(160deg, var(--verde-900), var(--verde-950));
 }
 
 /* Las rayas del césped. Muy suaves: es textura, no un dibujo. */
@@ -672,27 +673,27 @@ main:focus { outline: none; }
 }
 
 .hero-marca {
-    font-size: 0.6875rem;
+    font-size: var(--texto-xs);
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.24em;
-    color: #86efac;
+    color: var(--verde-300);
 }
 
 .hero-titulo {
     margin-top: 0.75rem;
-    font-size: 2rem;
+    font-size: var(--texto-3xl);
     font-weight: 800;
     line-height: 1.15;
-    color: #fff;
+    color: var(--blanco);
 }
 
 .hero-bajada {
     margin-top: 0.875rem;
     max-width: 34rem;
-    font-size: 0.9375rem;
+    font-size: var(--texto-md);
     line-height: 1.6;
-    color: #bbf7d0;
+    color: var(--verde-200);
 }
 
 .hero-acciones {
@@ -706,19 +707,19 @@ main:focus { outline: none; }
     display: inline-flex;
     align-items: center;
     padding: 0.75rem 1.5rem;
-    border-radius: 9999px;
-    background-color: #fff;
-    font-size: 0.875rem;
+    border-radius: var(--radio-full);
+    background-color: var(--blanco);
+    font-size: var(--texto-md);
     font-weight: 700;
-    color: #14532d;
+    color: var(--verde-900);
     transition: transform 0.12s ease, background-color 0.12s ease;
 }
-.hero-boton:hover { background-color: #dcfce7; transform: translateY(-1px); }
+.hero-boton:hover { background-color: var(--verde-100); transform: translateY(-1px); }
 
 .hero-boton-borde {
     background-color: transparent;
     border: 1px solid rgba(255, 255, 255, 0.45);
-    color: #fff;
+    color: var(--blanco);
 }
 .hero-boton-borde:hover { background-color: rgba(255, 255, 255, 0.12); }
 
@@ -726,7 +727,7 @@ main:focus { outline: none; }
 .hero-partido {
     display: block;
     padding: 1.25rem;
-    border-radius: 1.5rem;
+    border-radius: var(--radio-xl);
     border: 1px solid rgba(134, 239, 172, 0.3);
     background-color: rgba(255, 255, 255, 0.07);
     /* El desenfoque de atrás hace que la tarjeta flote sobre el césped en vez
@@ -737,11 +738,11 @@ main:focus { outline: none; }
 .hero-partido:hover { background-color: rgba(255, 255, 255, 0.13); }
 
 .hero-partido-etiqueta {
-    font-size: 0.625rem;
+    font-size: var(--texto-xs);
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.16em;
-    color: #fde047;
+    color: var(--amarillo-300);
     text-align: center;
 }
 
@@ -759,26 +760,26 @@ main:focus { outline: none; }
     height: 3.25rem;
     width: 3.25rem;
     margin: 0 auto 0.5rem;
-    border-radius: 9999px;
+    border-radius: var(--radio-full);
     object-fit: cover;
 }
 
 .hero-equipo {
-    font-size: 0.8125rem;
+    font-size: var(--texto-sm);
     font-weight: 700;
-    color: #fff;
+    color: var(--blanco);
     overflow-wrap: anywhere;
 }
 
 .hero-puesto {
     margin-top: 0.125rem;
-    font-size: 0.6875rem;
-    color: #86efac;
+    font-size: var(--texto-xs);
+    color: var(--verde-300);
 }
 
 .hero-versus { text-align: center; }
 .hero-versus span {
-    font-size: 0.75rem;
+    font-size: var(--texto-xs);
     font-weight: 800;
     letter-spacing: 0.1em;
     color: rgba(255, 255, 255, 0.55);
@@ -786,9 +787,9 @@ main:focus { outline: none; }
 
 .hero-cuenta {
     margin-top: 0.25rem;
-    font-size: 0.75rem;
+    font-size: var(--texto-xs);
     font-weight: 700;
-    color: #fde047;
+    color: var(--amarillo-300);
     white-space: nowrap;
 }
 
@@ -796,13 +797,13 @@ main:focus { outline: none; }
     margin-top: 0.875rem;
     padding-top: 0.75rem;
     border-top: 1px solid rgba(255, 255, 255, 0.15);
-    font-size: 0.6875rem;
-    color: #bbf7d0;
+    font-size: var(--texto-xs);
+    color: var(--verde-200);
     text-align: center;
 }
 
 /* ---- Las cuatro cifras ---- */
-.cifras {
+.portada-cifras {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 0.75rem;
@@ -811,32 +812,32 @@ main:focus { outline: none; }
     position: relative;
 }
 
-.cifra {
+.portada-cifra {
     padding: 1.125rem 0.75rem;
-    border-radius: 1.25rem;
-    border: 1px solid #dcfce7;
-    background-color: #fff;
-    box-shadow: 0 6px 20px rgba(20, 83, 45, 0.1);
+    border-radius: var(--radio-xl);
+    border: 1px solid var(--verde-100);
+    background-color: var(--blanco);
+    box-shadow: var(--sombra-marca-md);
     text-align: center;
 }
 
-.cifra-icono { font-size: 1.25rem; }
+.portada-cifra-icono { font-size: var(--texto-xl); }
 
-.cifra-numero {
+.portada-cifra-numero {
     margin-top: 0.25rem;
-    font-size: 1.75rem;
+    font-size: var(--texto-3xl);
     font-weight: 800;
     line-height: 1;
-    color: #14532d;
+    color: var(--verde-900);
 }
 
-.cifra-texto {
+.portada-cifra-texto {
     margin-top: 0.25rem;
-    font-size: 0.6875rem;
+    font-size: var(--texto-xs);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: #6b7280;
+    color: var(--gris-500);
 }
 
 /* ---- Partidos de hoy ---- */
@@ -858,14 +859,14 @@ main:focus { outline: none; }
     flex-direction: column;
     height: 100%;
     padding: 1rem;
-    border-radius: 1.125rem;
-    border: 1px solid #e5e7eb;
-    background-color: #fff;
+    border-radius: var(--radio-lg);
+    border: 1px solid var(--gris-200);
+    background-color: var(--blanco);
     transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.12s ease;
 }
 .hoy:hover {
-    border-color: #86efac;
-    box-shadow: 0 6px 18px rgba(20, 83, 45, 0.1);
+    border-color: var(--verde-300);
+    box-shadow: var(--sombra-marca-md);
     transform: translateY(-2px);
 }
 
@@ -877,21 +878,21 @@ main:focus { outline: none; }
 }
 
 .hoy-reloj {
-    font-size: 1.125rem;
+    font-size: var(--texto-lg);
     font-weight: 800;
-    color: #14532d;
+    color: var(--verde-900);
 }
 
 .hoy-estado {
     padding: 0.125rem 0.5rem;
-    border-radius: 9999px;
-    background-color: #f3f4f6;
-    font-size: 0.625rem;
+    border-radius: var(--radio-full);
+    background-color: var(--gris-100);
+    font-size: var(--texto-xs);
     font-weight: 700;
-    color: #6b7280;
+    color: var(--gris-500);
 }
 
-.hoy-final { background-color: #dcfce7; color: #15803d; }
+.hoy-final { background-color: var(--verde-100); color: var(--verde-700); }
 
 /* Ocupa el alto que sobre y centra el cruce: así una tarjeta con nombres de un
    renglón y otra de dos se ven igual de equilibradas. */
@@ -910,9 +911,9 @@ main:focus { outline: none; }
     align-items: center;
     gap: 0.5rem;
     min-width: 0;
-    font-size: 0.8125rem;
+    font-size: var(--texto-sm);
     font-weight: 600;
-    color: #1f2937;
+    color: var(--gris-800);
 }
 
 .hoy-equipo span { overflow-wrap: anywhere; }
@@ -922,19 +923,19 @@ main:focus { outline: none; }
     height: 1.75rem;
     width: 1.75rem;
     flex-shrink: 0;
-    border-radius: 9999px;
+    border-radius: var(--radio-full);
     object-fit: cover;
 }
 
-.hoy-vs { font-size: 0.6875rem; font-weight: 700; color: #9ca3af; }
+.hoy-vs { font-size: var(--texto-xs); font-weight: 700; color: var(--texto-debil); }
 
 .hoy-marcador {
     padding: 0.125rem 0.5rem;
-    border-radius: 0.5rem;
-    background-color: #14532d;
-    font-size: 0.875rem;
+    border-radius: var(--radio-sm);
+    background-color: var(--verde-900);
+    font-size: var(--texto-md);
     font-weight: 800;
-    color: #fff;
+    color: var(--blanco);
     white-space: nowrap;
 }
 
@@ -946,16 +947,16 @@ main:focus { outline: none; }
     gap: 0.25rem;
     margin-top: auto;
     padding-top: 0.625rem;
-    border-top: 1px solid #f3f4f6;
+    border-top: 1px solid var(--gris-100);
 }
 
 .hoy-chip {
     padding: 0.125rem 0.5rem;
-    border-radius: 9999px;
-    background-color: #f0fdf4;
-    font-size: 0.625rem;
+    border-radius: var(--radio-full);
+    background-color: var(--verde-50);
+    font-size: var(--texto-xs);
     font-weight: 600;
-    color: #15803d;
+    color: var(--verde-700);
 }
 
 .hoy-cancha { background-color: #eff6ff; color: #1d4ed8; }
@@ -970,11 +971,11 @@ main:focus { outline: none; }
    contaba nada: un 4 no dice si fueron cuatro goles o cuatro pases. */
 .figura {
     padding: 1.25rem;
-    border-radius: 1.25rem;
-    border: 1px solid #fde68a;
+    border-radius: var(--radio-xl);
+    border: 1px solid var(--aviso-borde);
     background-image:
         radial-gradient(80% 60% at 100% 0%, rgba(251, 191, 36, 0.16), transparent 70%),
-        linear-gradient(135deg, #fffbeb, #fff 60%);
+        linear-gradient(135deg, var(--oro-fondo), var(--blanco) 60%);
 }
 
 .figura-quien {
@@ -987,9 +988,9 @@ main:focus { outline: none; }
     flex-shrink: 0;
     width: 3.5rem;
     height: 3.5rem;
-    border-radius: 9999px;
+    border-radius: var(--radio-full);
     object-fit: cover;
-    box-shadow: 0 3px 10px rgba(180, 83, 9, 0.22);
+    box-shadow: var(--sombra-oro);
 }
 
 .figura-identidad { min-width: 0; }
@@ -999,23 +1000,23 @@ main:focus { outline: none; }
     align-items: center;
     flex-wrap: wrap;
     gap: 0.375rem;
-    font-size: 1.125rem;
+    font-size: var(--texto-lg);
     font-weight: 800;
-    color: #14532d;
+    color: var(--verde-900);
     overflow-wrap: anywhere;
 }
 
 .figura-dorsal {
     padding: 0 0.375rem;
-    border-radius: 0.25rem;
-    background-color: #fef3c7;
-    font-size: 0.6875rem;
+    border-radius: var(--radio-sm);
+    background-color: var(--aviso-fondo);
+    font-size: var(--texto-xs);
     font-weight: 700;
-    color: #92400e;
+    color: var(--aviso-texto);
 }
 
-.figura-club { font-size: 0.875rem; font-weight: 600; color: #374151; overflow-wrap: anywhere; }
-.figura-torneo { font-size: 0.6875rem; color: #9ca3af; overflow-wrap: anywhere; }
+.figura-club { font-size: var(--texto-md); font-weight: 600; color: var(--gris-700); overflow-wrap: anywhere; }
+.figura-torneo { font-size: var(--texto-xs); color: var(--texto-debil); overflow-wrap: anywhere; }
 
 /* Las tres cifras, cada una con su etiqueta: se lee qué es cada número sin
    tener que deducirlo. Va como <dl> porque eso es: pares de término y dato. */
@@ -1028,14 +1029,14 @@ main:focus { outline: none; }
 
 .figura-cifra {
     padding: 0.625rem 0.25rem;
-    border-radius: 0.75rem;
+    border-radius: var(--radio-md);
     background-color: rgba(255, 255, 255, 0.75);
-    border: 1px solid #fef3c7;
+    border: 1px solid var(--aviso-fondo);
     text-align: center;
 }
 
 .figura-cifra dt {
-    font-size: 0.5625rem;
+    font-size: var(--texto-xs);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -1044,10 +1045,10 @@ main:focus { outline: none; }
 
 .figura-cifra dd {
     margin-top: 0.125rem;
-    font-size: 1.375rem;
+    font-size: var(--texto-2xl);
     font-weight: 800;
     line-height: 1;
-    color: #14532d;
+    color: var(--verde-900);
 }
 
 /* El dato que hace que la sección cuente algo: qué hizo, contra quién, y el
@@ -1060,34 +1061,34 @@ main:focus { outline: none; }
     gap: 0.5rem;
     margin-top: 0.875rem;
     padding: 0.75rem 0.875rem;
-    border-radius: 0.875rem;
-    background-color: #14532d;
+    border-radius: var(--radio-lg);
+    background-color: var(--verde-900);
     transition: background-color 0.12s ease;
 }
-.figura-logro:hover { background-color: #166534; }
+.figura-logro:hover { background-color: var(--verde-800); }
 
-.figura-logro-que { font-size: 0.8125rem; font-weight: 600; color: #fff; }
-.figura-logro-ir { font-size: 0.6875rem; font-weight: 600; color: #86efac; white-space: nowrap; }
+.figura-logro-que { font-size: var(--texto-sm); font-weight: 600; color: var(--blanco); }
+.figura-logro-ir { font-size: var(--texto-xs); font-weight: 600; color: var(--verde-300); white-space: nowrap; }
 
 .figura-plantilla {
     display: block;
     margin-top: 0.75rem;
-    font-size: 0.75rem;
+    font-size: var(--texto-xs);
     font-weight: 600;
-    color: #b45309;
+    color: var(--oro-texto);
 }
-.figura-plantilla:hover { color: #92400e; text-decoration: underline; }
+.figura-plantilla:hover { color: var(--aviso-texto); text-decoration: underline; }
 
-.seccion-nota { font-size: 0.75rem; color: #9ca3af; }
+.seccion-nota { font-size: var(--texto-xs); color: var(--texto-debil); }
 
 /* Si el icono queda vacío no debe dejar un hueco fantasma. */
-.cifra-icono:empty { display: none; }
+.portada-cifra-icono:empty { display: none; }
 
 .resultados {
-    border: 1px solid #e5e7eb;
-    border-radius: 1.125rem;
+    border: 1px solid var(--gris-200);
+    border-radius: var(--radio-lg);
     overflow: hidden;
-    background-color: #fff;
+    background-color: var(--blanco);
 }
 
 .resultado {
@@ -1096,20 +1097,20 @@ main:focus { outline: none; }
     align-items: center;
     gap: 0.5rem;
     padding: 0.625rem 0.875rem;
-    font-size: 0.8125rem;
+    font-size: var(--texto-sm);
 }
-.resultado + .resultado { border-top: 1px solid #f3f4f6; }
-.resultado:hover { background-color: #f0fdf4; }
+.resultado + .resultado { border-top: 1px solid var(--gris-100); }
+.resultado:hover { background-color: var(--verde-50); }
 
-.resultado-equipo { color: #374151; overflow-wrap: anywhere; }
+.resultado-equipo { color: var(--gris-700); overflow-wrap: anywhere; }
 .resultado-equipo-der { text-align: right; }
 
 .resultado-marcador {
     padding: 0.0625rem 0.5rem;
-    border-radius: 0.375rem;
-    background-color: #f3f4f6;
+    border-radius: var(--radio-sm);
+    background-color: var(--gris-100);
     font-weight: 800;
-    color: #14532d;
+    color: var(--verde-900);
     white-space: nowrap;
 }
 
@@ -1117,10 +1118,10 @@ main:focus { outline: none; }
 .tres-columnas { display: grid; gap: 1rem; }
 
 .lideres {
-    border: 1px solid #e5e7eb;
-    border-radius: 1.125rem;
+    border: 1px solid var(--gris-200);
+    border-radius: var(--radio-lg);
     overflow: hidden;
-    background-color: #fff;
+    background-color: var(--blanco);
 }
 
 .lideres-cabecera {
@@ -1129,23 +1130,23 @@ main:focus { outline: none; }
     justify-content: space-between;
     gap: 0.5rem;
     padding: 0.75rem 0.875rem;
-    font-size: 0.8125rem;
+    font-size: var(--texto-sm);
     font-weight: 800;
-    color: #fff;
+    color: var(--blanco);
 }
 
 .lideres-cabecera a {
-    font-size: 0.6875rem;
+    font-size: var(--texto-xs);
     font-weight: 600;
     color: rgba(255, 255, 255, 0.85);
     text-decoration: underline;
 }
-.lideres-cabecera a:hover { color: #fff; }
+.lideres-cabecera a:hover { color: var(--blanco); }
 
 /* Un color por ranking, para distinguirlos de un vistazo cuando están los tres
    uno al lado del otro. */
-.lideres-goles { background-image: linear-gradient(135deg, #15803d, #166534); }
-.lideres-asistencias { background-image: linear-gradient(135deg, #b45309, #92400e); }
+.lideres-goles { background-image: linear-gradient(135deg, var(--verde-700), var(--verde-800)); }
+.lideres-asistencias { background-image: linear-gradient(135deg, var(--oro-texto), var(--aviso-texto)); }
 .lideres-vallas { background-image: linear-gradient(135deg, #0369a1, #075985); }
 
 .lider {
@@ -1154,7 +1155,7 @@ main:focus { outline: none; }
     gap: 0.625rem;
     padding: 0.5rem 0.875rem;
 }
-.lider + .lider { border-top: 1px solid #f9fafb; }
+.lider + .lider { border-top: 1px solid var(--gris-50); }
 
 .lider-puesto {
     flex-shrink: 0;
@@ -1163,40 +1164,40 @@ main:focus { outline: none; }
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 9999px;
-    background-color: #f3f4f6;
-    font-size: 0.6875rem;
+    border-radius: var(--radio-full);
+    background-color: var(--gris-100);
+    font-size: var(--texto-xs);
     font-weight: 800;
-    color: #6b7280;
+    color: var(--gris-500);
 }
 
 /* Podio: los tres primeros con su metal. */
-.lider-puesto-1 { background-image: linear-gradient(160deg, #fde68a, #f59e0b); color: #78350f; }
-.lider-puesto-2 { background-image: linear-gradient(160deg, #f3f4f6, #9ca3af); color: #374151; }
-.lider-puesto-3 { background-image: linear-gradient(160deg, #fed7aa, #b45309); color: #fff; }
+.lider-puesto-1 { background-image: linear-gradient(160deg, var(--aviso-borde), var(--oro)); color: #78350f; }
+.lider-puesto-2 { background-image: linear-gradient(160deg, var(--gris-100), var(--gris-400)); color: var(--gris-700); }
+.lider-puesto-3 { background-image: linear-gradient(160deg, #fed7aa, var(--oro-texto)); color: var(--blanco); }
 
 .lider-quien { flex: 1; min-width: 0; }
 .lider-nombre {
-    font-size: 0.8125rem;
+    font-size: var(--texto-sm);
     font-weight: 600;
-    color: #1f2937;
+    color: var(--gris-800);
     overflow-wrap: anywhere;
 }
-.lider-equipo { font-size: 0.6875rem; color: #9ca3af; overflow-wrap: anywhere; }
+.lider-equipo { font-size: var(--texto-xs); color: var(--texto-debil); overflow-wrap: anywhere; }
 
 .lider-total {
     flex-shrink: 0;
-    font-size: 1.125rem;
+    font-size: var(--texto-lg);
     font-weight: 800;
-    color: #14532d;
+    color: var(--verde-900);
 }
-.lider-total-chico { font-size: 0.9375rem; }
+.lider-total-chico { font-size: var(--texto-md); }
 
 .lideres-pie {
     padding: 0.5rem 0.875rem;
-    border-top: 1px solid #f3f4f6;
-    font-size: 0.625rem;
-    color: #9ca3af;
+    border-top: 1px solid var(--gris-100);
+    font-size: var(--texto-xs);
+    color: var(--texto-debil);
 }
 
 /* ---- Torneos en juego ---- */
@@ -1209,12 +1210,12 @@ main:focus { outline: none; }
 .torneo {
     display: block;
     padding: 1rem;
-    border-radius: 1.125rem;
-    border: 1px solid #e5e7eb;
-    background-color: #fff;
+    border-radius: var(--radio-lg);
+    border: 1px solid var(--gris-200);
+    background-color: var(--blanco);
     transition: border-color 0.15s ease, transform 0.12s ease;
 }
-.torneo:hover { border-color: #86efac; transform: translateY(-2px); }
+.torneo:hover { border-color: var(--verde-300); transform: translateY(-2px); }
 
 .torneo-cabecera {
     display: flex;
@@ -1224,59 +1225,59 @@ main:focus { outline: none; }
 
 /* El tamaño chico del logo de liga. Existían -md y -lg, pero no este, y lo
    estaban usando tres pantallas: el logo salía del tamaño por defecto. */
-.logo-liga-sm { height: 2rem; width: 2rem; font-size: 0.625rem; }
+.logo-liga-sm { height: 2rem; width: 2rem; font-size: var(--texto-xs); }
 
 .torneo-identidad { flex: 1; min-width: 0; }
 
 .torneo-liga {
-    font-size: 0.625rem;
+    font-size: var(--texto-xs);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: #15803d;
+    color: var(--verde-700);
     overflow-wrap: anywhere;
 }
 
-.torneo-nombre { font-size: 1rem; font-weight: 800; color: #14532d; }
+.torneo-nombre { font-size: var(--texto-base); font-weight: 800; color: var(--verde-900); }
 
 .torneo-estado {
     flex-shrink: 0;
     padding: 0.125rem 0.5rem;
-    border-radius: 9999px;
-    font-size: 0.5625rem;
+    border-radius: var(--radio-full);
+    font-size: var(--texto-xs);
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    background-color: #dcfce7;
-    color: #15803d;
+    background-color: var(--verde-100);
+    color: var(--verde-700);
 }
-.torneo-por-comenzar { background-color: #f3f4f6; color: #6b7280; }
-.torneo-terminando { background-color: #fef3c7; color: #92400e; }
+.torneo-por-comenzar { background-color: var(--gris-100); color: var(--gris-500); }
+.torneo-terminando { background-color: var(--aviso-fondo); color: var(--aviso-texto); }
 
 .torneo-cifras {
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;
     margin-top: 0.75rem;
-    font-size: 0.75rem;
-    color: #6b7280;
+    font-size: var(--texto-xs);
+    color: var(--gris-500);
 }
 
 .torneo-barra {
     margin-top: 0.5rem;
     height: 0.375rem;
-    border-radius: 9999px;
-    background-color: #f3f4f6;
+    border-radius: var(--radio-full);
+    background-color: var(--gris-100);
     overflow: hidden;
 }
 .torneo-barra span {
     display: block;
     height: 100%;
-    border-radius: 9999px;
-    background-image: linear-gradient(90deg, #22c55e, #15803d);
+    border-radius: var(--radio-full);
+    background-image: linear-gradient(90deg, #22c55e, var(--verde-700));
 }
 
-.torneo-nota { margin-top: 0.5rem; font-size: 0.6875rem; color: #9ca3af; }
+.torneo-nota { margin-top: 0.5rem; font-size: var(--texto-xs); color: var(--texto-debil); }
 
 /* ---- Últimos campeones ---- */
 .campeones {
@@ -1288,13 +1289,13 @@ main:focus { outline: none; }
 .campeon {
     display: block;
     padding: 1.25rem 1rem;
-    border-radius: 1.125rem;
-    border: 1px solid #fde68a;
-    background-image: linear-gradient(160deg, #fffbeb, #fff 70%);
+    border-radius: var(--radio-lg);
+    border: 1px solid var(--aviso-borde);
+    background-image: linear-gradient(160deg, var(--oro-fondo), var(--blanco) 70%);
     text-align: center;
     transition: transform 0.12s ease, box-shadow 0.15s ease;
 }
-.campeon:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(180, 83, 9, 0.15); }
+.campeon:hover { transform: translateY(-2px); box-shadow: var(--sombra-oro); }
 
 /* La copa de verdad, la misma imagen que la vitrina, en vez del emoji 🏆: cada
    sistema lo dibuja distinto y al lado del resto se veía como un carácter
@@ -1307,12 +1308,12 @@ main:focus { outline: none; }
 }
 .campeon-nombre {
     margin-top: 0.375rem;
-    font-size: 1rem;
+    font-size: var(--texto-base);
     font-weight: 800;
-    color: #14532d;
+    color: var(--verde-900);
     overflow-wrap: anywhere;
 }
-.campeon-torneo { margin-top: 0.125rem; font-size: 0.6875rem; color: #92400e; }
+.campeon-torneo { margin-top: 0.125rem; font-size: var(--texto-xs); color: var(--aviso-texto); }
 
 /* ============================================================================
    Buscador
@@ -1320,13 +1321,13 @@ main:focus { outline: none; }
 .buscador-cabecera {
     margin-bottom: 2rem;
     padding: 2.5rem 0;
-    background-image: linear-gradient(160deg, #14532d, #052e16);
+    background-image: linear-gradient(160deg, var(--verde-900), var(--verde-950));
 }
 
 .buscador-titulo {
-    font-size: 1.75rem;
+    font-size: var(--texto-3xl);
     font-weight: 800;
-    color: #fff;
+    color: var(--blanco);
 }
 
 .buscador-caja {
@@ -1341,38 +1342,38 @@ main:focus { outline: none; }
     min-width: 0;
     padding: 0.875rem 1.125rem;
     border: 1px solid rgba(134, 239, 172, 0.35);
-    border-radius: 9999px;
+    border-radius: var(--radio-full);
     background-color: rgba(255, 255, 255, 0.95);
-    font-size: 0.9375rem;
-    color: #111827;
+    font-size: var(--texto-md);
+    color: var(--gris-900);
 }
 .buscador-campo:focus {
     outline: none;
-    border-color: #facc15;
-    box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.25);
+    border-color: var(--oro-claro);
+    box-shadow: var(--anillo-oro);
 }
 
 .buscador-boton {
     flex-shrink: 0;
     padding: 0.875rem 1.5rem;
-    border-radius: 9999px;
-    background-color: #facc15;
-    font-size: 0.875rem;
+    border-radius: var(--radio-full);
+    background-color: var(--oro-claro);
+    font-size: var(--texto-md);
     font-weight: 700;
-    color: #14532d;
+    color: var(--verde-900);
     cursor: pointer;
 }
-.buscador-boton:hover { background-color: #fde047; }
+.buscador-boton:hover { background-color: var(--amarillo-300); }
 
-.buscador-aviso { margin-top: 0.75rem; font-size: 0.8125rem; color: #86efac; }
+.buscador-aviso { margin-top: 0.75rem; font-size: var(--texto-sm); color: var(--verde-300); }
 
 .grupo { margin-bottom: 2rem; }
 
 .grupo-titulo {
     margin-bottom: 0.75rem;
-    font-size: 1.0625rem;
+    font-size: var(--texto-lg);
     font-weight: 800;
-    color: #14532d;
+    color: var(--verde-900);
 }
 
 .grupo-lista {
@@ -1386,22 +1387,22 @@ main:focus { outline: none; }
     align-items: center;
     gap: 0.75rem;
     padding: 0.75rem 0.875rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.875rem;
-    background-color: #fff;
+    border: 1px solid var(--gris-200);
+    border-radius: var(--radio-lg);
+    background-color: var(--blanco);
     transition: border-color 0.15s ease, transform 0.12s ease;
 }
-.hallazgo:hover { border-color: #86efac; transform: translateY(-1px); }
+.hallazgo:hover { border-color: var(--verde-300); transform: translateY(-1px); }
 
 .hallazgo-escudo {
     height: 2.25rem;
     width: 2.25rem;
     flex-shrink: 0;
-    border-radius: 9999px;
+    border-radius: var(--radio-full);
     object-fit: cover;
 }
 
-.hallazgo-pin { font-size: 1.25rem; flex-shrink: 0; }
+.hallazgo-pin { font-size: var(--texto-xl); flex-shrink: 0; }
 
 .hallazgo-datos { flex: 1; min-width: 0; }
 
@@ -1409,44 +1410,44 @@ main:focus { outline: none; }
     display: flex;
     align-items: center;
     gap: 0.375rem;
-    font-size: 0.875rem;
+    font-size: var(--texto-md);
     font-weight: 700;
-    color: #1f2937;
+    color: var(--gris-800);
     overflow-wrap: anywhere;
 }
 
 .hallazgo-dorsal {
     padding: 0 0.375rem;
-    border-radius: 0.25rem;
-    background-color: #f3f4f6;
-    font-size: 0.625rem;
-    color: #6b7280;
+    border-radius: var(--radio-sm);
+    background-color: var(--gris-100);
+    font-size: var(--texto-xs);
+    color: var(--gris-500);
 }
 
 .hallazgo-detalle {
-    font-size: 0.75rem;
-    color: #9ca3af;
+    font-size: var(--texto-xs);
+    color: var(--texto-debil);
     overflow-wrap: anywhere;
 }
 
 .hallazgo-ir {
     flex-shrink: 0;
-    font-size: 0.6875rem;
+    font-size: var(--texto-xs);
     font-weight: 600;
-    color: #15803d;
+    color: var(--verde-700);
 }
 
 /* Estado vacío compartido por buscador y sedes. */
 .vacio {
     padding: 3rem 1.5rem;
-    border: 1px dashed #d1d5db;
-    border-radius: 1.25rem;
-    background-color: #fff;
+    border: 1px dashed var(--gris-300);
+    border-radius: var(--radio-xl);
+    background-color: var(--blanco);
     text-align: center;
 }
-.vacio-titulo { font-size: 1rem; font-weight: 700; color: #374151; }
-.vacio-texto { margin-top: 0.5rem; font-size: 0.875rem; color: #6b7280; }
-.vacio-texto a { color: #15803d; font-weight: 600; text-decoration: underline; }
+.vacio-titulo { font-size: var(--texto-base); font-weight: 700; color: var(--gris-700); }
+.vacio-texto { margin-top: 0.5rem; font-size: var(--texto-md); color: var(--gris-500); }
+.vacio-texto a { color: var(--verde-700); font-weight: 600; text-decoration: underline; }
 
 /* ----------------------------------------------------------------------------
    Acceso pausado: la pantalla que ve quien agoto los intentos de login.
@@ -1461,35 +1462,35 @@ main:focus { outline: none; }
     max-width: 34rem;
     margin: 0 auto;
     padding: 2.5rem 1.75rem;
-    border: 1px solid #dcfce7;
-    border-radius: 1.5rem;
-    background-color: #fff;
-    box-shadow: 0 10px 30px -12px rgba(20, 83, 45, 0.25);
+    border: 1px solid var(--verde-100);
+    border-radius: var(--radio-xl);
+    background-color: var(--blanco);
+    box-shadow: var(--sombra-marca-lg);
     text-align: center;
 }
 
 .bloqueo-etiqueta {
-    font-size: 0.75rem;
+    font-size: var(--texto-xs);
     font-weight: 700;
     letter-spacing: 0.2em;
     text-transform: uppercase;
-    color: #15803d;
+    color: var(--verde-700);
 }
 
 .bloqueo-titulo {
     margin-top: 0.5rem;
-    font-size: 1.75rem;
+    font-size: var(--texto-3xl);
     font-weight: 800;
-    color: #14532d;
+    color: var(--verde-900);
 }
 
 .bloqueo-texto {
     margin-top: 1rem;
-    font-size: 0.9375rem;
+    font-size: var(--texto-md);
     line-height: 1.6;
-    color: #4b5563;
+    color: var(--gris-600);
 }
-.bloqueo-texto strong { color: #14532d; }
+.bloqueo-texto strong { color: var(--verde-900); }
 
 /* Envuelven solos en pantalla angosta: en un telefono los dos botones no
    entran uno al lado del otro sin quedar apretados. */
@@ -1504,26 +1505,29 @@ main:focus { outline: none; }
 .bloqueo-boton {
     display: inline-block;
     padding: 0.75rem 1.5rem;
-    border-radius: 9999px;
-    background-color: #166534;
-    font-size: 0.875rem;
+    border-radius: var(--radio-full);
+    background-color: var(--verde-800);
+    font-size: var(--texto-md);
     font-weight: 700;
-    color: #fff;
+    color: var(--blanco);
 }
-.bloqueo-boton:hover { background-color: #15803d; }
+.bloqueo-boton:hover { background-color: var(--verde-700); }
 
 .bloqueo-boton-tenue {
-    background-color: #f0fdf4;
-    color: #14532d;
-    border: 1px solid #bbf7d0;
+    background-color: var(--verde-50);
+    color: var(--verde-900);
+    border: 1px solid var(--verde-200);
 }
-.bloqueo-boton-tenue:hover { background-color: #dcfce7; }
+.bloqueo-boton-tenue:hover { background-color: var(--verde-100); }
 
 /* En pantallas chicas cada boton ocupa todo el ancho: son el destino de la
    pagina y a 320 px un boton a medio ancho es dificil de acertar con el dedo. */
+/* Excepción deliberada: teléfonos pequeños (por debajo de 416 px). Tailwind no
+   define nada ahí abajo y estas dos pantallas —bloqueo por pago y aviso de
+   sesión— son las únicas que se desbordaban a ese ancho. */
 @media (max-width: 26rem) {
     .bloqueo { padding: 2rem 1.25rem; }
-    .bloqueo-titulo { font-size: 1.5rem; }
+    .bloqueo-titulo { font-size: var(--texto-2xl); }
     .bloqueo-boton { width: 100%; }
 }
 
@@ -1562,10 +1566,10 @@ body.sesion-quieta { overflow: hidden; }
     width: 100%;
     max-width: 26rem;
     padding: 2rem 1.75rem 1.5rem;
-    border: 1px solid #dcfce7;
-    border-radius: 1.5rem;
-    background-color: #fff;
-    box-shadow: 0 25px 50px -12px rgba(2, 20, 10, 0.45);
+    border: 1px solid var(--verde-100);
+    border-radius: var(--radio-xl);
+    background-color: var(--blanco);
+    box-shadow: var(--sombra-xl);
     text-align: center;
     animation: sesion-entrar 0.22s ease-out;
 }
@@ -1593,13 +1597,13 @@ body.sesion-quieta { overflow: hidden; }
 
 .sesion-anillo-fondo {
     fill: none;
-    stroke: #dcfce7;
+    stroke: var(--verde-100);
     stroke-width: 8;
 }
 
 .sesion-anillo-avance {
     fill: none;
-    stroke: #166534;
+    stroke: var(--verde-800);
     stroke-width: 8;
     stroke-linecap: round;
     /* Igual que el pulso del reloj en sesion.js: sin la transición el anillo
@@ -1613,36 +1617,36 @@ body.sesion-quieta { overflow: hidden; }
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.875rem;
+    font-size: var(--texto-3xl);
     font-weight: 800;
-    color: #14532d;
+    color: var(--verde-900);
     /* Cifras de ancho fijo: sin esto el número entero se mueve a cada segundo,
        porque el "1" es más angosto que el resto. */
     font-variant-numeric: tabular-nums;
 }
 
 .sesion-etiqueta {
-    font-size: 0.75rem;
+    font-size: var(--texto-xs);
     font-weight: 700;
     letter-spacing: 0.2em;
     text-transform: uppercase;
-    color: #b45309;
+    color: var(--oro-texto);
 }
 
 .sesion-titulo {
     margin-top: 0.375rem;
-    font-size: 1.5rem;
+    font-size: var(--texto-2xl);
     font-weight: 800;
-    color: #14532d;
+    color: var(--verde-900);
 }
 
 .sesion-texto {
     margin-top: 0.75rem;
-    font-size: 0.9375rem;
+    font-size: var(--texto-md);
     line-height: 1.6;
-    color: #4b5563;
+    color: var(--gris-600);
 }
-.sesion-texto strong { color: #14532d; }
+.sesion-texto strong { color: var(--verde-900); }
 
 .sesion-acciones {
     display: flex;
@@ -1660,28 +1664,28 @@ body.sesion-quieta { overflow: hidden; }
     display: inline-block;
     padding: 0.75rem 1.5rem;
     border: none;
-    border-radius: 9999px;
-    background-color: #166534;
-    font-size: 0.875rem;
+    border-radius: var(--radio-full);
+    background-color: var(--verde-800);
+    font-size: var(--texto-md);
     font-weight: 700;
-    color: #fff;
+    color: var(--blanco);
     cursor: pointer;
 }
-.sesion-boton:hover { background-color: #15803d; }
-.sesion-boton:focus-visible { outline: 3px solid #86efac; outline-offset: 2px; }
+.sesion-boton:hover { background-color: var(--verde-700); }
+.sesion-boton:focus-visible { outline: 3px solid var(--verde-300); outline-offset: 2px; }
 .sesion-boton:disabled { opacity: 0.65; cursor: progress; }
 
 .sesion-boton-tenue {
-    background-color: #f0fdf4;
-    color: #14532d;
-    border: 1px solid #bbf7d0;
+    background-color: var(--verde-50);
+    color: var(--verde-900);
+    border: 1px solid var(--verde-200);
 }
-.sesion-boton-tenue:hover { background-color: #dcfce7; }
+.sesion-boton-tenue:hover { background-color: var(--verde-100); }
 
 .sesion-pie {
     margin-top: 1.25rem;
-    font-size: 0.8125rem;
-    color: #6b7280;
+    font-size: var(--texto-sm);
+    color: var(--gris-500);
 }
 
 /* En un teléfono cada botón ocupa todo el ancho: son el destino de la pantalla
@@ -1689,8 +1693,8 @@ body.sesion-quieta { overflow: hidden; }
 @media (max-width: 26rem) {
     .sesion-tarjeta { padding: 1.5rem 1.25rem 1.25rem; }
     .sesion-reloj { width: 6rem; height: 6rem; }
-    .sesion-reloj-texto { font-size: 1.5rem; }
-    .sesion-titulo { font-size: 1.25rem; }
+    .sesion-reloj-texto { font-size: var(--texto-2xl); }
+    .sesion-titulo { font-size: var(--texto-xl); }
     .sesion-acciones { flex-direction: column; }
     .sesion-boton { width: 100%; }
 }
@@ -1708,8 +1712,8 @@ body.sesion-quieta { overflow: hidden; }
 .mapa-sedes {
     height: 24rem;
     margin-bottom: 1.5rem;
-    border-radius: 1.25rem;
-    border: 1px solid #dcfce7;
+    border-radius: var(--radio-xl);
+    border: 1px solid var(--verde-100);
     /* Leaflet dibuja los mosaicos en cuadrados: sin esto sobresalen del borde
        redondeado en las cuatro esquinas. */
     overflow: hidden;
@@ -1724,37 +1728,37 @@ body.sesion-quieta { overflow: hidden; }
 
 .sede {
     padding: 1rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 1.125rem;
-    background-color: #fff;
+    border: 1px solid var(--gris-200);
+    border-radius: var(--radio-lg);
+    background-color: var(--blanco);
     cursor: pointer;
     transition: border-color 0.15s ease, transform 0.12s ease;
 }
-.sede:hover { border-color: #86efac; transform: translateY(-2px); }
+.sede:hover { border-color: var(--verde-300); transform: translateY(-2px); }
 
 .sede-cabecera { display: flex; align-items: center; gap: 0.625rem; }
 .sede-identidad { min-width: 0; }
 
 .sede-liga {
-    font-size: 0.625rem;
+    font-size: var(--texto-xs);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: #15803d;
+    color: var(--verde-700);
 }
 
-.sede-nombre { font-size: 0.9375rem; font-weight: 800; color: #14532d; overflow-wrap: anywhere; }
-.sede-direccion { margin-top: 0.5rem; font-size: 0.75rem; color: #6b7280; }
-.sede-partidos { margin-top: 0.25rem; font-size: 0.75rem; color: #9ca3af; }
+.sede-nombre { font-size: var(--texto-md); font-weight: 800; color: var(--verde-900); overflow-wrap: anywhere; }
+.sede-direccion { margin-top: 0.5rem; font-size: var(--texto-xs); color: var(--gris-500); }
+.sede-partidos { margin-top: 0.25rem; font-size: var(--texto-xs); color: var(--texto-debil); }
 
 .sede-ir {
     display: inline-block;
     margin-top: 0.75rem;
-    font-size: 0.75rem;
+    font-size: var(--texto-xs);
     font-weight: 700;
-    color: #15803d;
+    color: var(--verde-700);
 }
-.sede-ir:hover { color: #14532d; }
+.sede-ir:hover { color: var(--verde-900); }
 
 /* ============================================================================
    Calendario mensual
@@ -1768,8 +1772,8 @@ body.sesion-quieta { overflow: hidden; }
     margin-bottom: 1.25rem;
 }
 
-.mes-titulo { font-size: 1.75rem; font-weight: 800; color: #14532d; }
-.mes-total { margin-top: 0.25rem; font-size: 0.875rem; color: #6b7280; }
+.mes-titulo { font-size: var(--texto-3xl); font-weight: 800; color: var(--verde-900); }
+.mes-total { margin-top: 0.25rem; font-size: var(--texto-md); color: var(--gris-500); }
 
 .mes-navegacion { display: flex; align-items: center; gap: 0.5rem; }
 
@@ -1781,20 +1785,20 @@ body.sesion-quieta { overflow: hidden; }
     justify-content: center;
     height: 2.25rem;
     padding: 0 0.875rem;
-    border: 1px solid #dcfce7;
-    border-radius: 9999px;
-    background-color: #fff;
-    font-size: 0.8125rem;
+    border: 1px solid var(--verde-100);
+    border-radius: var(--radio-full);
+    background-color: var(--blanco);
+    font-size: var(--texto-sm);
     font-weight: 600;
-    color: #15803d;
+    color: var(--verde-700);
 }
-.mes-flecha { width: 2.25rem; padding: 0; font-size: 1rem; }
+.mes-flecha { width: 2.25rem; padding: 0; font-size: var(--texto-base); }
 .mes-flecha:hover, .mes-hoy:hover, .mes-jornadas:hover {
-    background-color: #f0fdf4;
-    border-color: #86efac;
+    background-color: var(--verde-50);
+    border-color: var(--verde-300);
 }
-.mes-jornadas { background-color: #14532d; border-color: #14532d; color: #fff; }
-.mes-jornadas:hover { background-color: #166534; border-color: #166534; }
+.mes-jornadas { background-color: var(--verde-900); border-color: var(--verde-900); color: var(--blanco); }
+.mes-jornadas:hover { background-color: var(--verde-800); border-color: var(--verde-800); }
 
 .mes-grilla { display: grid; gap: 0.375rem; }
 
@@ -1805,14 +1809,38 @@ body.sesion-quieta { overflow: hidden; }
 .mes-dia {
     min-height: 3rem;
     padding: 0.5rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.75rem;
-    background-color: #fff;
+    border: 1px solid var(--gris-200);
+    border-radius: var(--radio-md);
+    background-color: var(--blanco);
 }
 
+/* "+N más": abre el resto del día sin salir de la pantalla. Se dibuja como una
+   pastilla y no como un enlace suelto para que se lea como algo pulsable, y
+   alcanza el alto cómodo para el pulgar igual que el resto de los controles. */
+.mes-mas > summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--toque);
+    margin-top: 0.25rem;
+    border-radius: var(--radio-md);
+    background-color: var(--verde-50);
+    color: var(--verde-700);
+    font-size: var(--texto-xs);
+    font-weight: 600;
+    cursor: pointer;
+    /* Quita el triangulito nativo: la pastilla ya dice que se abre, y en Safari
+       aparece pegado al borde izquierdo rompiendo el centrado. */
+    list-style: none;
+}
+
+.mes-mas > summary::-webkit-details-marker { display: none; }
+.mes-mas > summary:hover { background-color: var(--verde-100); }
+.mes-mas[open] > summary { margin-bottom: 0.25rem; }
+
 .mes-dia-fuera { background-color: #fafafa; }
-.mes-dia-fuera .mes-numero { color: #d1d5db; }
-.mes-dia-hoy { border-color: #16a34a; box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.18); }
+.mes-dia-fuera .mes-numero { color: var(--gris-500); }
+.mes-dia-hoy { border-color: var(--verde-600); box-shadow: var(--anillo-hoy); }
 
 /* En el celular la grilla no entra: se muestran sólo los días con partidos y
    quedan como una lista. */
@@ -1823,35 +1851,35 @@ body.sesion-quieta { overflow: hidden; }
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
-    font-size: 0.75rem;
+    font-size: var(--texto-xs);
     font-weight: 700;
-    color: #6b7280;
+    color: var(--gris-500);
 }
 
 .mes-cuenta {
     padding: 0 0.375rem;
-    border-radius: 9999px;
-    background-color: #dcfce7;
-    font-size: 0.625rem;
-    color: #15803d;
+    border-radius: var(--radio-full);
+    background-color: var(--verde-100);
+    font-size: var(--texto-xs);
+    color: var(--verde-700);
 }
 
 .mes-partido {
     display: block;
     margin-top: 0.375rem;
     padding: 0.375rem 0.5rem;
-    border-radius: 0.5rem;
-    background-color: #f0fdf4;
+    border-radius: var(--radio-sm);
+    background-color: var(--verde-50);
     border-left: 3px solid #22c55e;
-    font-size: 0.6875rem;
+    font-size: var(--texto-xs);
     line-height: 1.3;
 }
-.mes-partido:hover { background-color: #dcfce7; }
+.mes-partido:hover { background-color: var(--verde-100); }
 
-.mes-hora { font-weight: 800; color: #14532d; }
-.mes-cruce { display: block; color: #374151; overflow-wrap: anywhere; }
-.mes-cruce strong { color: #14532d; }
-.mes-torneo { display: block; font-size: 0.5625rem; color: #9ca3af; }
+.mes-hora { font-weight: 800; color: var(--verde-900); }
+.mes-cruce { display: block; color: var(--gris-700); overflow-wrap: anywhere; }
+.mes-cruce strong { color: var(--verde-900); }
+.mes-torneo { display: block; font-size: var(--texto-xs); color: var(--texto-debil); }
 
 /* ============================================================================
    La ficha del partido y el formulario de resultado como página completa.
@@ -1877,8 +1905,8 @@ body.sesion-quieta { overflow: hidden; }
     max-height: none;
     overflow: visible;
     margin: 0 auto;
-    box-shadow: 0 4px 20px rgba(20, 83, 45, 0.08);
-    border: 1px solid #dcfce7;
+    box-shadow: var(--sombra-marca-md);
+    border: 1px solid var(--verde-100);
 }
 
 /* Migas de pan: de dónde vengo y dónde estoy. */
@@ -1895,27 +1923,27 @@ body.sesion-quieta { overflow: hidden; }
     display: inline-flex;
     align-items: center;
     padding: 0.4375rem 0.875rem;
-    border-radius: 9999px;
-    border: 1px solid #dcfce7;
-    background-color: #fff;
-    font-size: 0.8125rem;
+    border-radius: var(--radio-full);
+    border: 1px solid var(--verde-100);
+    background-color: var(--blanco);
+    font-size: var(--texto-sm);
     font-weight: 600;
-    color: #15803d;
+    color: var(--verde-700);
     white-space: nowrap;
 }
-.ficha-volver:hover { background-color: #f0fdf4; border-color: #86efac; }
+.ficha-volver:hover { background-color: var(--verde-50); border-color: var(--verde-300); }
 
 .ficha-ruta {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 0.375rem;
-    font-size: 0.75rem;
-    color: #6b7280;
+    font-size: var(--texto-xs);
+    color: var(--gris-500);
 }
-.ficha-ruta a { color: #15803d; font-weight: 600; }
-.ficha-ruta a:hover { color: #14532d; text-decoration: underline; }
-.ficha-ruta-sep { color: #d1d5db; }
+.ficha-ruta a { color: var(--verde-700); font-weight: 600; }
+.ficha-ruta a:hover { color: var(--verde-900); text-decoration: underline; }
+.ficha-ruta-sep { color: var(--gris-500); }
 
 /* Atajos del pie de la ficha: a dónde se va desde acá. Solo en la página; en el
    modal no hacen falta porque quien lo abrió ya venía de una de esas pantallas. */
@@ -1932,12 +1960,12 @@ body.sesion-quieta { overflow: hidden; }
     align-items: center;
     gap: 0.75rem;
     padding: 0.875rem 1rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 1rem;
-    background-color: #fff;
+    border: 1px solid var(--gris-200);
+    border-radius: var(--radio-lg);
+    background-color: var(--blanco);
     transition: border-color 0.15s ease, transform 0.12s ease;
 }
-.ficha-atajo:hover { border-color: #86efac; transform: translateY(-2px); }
+.ficha-atajo:hover { border-color: var(--verde-300); transform: translateY(-2px); }
 
 .ficha-atajo-icono {
     display: flex;
@@ -1946,27 +1974,27 @@ body.sesion-quieta { overflow: hidden; }
     flex-shrink: 0;
     width: 2.25rem;
     height: 2.25rem;
-    border-radius: 9999px;
-    background-color: #f0fdf4;
-    font-size: 1.125rem;
+    border-radius: var(--radio-full);
+    background-color: var(--verde-50);
+    font-size: var(--texto-lg);
 }
 .ficha-atajo-icono img {
     width: 2.25rem;
     height: 2.25rem;
-    border-radius: 9999px;
+    border-radius: var(--radio-full);
     object-fit: cover;
 }
 
 .ficha-atajo strong {
     display: block;
-    font-size: 0.8125rem;
+    font-size: var(--texto-sm);
     font-weight: 700;
-    color: #14532d;
+    color: var(--verde-900);
 }
 .ficha-atajo small {
     display: block;
-    font-size: 0.6875rem;
-    color: #9ca3af;
+    font-size: var(--texto-xs);
+    color: var(--texto-debil);
     overflow-wrap: anywhere;
 }
 
@@ -1989,23 +2017,23 @@ body.sesion-quieta { overflow: hidden; }
 }
 
 .graf-filtro { display: flex; align-items: center; gap: 0.5rem; }
-.graf-etiqueta { font-size: 0.75rem; font-weight: 600; color: #6b7280; }
+.graf-etiqueta { font-size: var(--texto-xs); font-weight: 600; color: var(--gris-500); }
 
 .graf-filtro select {
     padding: 0.5rem 0.875rem;
-    border: 1px solid #dcfce7;
-    border-radius: 9999px;
-    background-color: #fff;
-    font-size: 0.8125rem;
-    color: #14532d;
+    border: 1px solid var(--verde-100);
+    border-radius: var(--radio-full);
+    background-color: var(--blanco);
+    font-size: var(--texto-sm);
+    color: var(--verde-900);
 }
 
 .graf-caja {
     margin-top: 1.5rem;
     padding: 1.25rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 1.25rem;
-    background-color: #fff;
+    border: 1px solid var(--gris-200);
+    border-radius: var(--radio-xl);
+    background-color: var(--blanco);
 }
 
 .graf-titulo-fila {
@@ -2017,7 +2045,7 @@ body.sesion-quieta { overflow: hidden; }
     margin-bottom: 1rem;
 }
 
-.graf-nota { font-size: 0.75rem; color: #9ca3af; }
+.graf-nota { font-size: var(--texto-xs); color: var(--texto-debil); }
 
 /* ---- Columnas verticales: goles por jornada ---- */
 .graf-columnas {
@@ -2040,18 +2068,18 @@ body.sesion-quieta { overflow: hidden; }
     height: 100%;
 }
 
-.graf-valor { font-size: 0.625rem; font-weight: 700; color: #14532d; }
+.graf-valor { font-size: var(--texto-xs); font-weight: 700; color: var(--verde-900); }
 
 .graf-barra-vertical {
     width: 100%;
     min-height: 2px;
     margin-top: 0.125rem;
-    border-radius: 0.25rem 0.25rem 0 0;
-    background-image: linear-gradient(180deg, #22c55e, #15803d);
+    border-radius: var(--radio-sm) var(--radio-sm) 0 0;
+    background-image: linear-gradient(180deg, #22c55e, var(--verde-700));
 }
 
-.graf-eje { margin-top: 0.25rem; font-size: 0.5625rem; color: #9ca3af; }
-.graf-pie { margin-top: 0.5rem; font-size: 0.6875rem; color: #9ca3af; text-align: center; }
+.graf-eje { margin-top: 0.25rem; font-size: var(--texto-xs); color: var(--texto-debil); }
+.graf-pie { margin-top: 0.5rem; font-size: var(--texto-xs); color: var(--texto-debil); text-align: center; }
 
 /* ---- Barras horizontales: ataque y defensa ---- */
 .graf-fila {
@@ -2063,8 +2091,8 @@ body.sesion-quieta { overflow: hidden; }
 }
 
 .graf-nombre {
-    font-size: 0.75rem;
-    color: #374151;
+    font-size: var(--texto-xs);
+    color: var(--gris-700);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -2072,23 +2100,23 @@ body.sesion-quieta { overflow: hidden; }
 
 .graf-pista {
     height: 0.875rem;
-    border-radius: 9999px;
-    background-color: #f3f4f6;
+    border-radius: var(--radio-full);
+    background-color: var(--gris-100);
     overflow: hidden;
 }
 
 .graf-barra {
     height: 100%;
     min-width: 2px;
-    border-radius: 9999px;
+    border-radius: var(--radio-full);
 }
 .graf-barra-ataque { background-image: linear-gradient(90deg, #fb923c, #ea580c); }
 .graf-barra-defensa { background-image: linear-gradient(90deg, #38bdf8, #0369a1); }
 
 .graf-cifra {
-    font-size: 0.8125rem;
+    font-size: var(--texto-sm);
     font-weight: 800;
-    color: #14532d;
+    color: var(--verde-900);
     text-align: right;
 }
 
@@ -2096,7 +2124,7 @@ body.sesion-quieta { overflow: hidden; }
 .graf-reparto {
     display: flex;
     height: 2.25rem;
-    border-radius: 0.625rem;
+    border-radius: var(--radio-md);
     overflow: hidden;
 }
 
@@ -2104,26 +2132,26 @@ body.sesion-quieta { overflow: hidden; }
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.6875rem;
+    font-size: var(--texto-xs);
     font-weight: 800;
-    color: #fff;
+    color: var(--blanco);
     /* Un tramo del 2 % no puede mostrar su número: se lo esconde en vez de
        dejar un texto cortado a la mitad. */
     overflow: hidden;
     white-space: nowrap;
 }
 
-.graf-tramo-local { background-color: #15803d; }
-.graf-tramo-empate { background-color: #9ca3af; }
-.graf-tramo-visita { background-color: #b45309; }
+.graf-tramo-local { background-color: var(--verde-700); }
+.graf-tramo-empate { background-color: var(--gris-400); }
+.graf-tramo-visita { background-color: var(--oro-texto); }
 
 .graf-leyenda {
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem 1.25rem;
     margin-top: 0.75rem;
-    font-size: 0.75rem;
-    color: #4b5563;
+    font-size: var(--texto-xs);
+    color: var(--gris-600);
 }
 
 .graf-punto {
@@ -2131,14 +2159,14 @@ body.sesion-quieta { overflow: hidden; }
     width: 0.625rem;
     height: 0.625rem;
     margin-right: 0.25rem;
-    border-radius: 9999px;
+    border-radius: var(--radio-full);
 }
 
 .graf-aclaracion {
     margin-top: 1rem;
-    font-size: 0.75rem;
+    font-size: var(--texto-xs);
     line-height: 1.6;
-    color: #9ca3af;
+    color: var(--texto-debil);
 }
 
 /* ============================================================================
@@ -2146,8 +2174,8 @@ body.sesion-quieta { overflow: hidden; }
    verdad, no por el número mágico del celular.
    ============================================================================ */
 @media (min-width: 40rem) {
-    .cifras { grid-template-columns: repeat(4, 1fr); }
-    .hero-titulo { font-size: 2.5rem; }
+    .portada-cifras { grid-template-columns: repeat(4, 1fr); }
+    .hero-titulo { font-size: var(--texto-4xl); }
     .hero-escudo { height: 4rem; width: 4rem; }
     .pie-interior { grid-template-columns: repeat(2, 1fr); }
     /* Recién acá entra el nombre completo al lado del logo. */
@@ -2169,6 +2197,10 @@ body.sesion-quieta { overflow: hidden; }
     .menu-movil { display: none !important; }
 }
 
+/* Excepción deliberada a los cortes de Tailwind (40/48/64/80rem): una grilla
+   de SIETE columnas necesita más ancho que cualquier corte genérico. A 48rem
+   cada día mediría 105 px y a 64rem se retrasaría de más. El corte lo manda el
+   contenido, no la tabla de breakpoints. */
 @media (min-width: 56rem) {
     /* Recién acá entra la grilla de siete columnas sin que cada día quede del
        ancho de un dedo. Debajo de esto es una lista de los días con partidos. */
@@ -2178,11 +2210,11 @@ body.sesion-quieta { overflow: hidden; }
     .mes-encabezado {
         display: block;
         padding-bottom: 0.25rem;
-        font-size: 0.6875rem;
+        font-size: var(--texto-xs);
         font-weight: 800;
         text-transform: uppercase;
         letter-spacing: 0.08em;
-        color: #9ca3af;
+        color: var(--texto-debil);
         text-align: center;
     }
 }
@@ -2192,7 +2224,7 @@ body.sesion-quieta { overflow: hidden; }
     /* El texto a la izquierda y el partido destacado a la derecha: recién acá
        entran los dos sin que ninguno quede apretado. */
     .hero-interior { grid-template-columns: 1.35fr 1fr; align-items: center; gap: 3rem; }
-    .hero-titulo { font-size: 2.75rem; }
+    .hero-titulo { font-size: var(--texto-5xl); }
     .dos-columnas { grid-template-columns: 1fr 1fr; align-items: start; }
     .tres-columnas { grid-template-columns: repeat(3, 1fr); }
     .equipo-fechas { grid-template-columns: 1fr 1fr; }
@@ -2234,5 +2266,5 @@ body.sesion-quieta { overflow: hidden; }
 .alto-100 { height: 100%; }
 
 .ancho-pagina-arriba { padding-top: 2rem; }
-.cifras-sueltas { margin-top: 0; }
+.portada-cifras-sueltas { margin-top: 0; }
 .vacio-separado { margin-top: 1.5rem; }

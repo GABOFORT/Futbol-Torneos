@@ -63,14 +63,14 @@ claves foraneas.
                 <div class="vitrina-escenario">
                     <div class="vitrina-podio">
                         <div class="vitrina-podio-lugar vitrina-podio-primero vitrina-podio-oro">
-                            <img src="{{ podios.campeon }}" alt="Copa de campeón" class="vitrina-podio-copa">
+                            <img src="{{ podios.campeon }}" alt="Copa de campeón" class="vitrina-podio-copa" loading="lazy" decoding="async">
                             <p class="vitrina-podio-puesto">Campeón</p>
                             <p class="vitrina-podio-equipo">{{ registro.campeon }}</p>
                             <div class="vitrina-podio-base">1</div>
                         </div>
                         {% if registro.subcampeon %}
                             <div class="vitrina-podio-lugar vitrina-podio-plata">
-                                <img src="{{ podios.subcampeon }}" alt="Copa de subcampeón" class="vitrina-podio-copa">
+                                <img src="{{ podios.subcampeon }}" alt="Copa de subcampeón" class="vitrina-podio-copa" loading="lazy" decoding="async">
                                 <p class="vitrina-podio-puesto">Subcampeón</p>
                                 <p class="vitrina-podio-equipo">{{ registro.subcampeon }}</p>
                                 <div class="vitrina-podio-base">2</div>
@@ -78,7 +78,7 @@ claves foraneas.
                         {% endif %}
                         {% if registro.tercero %}
                             <div class="vitrina-podio-lugar vitrina-podio-bronce">
-                                <img src="{{ podios.tercero }}" alt="Copa de tercer lugar" class="vitrina-podio-copa">
+                                <img src="{{ podios.tercero }}" alt="Copa de tercer lugar" class="vitrina-podio-copa" loading="lazy" decoding="async">
                                 <p class="vitrina-podio-puesto">Tercer lugar</p>
                                 <p class="vitrina-podio-equipo">{{ registro.tercero }}</p>
                                 <div class="vitrina-podio-base">3</div>
@@ -97,7 +97,7 @@ claves foraneas.
             <div class="premios">
                 {% if registro.lista_goleadores %}
                     <div class="premio premio-bota">
-                        <img src="{{ imagen_bota }}" alt="Bota de oro" class="premio-icono">
+                        <img src="{{ imagen_bota }}" alt="Bota de oro" class="premio-icono" loading="lazy" decoding="async">
                         <p class="premio-titulo">Bota de oro</p>
                         <p class="premio-cifra">{{ registro.goles_del_goleador }}<span>gol{{ registro.goles_del_goleador|pluralize:"es" }}</span></p>
                         <ul class="premio-gente">
@@ -110,7 +110,7 @@ claves foraneas.
 
                 {% if registro.lista_asistidores %}
                     <div class="premio premio-asistencias">
-                        <img src="{{ imagen_asistidor }}" alt="Trofeo de asistencias" class="premio-icono">
+                        <img src="{{ imagen_asistidor }}" alt="Trofeo de asistencias" class="premio-icono" loading="lazy" decoding="async">
                         <p class="premio-titulo">Asistencias</p>
                         <p class="premio-cifra">{{ registro.asistencias_del_asistidor }}<span>pase{{ registro.asistencias_del_asistidor|pluralize:"s" }} de gol</span></p>
                         <ul class="premio-gente">
@@ -123,7 +123,7 @@ claves foraneas.
 
                 {% if registro.lista_vallas %}
                     <div class="premio premio-guante">
-                        <img src="{{ podios.valla }}" alt="Guante de oro" class="premio-icono">
+                        <img src="{{ podios.valla }}" alt="Guante de oro" class="premio-icono" loading="lazy" decoding="async">
                         <p class="premio-titulo">Guante de oro</p>
                         <p class="premio-cifra">{{ registro.goles_recibidos }}<span>gol{{ registro.goles_recibidos|pluralize:"es" }} recibido{{ registro.goles_recibidos|pluralize:"s" }}</span></p>
                         <ul class="premio-gente">

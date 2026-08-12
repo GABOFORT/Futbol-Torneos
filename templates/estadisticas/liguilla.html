@@ -50,14 +50,14 @@
             </div>
 
             <div class="bracket-centro">
-                <img src="{% static_v 'img/copa-transparente.png' %}" alt="Copa de campeón" class="bracket-copa">
+                <img src="{% static_v 'img/copa-transparente.png' %}" alt="Copa de campeón" class="bracket-copa" loading="lazy" decoding="async">
 
                 {% if cuadro.campeon %}
                     {# Con la final jugada, el campeon va pegado a la copa. #}
                     <div class="bracket-campeon">
                         <p class="bracket-campeon-titulo">Campeón</p>
                         <div class="bracket-campeon-fila">
-                            <img src="{{ cuadro.campeon.escudo_url }}" alt="Escudo de {{ cuadro.campeon.nombre }}" class="bracket-campeon-escudo">
+                            <img src="{{ cuadro.campeon.escudo_url }}" alt="Escudo de {{ cuadro.campeon.nombre }}" class="bracket-campeon-escudo" loading="lazy" decoding="async">
                             <span class="bracket-campeon-nombre">{{ cuadro.campeon.nombre }}</span>
                         </div>
                     </div>

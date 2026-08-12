@@ -45,21 +45,38 @@ def entrenador_required(view_func):
 
 
 def ligas_visibles(user):
-    """Las ligas que este usuario debe ver en los listados generales.
+    """Las ligas que este usuario debe ver en las pantallas publicas.
 
-    Un admin de liga ve solo las suyas: cada liga es un negocio aparte y no
-    tiene por que ver los equipos ni las tablas de las demas. El superadmin ve
-    todas, y el publico sin cuenta ve las activas, porque esas pantallas son la
-    vitrina del sistema.
+    Es **lo publico mas lo propio**: las ligas activas, que son la vitrina del
+    sistema y las ve cualquiera, mas las que uno administra aunque las tenga
+    desactivadas —el admin no deja de ver su liga por esconderla del publico—.
+
+    No confundirla con `ligas_administradas`, que es sobre que se puede
+    ESCRIBIR. Esta responde que se puede MIRAR, y son dos preguntas distintas:
+    el tablero, el alta de equipos y la carga de resultados se acotan con la
+    otra.
+
+    Antes devolvia `ligas_administradas(user)` para el admin de liga, con el
+    razonamiento de que cada liga es un negocio aparte. Pero eso solo vale para
+    la gestion: aplicado a la vitrina dejaba al admin viendo MENOS que un
+    visitante sin cuenta. En la practica, entrar a Inicio -> Torneos en juego,
+    abrir una liga ajena y pulsar un equipo daba 404 —`equipo_perfil` filtra por
+    esta funcion— cuando cerrando sesion ese mismo enlace funcionaba. La portada
+    ofrece las seis ligas activas a todo el mundo, asi que el sistema invitaba a
+    un recorrido que despues cortaba.
     """
     from apps.torneos.models import Liga
+
+    publicas = Liga.objects.filter(activa=True)
 
     # es_super_admin() y no is_superuser, igual que en ligas_administradas: sin
     # esto un administrador general sin el flag veia solo las ligas activas, como
     # un visitante cualquiera.
     if user.is_authenticated and (user.es_super_admin() or user.role == user.ROLE_ADMIN_LIGA):
-        return ligas_administradas(user)
-    return Liga.objects.filter(activa=True)
+        # distinct() porque una liga propia y activa entra por los dos lados de
+        # la union, y sin el saldria dos veces en los desplegables de filtros.
+        return (publicas | ligas_administradas(user)).distinct()
+    return publicas
 
 
 def ligas_administradas(user):

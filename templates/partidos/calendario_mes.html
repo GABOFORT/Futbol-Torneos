@@ -55,7 +55,22 @@ información, ordenada de otra manera.
                             <span class="mes-cuenta">{{ celda.partidos|length }}</span>
                         {% endif %}
                     </p>
-                    {% for partido in celda.partidos %}
+                    {% comment %}
+                    Sólo los primeros tres a la vista, y el resto detrás de
+                    "+N más".
+
+                    El motivo es la retícula: la grilla estira todas las celdas
+                    de una fila a la altura de la más alta, así que un sábado con
+                    20 partidos hacía la fila de unos 1 200 px y dejaba a sus seis
+                    días vecinos como cajas vacías enormes. Con el tope, el mes
+                    entero se lee de un vistazo, que es justo para lo que sirve
+                    una vista mensual.
+
+                    Va con <details> y no con JavaScript: se despliega en el
+                    sitio, funciona con el teclado, se puede imprimir abierto y
+                    no hace falta ninguna ruta nueva para "el día 13".
+                    {% endcomment %}
+                    {% for partido in celda.partidos|slice:':3' %}
                         <a href="{% url 'partido-detalle' partido.pk %}" class="mes-partido">
                             <span class="mes-hora">{{ partido.fecha|date:'H:i' }}</span>
                             <span class="mes-cruce">
@@ -68,6 +83,24 @@ información, ordenada de otra manera.
                             <span class="mes-torneo">{{ partido.categoria.nombre }}</span>
                         </a>
                     {% endfor %}
+                    {% if celda.partidos|length > 3 %}
+                        <details class="mes-mas">
+                            <summary>+{{ celda.partidos|length|add:'-3' }} más</summary>
+                            {% for partido in celda.partidos|slice:'3:' %}
+                                <a href="{% url 'partido-detalle' partido.pk %}" class="mes-partido">
+                                    <span class="mes-hora">{{ partido.fecha|date:'H:i' }}</span>
+                                    <span class="mes-cruce">
+                                        {{ partido.equipo_local.nombre }}
+                                        {% if partido.jugado %}
+                                            <strong>{{ partido.goles_local }}-{{ partido.goles_visitante }}</strong>
+                                        {% else %}vs{% endif %}
+                                        {{ partido.equipo_visitante.nombre }}
+                                    </span>
+                                    <span class="mes-torneo">{{ partido.categoria.nombre }}</span>
+                                </a>
+                            {% endfor %}
+                        </details>
+                    {% endif %}
                 </div>
             {% endfor %}
         {% endfor %}

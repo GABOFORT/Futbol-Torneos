@@ -31,7 +31,7 @@
             <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {% for equipo in mis_equipos %}
                     <a href="{% url 'equipo-detail' equipo.pk %}" class="rounded-2xl bg-white p-4 shadow-sm hover:shadow-md transition">
-                        <img src="{{ equipo.escudo_url }}" alt="Escudo de {{ equipo.nombre }}" class="escudo-mini">
+                        <img src="{{ equipo.escudo_url }}" alt="Escudo de {{ equipo.nombre }}" class="escudo-mini" loading="lazy" decoding="async">
                         <p class="mt-2 font-semibold text-gray-900">{{ equipo.nombre }}{% include 'torneos/_trofeos.html' with trofeos=equipo.trofeos tam='md' %}</p>
                         <p class="text-sm text-gray-500">{{ equipo.liga.nombre }} · {{ equipo.categoria.nombre }}</p>
                         {% if equipo.formacion %}
@@ -64,7 +64,7 @@
                                 <button type="button" class="estrella" data-seguir="{{ equipo.pk }}"
                                         data-nombre="{{ equipo.nombre }}" aria-pressed="false"
                                         aria-label="Seguir a {{ equipo.nombre }}">★</button>
-                                <img src="{{ equipo.escudo_url }}" alt="Escudo de {{ equipo.nombre }}" class="escudo-mini">
+                                <img src="{{ equipo.escudo_url }}" alt="Escudo de {{ equipo.nombre }}" class="escudo-mini" loading="lazy" decoding="async">
                                 <p class="mt-2 font-semibold text-gray-900">{{ equipo.nombre }}{% include 'torneos/_trofeos.html' with trofeos=equipo.trofeos tam='md' %}</p>
                                 <p class="mt-1 text-sm text-gray-500">{{ equipo.entrenador.get_full_name|default:equipo.entrenador.username }}</p>
                                 {% if equipo.formacion %}

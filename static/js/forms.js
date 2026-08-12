@@ -148,6 +148,37 @@
     return '';
   }
 
+  // Deja el boton de enviar fuera de juego mientras el formulario viaja.
+  //
+  // Sin esto, una conexion lenta invita a pulsar "Guardar" dos veces, y en este
+  // sistema eso significa cargar dos veces el mismo resultado o dar de alta dos
+  // veces al mismo jugador. El servidor tiene sus validaciones, pero el usuario
+  // no tiene por que llegar hasta ellas: la pantalla debe decir que ya esta
+  // trabajando.
+  //
+  // NO se usa `disabled`: un boton deshabilitado no viaja en el POST, y si el
+  // boton lleva name/value —como los de "guardar y seguir"— el servidor dejaria
+  // de recibir cual se pulso. Se marca con una clase y se corta el segundo
+  // envio a mano.
+  function bloquearEnvio(form) {
+    if (form.dataset.enviando) return;
+    form.dataset.enviando = '1';
+    form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(function (boton) {
+      boton.classList.add('enviando');
+      boton.setAttribute('aria-busy', 'true');
+      if (boton.dataset.textoEnviando) boton.textContent = boton.dataset.textoEnviando;
+    });
+    // Si el navegador vuelve atras con la pagina cacheada, el formulario seguiria
+    // bloqueado y no habria forma de reenviarlo.
+    window.addEventListener('pageshow', function () {
+      delete form.dataset.enviando;
+      form.querySelectorAll('.enviando').forEach(function (boton) {
+        boton.classList.remove('enviando');
+        boton.removeAttribute('aria-busy');
+      });
+    });
+  }
+
   function ponerValidacion(raiz) {
     raiz.querySelectorAll('form').forEach(function (form) {
       if (form.dataset.validacionBound) return;
@@ -172,7 +203,10 @@
             faltantes.push(campo);
           }
         });
-        if (!faltantes.length) return;
+        if (!faltantes.length) {
+          bloquearEnvio(form);
+          return;
+        }
         evento.preventDefault();
         // Corta tambien el handler que envia el modal por fetch.
         evento.stopImmediatePropagation();

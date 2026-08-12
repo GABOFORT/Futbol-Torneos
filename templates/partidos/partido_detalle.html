@@ -56,7 +56,7 @@ modal, igual que en el calendario.
         </a>
         <a href="{% url 'jugador-list' partido.equipo_local.pk %}" class="ficha-atajo">
             <span class="ficha-atajo-icono">
-                <img src="{{ partido.equipo_local.escudo_url }}" alt="">
+                <img src="{{ partido.equipo_local.escudo_url }}" alt="" loading="lazy" decoding="async">
             </span>
             <span>
                 <strong>Plantilla</strong>
@@ -65,7 +65,7 @@ modal, igual que en el calendario.
         </a>
         <a href="{% url 'jugador-list' partido.equipo_visitante.pk %}" class="ficha-atajo">
             <span class="ficha-atajo-icono">
-                <img src="{{ partido.equipo_visitante.escudo_url }}" alt="">
+                <img src="{{ partido.equipo_visitante.escudo_url }}" alt="" loading="lazy" decoding="async">
             </span>
             <span>
                 <strong>Plantilla</strong>

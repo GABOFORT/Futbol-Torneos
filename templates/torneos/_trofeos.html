@@ -18,7 +18,7 @@ contenedor, para no dejar huecos en las tablas.
             El title da el detalle al pasar el mouse y el alt lo dice en voz alta:
             un icono dorado no se entiende solo.
             {% endcomment %}
-            <img src="{{ trofeo.imagen }}" alt="{{ trofeo.etiqueta }}" title="{{ trofeo.etiqueta }}" class="trofeo">
+            <img src="{{ trofeo.imagen }}" alt="{{ trofeo.etiqueta }}" title="{{ trofeo.etiqueta }}" class="trofeo" loading="lazy" decoding="async">
         {% endfor %}
     </span>
 {% endif %}

@@ -77,7 +77,7 @@
             {% endcomment %}
             <section class="ranking">
                 <header class="ranking-cabecera">
-                    <img src="{{ icono_goleador }}" alt="" class="ranking-icono">
+                    <img src="{{ icono_goleador }}" alt="" class="ranking-icono" loading="lazy" decoding="async">
                     <h2>Goleadores</h2>
                 </header>
                 {% for fila in rankings.goleadores %}
@@ -93,7 +93,7 @@
 
             <section class="ranking">
                 <header class="ranking-cabecera">
-                    <img src="{{ icono_asistidor }}" alt="" class="ranking-icono">
+                    <img src="{{ icono_asistidor }}" alt="" class="ranking-icono" loading="lazy" decoding="async">
                     <h2>Asistencias</h2>
                 </header>
                 {% for fila in rankings.asistidores %}
@@ -109,7 +109,7 @@
 
             <section class="ranking">
                 <header class="ranking-cabecera">
-                    <img src="{{ icono_valla }}" alt="" class="ranking-icono">
+                    <img src="{{ icono_valla }}" alt="" class="ranking-icono" loading="lazy" decoding="async">
                     <h2>Menos goles recibidos</h2>
                 </header>
                 {% comment %}

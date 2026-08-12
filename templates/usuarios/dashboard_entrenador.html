@@ -14,7 +14,7 @@
         <section class="festejo">
             <div class="festejo-copas">
                 {% for trofeo in festejo.trofeos %}
-                    <img src="{{ trofeo.imagen }}" alt="{{ trofeo.etiqueta }}" title="{{ trofeo.etiqueta }}" class="festejo-copa">
+                    <img src="{{ trofeo.imagen }}" alt="{{ trofeo.etiqueta }}" title="{{ trofeo.etiqueta }}" class="festejo-copa" loading="lazy" decoding="async">
                 {% endfor %}
             </div>
             <p class="festejo-titulo">¡Felicitaciones!</p>
@@ -29,7 +29,7 @@
                     {% for premiado in festejo.jugadores %}
                         <div class="festejo-jugador">
                             {% for trofeo in premiado.trofeos %}
-                                <img src="{{ trofeo.imagen }}" alt="{{ trofeo.etiqueta }}" class="festejo-jugador-icono">
+                                <img src="{{ trofeo.imagen }}" alt="{{ trofeo.etiqueta }}" class="festejo-jugador-icono" loading="lazy" decoding="async">
                             {% endfor %}
                             <span><strong>{{ premiado.jugador }}</strong> — {% for t in premiado.trofeos %}{{ t.etiqueta }}{% if not forloop.last %}, {% endif %}{% endfor %}</span>
                         </div>

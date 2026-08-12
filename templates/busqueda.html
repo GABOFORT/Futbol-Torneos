@@ -63,7 +63,7 @@ No busca árbitros: el sistema no los registra.
             <div class="grupo-lista">
                 {% for equipo in resultados.equipos %}
                     <a href="{% url 'equipo-detail' equipo.pk %}" class="hallazgo">
-                        <img src="{{ equipo.escudo_url }}" alt="" class="hallazgo-escudo">
+                        <img src="{{ equipo.escudo_url }}" alt="" class="hallazgo-escudo" loading="lazy" decoding="async">
                         <div class="hallazgo-datos">
                             <p class="hallazgo-nombre">{{ equipo.nombre }}</p>
                             <p class="hallazgo-detalle">{{ equipo.liga.nombre }} · {{ equipo.categoria.nombre }}</p>
@@ -80,7 +80,7 @@ No busca árbitros: el sistema no los registra.
             <div class="grupo-lista">
                 {% for jugador in resultados.jugadores %}
                     <a href="{% url 'jugador-list' jugador.equipo.pk %}" class="hallazgo">
-                        <img src="{{ jugador.equipo.escudo_url }}" alt="" class="hallazgo-escudo">
+                        <img src="{{ jugador.equipo.escudo_url }}" alt="" class="hallazgo-escudo" loading="lazy" decoding="async">
                         <div class="hallazgo-datos">
                             <p class="hallazgo-nombre">
                                 {{ jugador.nombre }} {{ jugador.apellido }}

@@ -15,7 +15,7 @@ ningun lado del sistema (ver el docstring de apps/equipos/perfil.py).
     <header class="perfil-cabecera">
         <div class="perfil-cabecera-fila">
             <div class="perfil-identidad">
-                <img src="{{ equipo.escudo_url }}" alt="Escudo de {{ equipo.nombre }}" class="perfil-escudo">
+                <img src="{{ equipo.escudo_url }}" alt="Escudo de {{ equipo.nombre }}" class="perfil-escudo" loading="lazy" decoding="async">
                 <div class="perfil-titulos">
                     <p class="perfil-liga">{{ equipo.liga.nombre }} · {{ equipo.categoria.nombre }}</p>
                     <h2 class="perfil-nombre">
@@ -128,7 +128,7 @@ ningun lado del sistema (ver el docstring de apps/equipos/perfil.py).
                                 <span class="perfil-juego-signo signo-pendiente" title="Todavía no se juega">–</span>
                             {% endif %}
 
-                            <img src="{{ fila.rival.escudo_url }}" alt="Escudo de {{ fila.rival.nombre }}" class="perfil-juego-escudo">
+                            <img src="{{ fila.rival.escudo_url }}" alt="Escudo de {{ fila.rival.nombre }}" class="perfil-juego-escudo" loading="lazy" decoding="async">
 
                             <span class="perfil-juego-datos">
                                 <span class="perfil-juego-rival">{{ fila.rival.nombre }}</span>

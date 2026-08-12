@@ -7,7 +7,7 @@ queda alineado a la derecha del bloque.
 <div class="campo-archivo">
     {% if widget.is_initial %}
         <div class="campo-archivo-actual">
-            <img src="{{ widget.value.url }}" alt="Imagen actual" class="campo-archivo-miniatura">
+            <img src="{{ widget.value.url }}" alt="Imagen actual" class="campo-archivo-miniatura" loading="lazy" decoding="async">
             <a href="{{ widget.value.url }}" target="_blank" rel="noopener" class="campo-archivo-nombre">{{ widget.value }}</a>
             {% if not widget.required %}
                 <label class="campo-archivo-borrar" for="{{ widget.checkbox_id }}">

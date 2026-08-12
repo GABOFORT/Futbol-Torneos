@@ -14,7 +14,7 @@ partido único y ahí no hay detalle que mostrar.
 
     <div class="llave-lado {% if cruce.ganador.id == cruce.uno.id %}llave-gana{% endif %}">
         {% if cruce.siembra_uno %}<span class="llave-siembra">{{ cruce.siembra_uno }}</span>{% endif %}
-        <img src="{{ cruce.uno.escudo_url }}" alt="Escudo de {{ cruce.uno.nombre }}" class="llave-escudo">
+        <img src="{{ cruce.uno.escudo_url }}" alt="Escudo de {{ cruce.uno.nombre }}" class="llave-escudo" loading="lazy" decoding="async">
         <span class="llave-nombre">{{ cruce.uno.nombre }}</span>
         {% include 'torneos/_trofeos.html' with trofeos=cruce.trofeos_uno tam='md' %}
         {% if cruce.completa %}<span class="llave-goles">{{ cruce.goles_uno }}</span>{% endif %}
@@ -22,7 +22,7 @@ partido único y ahí no hay detalle que mostrar.
 
     <div class="llave-lado {% if cruce.ganador.id == cruce.otro.id %}llave-gana{% endif %}">
         {% if cruce.siembra_otro %}<span class="llave-siembra">{{ cruce.siembra_otro }}</span>{% endif %}
-        <img src="{{ cruce.otro.escudo_url }}" alt="Escudo de {{ cruce.otro.nombre }}" class="llave-escudo">
+        <img src="{{ cruce.otro.escudo_url }}" alt="Escudo de {{ cruce.otro.nombre }}" class="llave-escudo" loading="lazy" decoding="async">
         <span class="llave-nombre">{{ cruce.otro.nombre }}</span>
         {% include 'torneos/_trofeos.html' with trofeos=cruce.trofeos_otro tam='md' %}
         {% if cruce.completa %}<span class="llave-goles">{{ cruce.goles_otro }}</span>{% endif %}

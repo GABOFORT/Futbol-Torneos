@@ -104,6 +104,26 @@ def partido_list(request):
         'sede', 'sede_original',
     ).order_by('categoria__liga__nombre', 'categoria__nombre', 'fecha', 'id')
 
+    # Que partidos puede administrar, uno por uno. Antes alcanzaba con un solo
+    # flag para toda la pantalla porque el calendario le mostraba al admin de
+    # liga unicamente las suyas. Desde que `ligas_visibles` incluye tambien las
+    # publicas, ve partidos de ligas ajenas: con el flag global le saldrian los
+    # botones de programar y cargar resultado sobre partidos que no son suyos, y
+    # al pulsarlos se comeria un 404 de `partido_edit`, que si acota por
+    # `ligas_administradas`. El boton se dibuja donde la accion existe.
+    #
+    # `ligas_administradas` solo se llama si hay alguien que pueda administrar:
+    # esa funcion pregunta por `user.es_super_admin()`, que un AnonymousUser no
+    # tiene, y el visitante sin cuenta —que es la mayoria del trafico de esta
+    # pantalla— reventaba con AttributeError.
+    partidos = list(partidos)
+    ids_propias = (
+        set(ligas_administradas(user).values_list('id', flat=True))
+        if puede_gestionar else set()
+    )
+    for partido in partidos:
+        partido.se_puede_gestionar = puede_gestionar and partido.categoria.liga_id in ids_propias
+
     # Los filtros son para todos, no solo para quien administra. El visitante es
     # justamente el que mas los necesita: entra a buscar el partido de SU equipo
     # y sin ellos tiene que recorrer el calendario entero de doce categorias.
@@ -143,7 +163,7 @@ def partido_list(request):
         ),
         'filtros': filtros,
         'filtros_activos': bool(termino or seleccion['liga'] or seleccion['categoria'] or seleccion['equipo']),
-        'total_resultados': partidos.count(),
+        'total_resultados': len(partidos),
     })
 
 

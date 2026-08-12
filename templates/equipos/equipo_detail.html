@@ -13,7 +13,7 @@
             Con flex-wrap, en pantallas angostas los trofeos bajan a su renglón.
             {% endcomment %}
             <div class="flex flex-wrap items-center gap-x-4 gap-y-3">
-                <img src="{{ equipo.escudo_url }}" alt="Escudo de {{ equipo.nombre }}" class="escudo-grande">
+                <img src="{{ equipo.escudo_url }}" alt="Escudo de {{ equipo.nombre }}" class="escudo-grande" loading="lazy" decoding="async">
                 <div>
                     <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">Equipo</p>
                     <h1 class="mt-1 text-3xl font-bold text-green-900">{{ equipo.nombre }}</h1>

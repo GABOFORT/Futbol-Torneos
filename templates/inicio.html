@@ -31,21 +31,21 @@ empujar la página hacia abajo.
             <span class="franja-titulo">{{ franja_titulo }}</span>
             <div class="franja-lista">
                 {% for partido in franja %}
-                    <a href="{% url 'partido-detalle' partido.pk %}" class="marcador">
-                        <span class="marcador-torneo">{{ partido.categoria.liga.nombre }} · {{ partido.categoria.nombre }}</span>
-                        <span class="marcador-fila">
-                            <span class="marcador-equipo">{{ partido.equipo_local.nombre }}</span>
+                    <a href="{% url 'partido-detalle' partido.pk %}" class="franja-marcador">
+                        <span class="franja-marcador-torneo">{{ partido.categoria.liga.nombre }} · {{ partido.categoria.nombre }}</span>
+                        <span class="franja-marcador-fila">
+                            <span class="franja-marcador-equipo">{{ partido.equipo_local.nombre }}</span>
                             {% if partido.jugado %}
-                                <span class="marcador-gol">{{ partido.goles_local }}</span>
+                                <span class="franja-marcador-gol">{{ partido.goles_local }}</span>
                             {% endif %}
                         </span>
-                        <span class="marcador-fila">
-                            <span class="marcador-equipo">{{ partido.equipo_visitante.nombre }}</span>
+                        <span class="franja-marcador-fila">
+                            <span class="franja-marcador-equipo">{{ partido.equipo_visitante.nombre }}</span>
                             {% if partido.jugado %}
-                                <span class="marcador-gol">{{ partido.goles_visitante }}</span>
+                                <span class="franja-marcador-gol">{{ partido.goles_visitante }}</span>
                             {% endif %}
                         </span>
-                        <span class="marcador-pie">
+                        <span class="franja-marcador-pie">
                             {% if partido.jugado %}
                                 Final{% if partido.ganado_por_default %} · default{% endif %}
                             {% else %}
@@ -112,26 +112,26 @@ empujar la página hacia abajo.
 
 {% comment %} ---- Las cuatro cifras ---- {% endcomment %}
 <section class="ancho-pagina">
-    <div class="cifras">
-        <div class="cifra">
-            <span class="cifra-icono"></span>
-            <p class="cifra-numero">{{ cifras.partidos_hoy }}</p>
-            <p class="cifra-texto">Partido{{ cifras.partidos_hoy|pluralize:"s" }} hoy</p>
+    <div class="portada-cifras">
+        <div class="portada-cifra">
+            <span class="portada-cifra-icono"></span>
+            <p class="portada-cifra-numero">{{ cifras.partidos_hoy }}</p>
+            <p class="portada-cifra-texto">Partido{{ cifras.partidos_hoy|pluralize:"s" }} hoy</p>
         </div>
-        <div class="cifra">
-            <span class="cifra-icono"></span>
-            <p class="cifra-numero">{{ cifras.torneos_activos }}</p>
-            <p class="cifra-texto">Torneo{{ cifras.torneos_activos|pluralize:"s" }} activo{{ cifras.torneos_activos|pluralize:"s" }}</p>
+        <div class="portada-cifra">
+            <span class="portada-cifra-icono"></span>
+            <p class="portada-cifra-numero">{{ cifras.torneos_activos }}</p>
+            <p class="portada-cifra-texto">Torneo{{ cifras.torneos_activos|pluralize:"s" }} activo{{ cifras.torneos_activos|pluralize:"s" }}</p>
         </div>
-        <div class="cifra">
-            <span class="cifra-icono"></span>
-            <p class="cifra-numero">{{ cifras.equipos }}</p>
-            <p class="cifra-texto">Equipos registrados</p>
+        <div class="portada-cifra">
+            <span class="portada-cifra-icono"></span>
+            <p class="portada-cifra-numero">{{ cifras.equipos }}</p>
+            <p class="portada-cifra-texto">Equipos registrados</p>
         </div>
-        <div class="cifra">
-            <span class="cifra-icono"></span>
-            <p class="cifra-numero">{{ cifras.jugadores }}</p>
-            <p class="cifra-texto">Jugadores inscritos</p>
+        <div class="portada-cifra">
+            <span class="portada-cifra-icono"></span>
+            <p class="portada-cifra-numero">{{ cifras.jugadores }}</p>
+            <p class="portada-cifra-texto">Jugadores inscritos</p>
         </div>
     </div>
 </section>
@@ -197,7 +197,7 @@ el servidor, así que el HTML de la portada no puede saberlo de antemano.
                     </div>
                     <div class="hoy-cruce">
                         <div class="hoy-equipo">
-                            <img src="{{ partido.equipo_local.escudo_url }}" alt="" class="hoy-escudo">
+                            <img src="{{ partido.equipo_local.escudo_url }}" alt="" class="hoy-escudo" loading="lazy" decoding="async">
                             <span>{{ partido.equipo_local.nombre }}</span>
                         </div>
                         {% if partido.jugado %}
@@ -207,7 +207,7 @@ el servidor, así que el HTML de la portada no puede saberlo de antemano.
                         {% endif %}
                         <div class="hoy-equipo hoy-equipo-der">
                             <span>{{ partido.equipo_visitante.nombre }}</span>
-                            <img src="{{ partido.equipo_visitante.escudo_url }}" alt="" class="hoy-escudo">
+                            <img src="{{ partido.equipo_visitante.escudo_url }}" alt="" class="hoy-escudo" loading="lazy" decoding="async">
                         </div>
                     </div>
                     <div class="hoy-datos">
@@ -235,13 +235,13 @@ el servidor, así que el HTML de la portada no puede saberlo de antemano.
                     </div>
                     <div class="hoy-cruce">
                         <div class="hoy-equipo">
-                            <img src="{{ partido.equipo_local.escudo_url }}" alt="" class="hoy-escudo">
+                            <img src="{{ partido.equipo_local.escudo_url }}" alt="" class="hoy-escudo" loading="lazy" decoding="async">
                             <span>{{ partido.equipo_local.nombre }}</span>
                         </div>
                         <span class="hoy-vs">vs</span>
                         <div class="hoy-equipo hoy-equipo-der">
                             <span>{{ partido.equipo_visitante.nombre }}</span>
-                            <img src="{{ partido.equipo_visitante.escudo_url }}" alt="" class="hoy-escudo">
+                            <img src="{{ partido.equipo_visitante.escudo_url }}" alt="" class="hoy-escudo" loading="lazy" decoding="async">
                         </div>
                     </div>
                     <div class="hoy-datos">
@@ -274,7 +274,7 @@ el servidor, así que el HTML de la portada no puede saberlo de antemano.
                     </div>
                     <article class="figura">
                     <div class="figura-quien">
-                        <img src="{{ figura.club.escudo_url }}" alt="" class="figura-escudo">
+                        <img src="{{ figura.club.escudo_url }}" alt="" class="figura-escudo" loading="lazy" decoding="async">
                         <div class="figura-identidad">
                             <h3 class="figura-nombre">
                                 {{ figura.jugador }}
@@ -422,7 +422,7 @@ el servidor, así que el HTML de la portada no puede saberlo de antemano.
         <div class="campeones">
             {% for p in campeones %}
                 <a href="{% url 'vitrina' %}" class="campeon">
-                    <img src="{{ imagen_copa }}" alt="" class="campeon-copa">
+                    <img src="{{ imagen_copa }}" alt="" class="campeon-copa" loading="lazy" decoding="async">
                     <p class="campeon-nombre">{{ p.campeon }}</p>
                     <p class="campeon-torneo">{{ p.liga_nombre }} · {{ p.categoria_nombre }}</p>
                 </a>

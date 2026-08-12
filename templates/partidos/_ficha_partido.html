@@ -42,7 +42,7 @@ bloque completo por equipo desde ficha.py.
                 <button type="button" class="open-modal equipo-boton"
                         data-url="{% url 'equipo-perfil' partido.equipo_local.pk %}"
                         aria-label="Ver el perfil de {{ partido.equipo_local.nombre }}">
-                    <img src="{{ partido.equipo_local.escudo_url }}" alt="Escudo de {{ partido.equipo_local.nombre }}" class="ficha-escudo">
+                    <img src="{{ partido.equipo_local.escudo_url }}" alt="Escudo de {{ partido.equipo_local.nombre }}" class="ficha-escudo" loading="lazy" decoding="async">
                     <span class="ficha-equipo">{{ partido.equipo_local.nombre }}</span>
                 </button>
                 <p class="ficha-localia">Local</p>
@@ -86,7 +86,7 @@ bloque completo por equipo desde ficha.py.
                 <button type="button" class="open-modal equipo-boton"
                         data-url="{% url 'equipo-perfil' partido.equipo_visitante.pk %}"
                         aria-label="Ver el perfil de {{ partido.equipo_visitante.nombre }}">
-                    <img src="{{ partido.equipo_visitante.escudo_url }}" alt="Escudo de {{ partido.equipo_visitante.nombre }}" class="ficha-escudo">
+                    <img src="{{ partido.equipo_visitante.escudo_url }}" alt="Escudo de {{ partido.equipo_visitante.nombre }}" class="ficha-escudo" loading="lazy" decoding="async">
                     <span class="ficha-equipo">{{ partido.equipo_visitante.nombre }}</span>
                 </button>
                 <p class="ficha-localia">Visitante</p>

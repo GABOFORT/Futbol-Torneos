@@ -50,26 +50,26 @@ template de Django no sabe dividir.
         </div>
     {% else %}
         {% comment %} ---- Los tres numeros de arriba ---- {% endcomment %}
-        <div class="cifras cifras-sueltas">
-            <div class="cifra">
-                <span class="cifra-icono"></span>
-                <p class="cifra-numero">{{ datos.goles }}</p>
-                <p class="cifra-texto">Goles</p>
+        <div class="portada-cifras portada-cifras-sueltas">
+            <div class="portada-cifra">
+                <span class="portada-cifra-icono"></span>
+                <p class="portada-cifra-numero">{{ datos.goles }}</p>
+                <p class="portada-cifra-texto">Goles</p>
             </div>
-            <div class="cifra">
-                <span class="cifra-icono"></span>
-                <p class="cifra-numero">{{ datos.partidos }}</p>
-                <p class="cifra-texto">Partidos jugados</p>
+            <div class="portada-cifra">
+                <span class="portada-cifra-icono"></span>
+                <p class="portada-cifra-numero">{{ datos.partidos }}</p>
+                <p class="portada-cifra-texto">Partidos jugados</p>
             </div>
-            <div class="cifra">
-                <span class="cifra-icono"></span>
-                <p class="cifra-numero">{{ datos.promedio }}</p>
-                <p class="cifra-texto">Goles por partido</p>
+            <div class="portada-cifra">
+                <span class="portada-cifra-icono"></span>
+                <p class="portada-cifra-numero">{{ datos.promedio }}</p>
+                <p class="portada-cifra-texto">Goles por partido</p>
             </div>
-            <div class="cifra">
-                <span class="cifra-icono"></span>
-                <p class="cifra-numero">{{ datos.resultados.local.porcentaje }}%</p>
-                <p class="cifra-texto">Gana el local</p>
+            <div class="portada-cifra">
+                <span class="portada-cifra-icono"></span>
+                <p class="portada-cifra-numero">{{ datos.resultados.local.porcentaje }}%</p>
+                <p class="portada-cifra-texto">Gana el local</p>
             </div>
         </div>
 

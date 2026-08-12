@@ -60,7 +60,7 @@ es una cortesia, no el mecanismo. Lo que protege es el servidor.
             {% comment %}
             Cerrar sesion es un POST de verdad, con su token: el mismo criterio
             que el boton de salir de la barra. Por GET, un sitio ajeno podria
-            cerrarle la sesion a cualquiera con un <img>.
+            cerrarle la sesion a cualquiera con un <img loading="lazy" decoding="async">.
             {% endcomment %}
             <form action="{% url 'logout' %}" method="post" class="sesion-forma-salir">
                 {% csrf_token %}
