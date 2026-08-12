@@ -37,7 +37,6 @@ RUTA_ADMIN = config('RUTA_ADMIN', default='admin').strip('/')
 
 urlpatterns = [
     path(f'{RUTA_ADMIN}/', admin.site.urls),
-    path('__reload__/', include('django_browser_reload.urls')),
     path('', include('apps.torneos.urls')),         # Pagina principal
     path('usuarios/', include('apps.usuarios.urls')),
     path('equipos/', include('apps.equipos.urls')),
@@ -51,3 +50,14 @@ urlpatterns = [
     re_path(r'^static/(?P<path>.*)$', servir_estatico, {'document_root': settings.STATIC_ROOT}),
     re_path(r'^media/(?P<path>.*)$', servir_estatico, {'document_root': settings.MEDIA_ROOT}),
 ]
+
+# La otra mitad de lo mismo que se hace en settings.py con INSTALLED_APPS y
+# MIDDLEWARE: la URL de la recarga automatica solo existe en desarrollo. Sin
+# esta condicion quedaria montada en produccion apuntando a una app que ya no
+# esta instalada.
+#
+# Va en la posicion 1, justo despues del panel, que es donde estaba: antes de
+# las rutas de las apps para que ninguna la tape, y despues del admin para no
+# meterse entre RUTA_ADMIN y su propio prefijo.
+if settings.DEBUG:
+    urlpatterns.insert(1, path('__reload__/', include('django_browser_reload.urls')))

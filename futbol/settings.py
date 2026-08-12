@@ -186,7 +186,6 @@ INSTALLED_APPS = [
     # Permite reemplazar plantillas de widgets desde templates/django/forms/.
     'django.forms',
 
-    'django_browser_reload',
     # Cuenta los intentos fallidos de login y bloquea al que insiste. Sin esto
     # se pueden probar contrasenas sin limite: el sitio esta en internet y una
     # cuenta con clave floja cae sola con tiempo.
@@ -202,7 +201,6 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'django_browser_reload.middleware.BrowserReloadMiddleware',
     # Solo actua con DEBUG=True; con DEBUG=False Django lo descarta al arrancar.
     'futbol.middleware.NoCacheEnDesarrolloMiddleware',
     'django.middleware.security.SecurityMiddleware',
@@ -221,6 +219,29 @@ MIDDLEWARE = [
     # ya resuelto para poder anotar quien fallo el intento.
     'axes.middleware.AxesMiddleware',
 ]
+
+# Recarga el navegador al guardar un archivo. Es una herramienta de DESARROLLO
+# y hasta hoy quedaba montada tambien en produccion, donde no hacia nada util:
+# su middleware ya se autodescarta con DEBUG=False y su endpoint ya responde 404
+# por su cuenta (lo comprueba la propia vista del paquete).
+#
+# Se monta solo con DEBUG porque igual no tiene por que estar ahi: ese endpoint
+# es un flujo de eventos que mantiene TOMADO un hilo de Waitress por conexion, y
+# Waitress arranca con cuatro (iniciar_produccion.bat no le pasa --threads). El
+# dia que alguien encienda DEBUG en el servidor para depurar algo, cuatro
+# peticiones a esa URL dejarian el sitio sin responder. Es el mismo agotamiento
+# de hilos que ya obligo a mover los estaticos a IIS, por otra puerta.
+#
+# NO rompe la regla de no diferenciar entornos en el codigo: DEBUG sale del
+# .env, asi que este archivo queda IDENTICO en produccion y en desarrollo y lo
+# unico que cambia el comportamiento es la variable de entorno. En la maquina de
+# desarrollo, con DEBUG=True, la recarga automatica sigue funcionando igual.
+#
+# El middleware va en la POSICION 0, que es donde estaba: tiene que envolver a
+# todos los demas para poder inyectar su script en el HTML ya armado.
+if DEBUG:
+    INSTALLED_APPS.append('django_browser_reload')
+    MIDDLEWARE.insert(0, 'django_browser_reload.middleware.BrowserReloadMiddleware')
 
 ROOT_URLCONF = 'futbol.urls'
 

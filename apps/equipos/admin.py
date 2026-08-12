@@ -7,7 +7,16 @@ from apps.jugadores.models import Jugador
 class JugadorInline(admin.TabularInline):
     model = Jugador
     extra = 1
-    fields = ('nombre', 'apellido', 'documento', 'posicion', 'numero', 'estado', 'activo')
+    # Sin 'activo': ese campo NO existe en Jugador. Era un booleano que se
+    # reemplazo por 'estado' (activo/baja/lesion/sancion) y quedo la referencia
+    # colgada, asi que abrir cualquier equipo en el panel respondia 500.
+    #
+    # `manage.py check` NO lo detecta: el error salta recien al construir el
+    # formulario del inline, o sea al abrir la pagina. Se comprobo llamando a
+    # modelform_factory con esa lista de campos —FieldError: Unknown field(s)
+    # (activo)—, y por eso el panel dejaba sin herramienta al superadmin justo
+    # cuando hace falta entrar a corregir algo a mano.
+    fields = ('nombre', 'apellido', 'documento', 'posicion', 'numero', 'estado')
 
 
 @admin.register(Equipo)
