@@ -2208,11 +2208,43 @@ textarea.campo-invalido {
 /* ---- Listado de ligas (Estadísticas) ---- */
 
 /* Tarjetas anchas: con 4 cifras en fila y el anillo al lado, una columna
-   angosta las apretaria. En pantallas grandes entran de a dos o tres. */
+   angosta las apretaria. En pantallas grandes entran de a dos o tres.
+
+   El `min(28rem, 100%)` no es adorno: `minmax(28rem, ...)` a secas fija un piso
+   duro de 448px por columna, y en un telefono de 375px —donde al contenedor le
+   quedan unos 327px utiles tras el padding— la columna se salia de la pantalla
+   y dejaba la pagina entera con scroll horizontal. `auto-fit` no rescata eso:
+   reparte las columnas que caben, pero nunca achica el minimo. Con `min()` el
+   piso cede al ancho disponible cuando la pantalla es mas angosta que la
+   tarjeta, que es exactamente lo que se queria decir. */
 .rejilla-ligas {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(28rem, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(28rem, 100%), 1fr));
     gap: 1.25rem;
+}
+
+/* Enlace de apoyo bajo un encabezado: lleva a algun lado, pero no es la accion
+   principal de la pantalla. Hoy lo usa "Mis ligas" para cruzar a la vitrina
+   publica.
+
+   `min-height` con `--toque` y no solo padding: es un enlace suelto en medio de
+   texto, y sin altura minima queda en una franja de ~20px que en un telefono
+   obliga a apuntar. El `inline-flex` es lo que hace que esa altura se aplique
+   —un `inline` ignora min-height— y de paso alinea la flecha con el texto. */
+.enlace-secundario {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--toque);
+    color: var(--verde-700);
+    font-size: var(--texto-md);
+    font-weight: 600;
+    text-decoration: none;
+    transition: color var(--paso-normal);
+}
+
+.enlace-secundario:hover {
+    color: var(--verde-600);
+    text-decoration: underline;
 }
 
 .tarjeta-liga {

@@ -8,20 +8,67 @@ from apps.torneos import palmares
 from apps.torneos.models import Categoria, Liga
 from apps.usuarios.estaticos import url_estatico
 from apps.usuarios.filtros import buscar, campo_texto, campo_opciones
-from apps.usuarios.permissions import cascada_equipos, ligas_visibles
+from apps.usuarios.permissions import (
+    admin_liga_required, cascada_equipos, ligas_administradas, ligas_visibles,
+)
 
 from . import graficos, porteros, resumen, tabla
 
 
 def estadisticas_ligas(request):
-    """El listado de ligas, cada una con sus numeros y su avance.
+    """El listado publico de ligas, cada una con sus numeros y su avance.
 
-    Mismo criterio que en equipos y partidos: el admin de liga solo ve las suyas.
-    `panorama` resuelve todas las ligas juntas, en una cantidad fija de consultas.
+    Acotado por `ligas_visibles`: **a proposito muestra todas las ligas
+    activas**, tambien al admin de liga. Esta es la vitrina, y en la vitrina el
+    que mira decide que quiere ver; que un admin viera aca menos que un
+    visitante sin cuenta era justamente el 404 que se corrigio el 12/08/2026.
+
+    Si buscas la pantalla acotada a lo propio, es `estadisticas_mis_ligas`: se
+    entra desde el tablero y filtra por `ligas_administradas`. Son dos preguntas
+    distintas y por eso son dos vistas, no un `if` adentro de esta.
+
+    `panorama` resuelve todas las ligas juntas, en una cantidad fija de
+    consultas.
     """
     ligas = ligas_visibles(request.user).order_by('nombre')
     return render(request, 'estadisticas/estadisticas_ligas.html', {
         'fichas': resumen.panorama(ligas),
+        'titulo_pagina': 'Estadísticas',
+        'seccion': 'Estadísticas',
+        'encabezado': 'Elige una liga',
+        'descripcion': 'Cómo va cada liga: equipos, calendario y goles.',
+        'vacio': 'Todavía no hay ligas registradas.',
+    })
+
+
+@admin_liga_required
+def estadisticas_mis_ligas(request):
+    """El mismo listado, pero acotado a las ligas que uno administra.
+
+    Es la entrada desde el tablero. El tablero es la zona de gestion, y ahi la
+    pregunta no es "que puedo mirar" sino "que administro": por eso filtra por
+    `ligas_administradas` y no por `ligas_visibles`.
+
+    De aca en adelante el recorrido es el mismo que el publico —liga ->
+    categorias -> tabla de posiciones— reusando `estadisticas_ligas.html` y las
+    vistas que ya existen. No hay pantalla nueva ni consulta duplicada: lo unico
+    que cambia es de que conjunto de ligas se parte.
+
+    Se muestra el listado siempre, incluso administrando una sola liga: entrar
+    directo cuando hay una y pedir que elija cuando hay dos vuelve el tablero
+    impredecible. Elegir liga es el primer paso, y despues se elige categoria.
+    """
+    ligas = ligas_administradas(request.user).order_by('nombre')
+    return render(request, 'estadisticas/estadisticas_ligas.html', {
+        'fichas': resumen.panorama(ligas),
+        'titulo_pagina': 'Mis ligas',
+        'seccion': 'Tablero · Estadísticas',
+        'encabezado': 'Mis ligas',
+        'descripcion': 'Elige una de tus ligas para ver sus categorías.',
+        'vacio': 'Todavía no administras ninguna liga.',
+        # La vitrina completa sigue a un clic: el admin tambien es visitante del
+        # resto del sistema y no tiene por que salir del tablero a buscarla.
+        'enlace_publico': True,
     })
 
 
