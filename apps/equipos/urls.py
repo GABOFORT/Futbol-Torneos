@@ -3,6 +3,8 @@ from . import views
 
 urlpatterns = [
     path('', views.equipo_list, name='equipo-list'),
+    # El mismo directorio acotado a lo propio, para entrar desde el tablero.
+    path('mis-ligas/', views.equipos_de_mis_ligas, name='equipos-mis-ligas'),
     path('crear/', views.equipo_create, name='equipo-create'),
     path('<int:pk>/', views.equipo_detail, name='equipo-detail'),
     path('<int:pk>/perfil/', views.equipo_perfil, name='equipo-perfil'),

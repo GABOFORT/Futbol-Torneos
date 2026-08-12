@@ -18,11 +18,69 @@ from . import perfil
 from .forms import EquipoCreateForm, EquipoForm, EquipoFormacionForm
 from .models import Equipo
 
+# Los encabezados de las dos lecturas del directorio. Van por contexto y no
+# escritos en la plantilla porque la plantilla es la misma: lo que cambia es de
+# donde se entra, y el titulo tiene que decirlo. `vacio` es el mensaje cuando no
+# hay nada Y no hay filtros puestos —con filtros, el mensaje correcto es que la
+# busqueda no encontro nada, que es otra cosa—.
+_TEXTOS_PUBLICOS = {
+    # `titulo_pagina` va aparte del encabezado: es el nombre de la pestaña del
+    # navegador, donde un titulo largo se corta y no se distingue de otro.
+    'titulo_pagina': 'Equipos',
+    'seccion': 'Equipos',
+    'encabezado': 'Equipos por liga y categoría',
+    'descripcion': 'Explora los equipos participantes en cada liga.',
+    'vacio': 'Todavía no hay equipos registrados.',
+    'enlace_publico': False,
+}
+
+_TEXTOS_MIS_LIGAS = {
+    'titulo_pagina': 'Equipos de mis ligas',
+    'seccion': 'Tablero · Equipos',
+    'encabezado': 'Equipos de mis ligas',
+    'descripcion': 'Los equipos de las ligas que administras.',
+    'vacio': 'Todavía no hay equipos en tus ligas. Crea el primero con el botón de arriba.',
+    'enlace_publico': True,
+}
+
 
 def equipo_list(request):
+    """El directorio publico de equipos, acotado por `ligas_visibles`.
+
+    **A proposito muestra los equipos de todas las ligas activas**, tambien al
+    admin de liga: esta es la vitrina y el que mira decide que quiere ver.
+
+    La version acotada a lo propio es `equipos_de_mis_ligas`, que es a donde
+    lleva el tablero. Son dos entradas y no un `if` por rol adentro de esta:
+    acotar la vitrina por rol dejaria al admin viendo menos que un visitante sin
+    cuenta, que fue el fallo corregido el 12/08/2026.
+    """
+    return _directorio(request, solo_propias=False)
+
+
+@admin_liga_required
+def equipos_de_mis_ligas(request):
+    """El mismo directorio, acotado a las ligas que uno administra.
+
+    Es la entrada desde el tablero, donde la pregunta no es "que puedo mirar"
+    sino "que administro". Sin esto, un admin que lleva una sola liga abria su
+    pantalla de trabajo y recibia los equipos de TODAS las ligas activas: en
+    la practica, la gran mayoria de las fichas eran ajenas, y un admin de una
+    liga recien creada no veia ni una sola propia.
+
+    Reusa la vista y la plantilla: lo unico que cambia es de que conjunto de
+    ligas se parte, y que los filtros se arman sobre ese mismo conjunto.
+    """
+    return _directorio(request, solo_propias=True)
+
+
+def _directorio(request, solo_propias):
     user = request.user
 
-    if user.is_authenticated and user.role == user.ROLE_ENTRENADOR and not user.is_superuser:
+    # El entrenador tiene otra lectura de esta pantalla: sus equipos, sin
+    # directorio ni filtros. No se pregunta en la version del tablero porque ahi
+    # no llega —`admin_liga_required` lo saca antes—.
+    if not solo_propias and user.is_authenticated and user.role == user.ROLE_ENTRENADOR and not user.is_superuser:
         mis_equipos = list(
             Equipo.objects.filter(entrenador=user).select_related('liga', 'categoria').order_by('-fecha_creacion')
         )
@@ -36,17 +94,20 @@ def equipo_list(request):
             'solo_mis_equipos': True,
             'ligas': Liga.objects.none(),
             'liga_id': None,
+            **_TEXTOS_PUBLICOS,
         })
 
-    # Un admin de liga solo ve las suyas; el superadmin y el publico ven todas.
-    visibles = ligas_visibles(user)
+    # De que conjunto de ligas parte la pantalla. Es la unica diferencia entre
+    # las dos entradas, y de aca cuelga todo lo demas: el listado, el desplegable
+    # de ligas y el de categorias.
+    ambito = ligas_administradas(user) if solo_propias else ligas_visibles(user)
     puede_administrar = user.is_authenticated and (user.is_superuser or user.role == user.ROLE_ADMIN_LIGA)
 
     termino = request.GET.get('q', '')
     liga_id = request.GET.get('liga', '')
     categoria_id = request.GET.get('categoria', '')
 
-    directorio = Equipo.objects.filter(liga__in=visibles).select_related('liga', 'categoria', 'entrenador')
+    directorio = Equipo.objects.filter(liga__in=ambito).select_related('liga', 'categoria', 'entrenador')
     directorio = buscar(directorio, termino, [
         'nombre', 'entrenador__first_name', 'entrenador__last_name', 'entrenador__username',
     ])
@@ -64,13 +125,17 @@ def equipo_list(request):
 
     # Las categorias del desplegable se acotan a la liga elegida: con 13
     # categorias repartidas en 7 ligas, ofrecerlas todas juntas confunde.
-    categorias = Categoria.objects.filter(liga__in=visibles)
+    categorias = Categoria.objects.filter(liga__in=ambito)
     if liga_id.isdigit():
         categorias = categorias.filter(liga_id=int(liga_id))
 
+    # Los desplegables se arman sobre `ambito` y no sobre todas las ligas. Si no,
+    # la pantalla del tablero ofreceria filtrar por una liga ajena y devolveria
+    # cero resultados sin explicar por que: un filtro que no puede encontrar nada
+    # es peor que no tener filtro.
     filtros = [
         campo_texto('q', 'Buscar', termino, 'Nombre del equipo o del entrenador'),
-        campo_opciones('liga', 'Liga', liga_id, visibles.order_by('nombre').values_list('id', 'nombre'), vacio='Todas'),
+        campo_opciones('liga', 'Liga', liga_id, ambito.order_by('nombre').values_list('id', 'nombre'), vacio='Todas'),
         campo_opciones('categoria', 'Categoría', categoria_id,
                        categorias.order_by('nombre').values_list('id', 'nombre'), vacio='Todas'),
     ]
@@ -84,6 +149,7 @@ def equipo_list(request):
         'filtros': filtros,
         'filtros_activos': hay_filtros(filtros),
         'total_resultados': len(directorio),
+        **(_TEXTOS_MIS_LIGAS if solo_propias else _TEXTOS_PUBLICOS),
     })
 
 

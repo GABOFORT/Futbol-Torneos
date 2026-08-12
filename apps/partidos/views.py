@@ -25,6 +25,27 @@ CENTRO_POR_DEFECTO = ('17.989500', '-92.947500')
 # liguilla no es una jornada mas: son los cruces de eliminacion.
 VALOR_LIGUILLA = 'liguilla'
 
+# Los encabezados de las dos lecturas del calendario. Van por contexto porque la
+# plantilla es la misma y lo que cambia es desde donde se entra.
+_TEXTOS_PUBLICOS = {
+    # Aparte del encabezado: es el nombre de la pestaña del navegador.
+    'titulo_pagina': 'Partidos',
+    'seccion': 'Partidos',
+    'encabezado': 'Calendario de partidos',
+    'descripcion': 'Cada jornada enfrenta a todos los equipos una vez. '
+                   'Elige la jornada para ver sus partidos.',
+    'enlace_publico': False,
+}
+
+_TEXTOS_MIS_LIGAS = {
+    'titulo_pagina': 'Calendario de mis ligas',
+    'seccion': 'Tablero · Partidos',
+    'encabezado': 'Calendario de mis ligas',
+    'descripcion': 'Los partidos de las ligas que administras. '
+                   'Elige la jornada para programar o cargar resultados.',
+    'enlace_publico': True,
+}
+
 
 def calendario_mes(request):
     """El calendario en vista mensual, publico.
@@ -63,13 +84,45 @@ def calendario_mes(request):
 
 
 def partido_list(request):
+    """El calendario publico, acotado por `ligas_visibles`.
+
+    **A proposito trae los partidos de todas las ligas activas**, tambien para
+    el admin de liga: esta es la pantalla que responde "que se juega", y la hace
+    sobre todo quien no administra nada. La version acotada a lo propio es
+    `partidos_de_mis_ligas`, que es a donde lleva el tablero.
+    """
+    return _calendario(request, solo_propias=False)
+
+
+@admin_liga_required
+def partidos_de_mis_ligas(request):
+    """El mismo calendario, acotado a las ligas que uno administra.
+
+    Es la entrada desde el tablero: ahi no se viene a mirar que se juega el
+    sabado, se viene a programar y a cargar resultados. Sin acotar, un admin
+    tenia que atravesar el calendario completo de todas las ligas activas para
+    llegar a los partidos que si puede tocar.
+
+    Reusa la vista y la plantilla; lo unico distinto es de que ligas se parte,
+    incluida la cascada Liga -> Categoria -> Equipo de los filtros.
+    """
+    return _calendario(request, solo_propias=True)
+
+
+def _calendario(request, solo_propias):
     user = request.user
     puede_gestionar = user.is_authenticated and (user.is_superuser or user.role == user.ROLE_ADMIN_LIGA)
-    es_entrenador = user.is_authenticated and user.role == user.ROLE_ENTRENADOR and not user.is_superuser
+    # En la version del tablero no hay entrenadores: `admin_liga_required` los
+    # saca antes de llegar aca.
+    es_entrenador = (
+        not solo_propias
+        and user.is_authenticated and user.role == user.ROLE_ENTRENADOR and not user.is_superuser
+    )
 
-    # Mismo criterio que en equipos: el admin de liga solo ve sus ligas y el
-    # entrenador unicamente los partidos de los equipos que dirige.
-    partidos = Partido.objects.filter(categoria__liga__in=ligas_visibles(user))
+    # De que conjunto de ligas parte la pantalla. El entrenador ademas se queda
+    # solo con los partidos de los equipos que dirige.
+    ambito = ligas_administradas(user) if solo_propias else ligas_visibles(user)
+    partidos = Partido.objects.filter(categoria__liga__in=ambito)
     if es_entrenador:
         partidos = partidos.filter(Q(equipo_local__entrenador=user) | Q(equipo_visitante__entrenador=user))
 
@@ -78,7 +131,7 @@ def partido_list(request):
     # de partidos de una vez y no se entiende nada.
     jornada = request.GET.get('jornada', '1')
 
-    seleccion, opciones = _cascada(user, request.GET)
+    seleccion, opciones = _cascada(request.GET, ambito)
 
     partidos = buscar(partidos, termino, [
         'equipo_local__nombre', 'equipo_visitante__nombre',
@@ -104,13 +157,16 @@ def partido_list(request):
         'sede', 'sede_original',
     ).order_by('categoria__liga__nombre', 'categoria__nombre', 'fecha', 'id')
 
-    # Que partidos puede administrar, uno por uno. Antes alcanzaba con un solo
-    # flag para toda la pantalla porque el calendario le mostraba al admin de
-    # liga unicamente las suyas. Desde que `ligas_visibles` incluye tambien las
-    # publicas, ve partidos de ligas ajenas: con el flag global le saldrian los
-    # botones de programar y cargar resultado sobre partidos que no son suyos, y
-    # al pulsarlos se comeria un 404 de `partido_edit`, que si acota por
-    # `ligas_administradas`. El boton se dibuja donde la accion existe.
+    # Que partidos puede administrar, uno por uno. Hace falta por la pantalla
+    # publica: ahi `ligas_visibles` trae tambien las ligas ajenas, y con un solo
+    # flag para toda la pantalla le saldrian al admin los botones de programar y
+    # cargar resultado sobre partidos que no son suyos —al pulsarlos se comeria
+    # un 404 de `partido_edit`, que si acota por `ligas_administradas`—.
+    #
+    # En la pantalla del tablero todos los partidos son propios y la marca sale
+    # verdadera para todos, pero se calcula igual: la comprobacion es por
+    # partido, no por pantalla, y asi sigue siendo cierta si algun dia una liga
+    # cambia de manos. El boton se dibuja donde la accion existe.
     #
     # `ligas_administradas` solo se llama si hay alguien que pueda administrar:
     # esa funcion pregunta por `user.es_super_admin()`, que un AnonymousUser no
@@ -128,8 +184,9 @@ def partido_list(request):
     # justamente el que mas los necesita: entra a buscar el partido de SU equipo
     # y sin ellos tiene que recorrer el calendario entero de doce categorias.
     #
-    # Se acotan solos: `_cascada` los arma sobre `ligas_visibles`, asi que cada
-    # uno ve las opciones de lo que puede ver.
+    # Se acotan solos: `_cascada` los arma sobre el mismo `ambito` del que sale
+    # el listado, asi que los desplegables nunca ofrecen una liga que esta
+    # pantalla no vaya a mostrar.
     filtros = [
         campo_texto('q', 'Buscar', termino, 'Equipo, categoría o liga'),
         campo_opciones('liga', 'Liga', seleccion['liga'],
@@ -164,17 +221,23 @@ def partido_list(request):
         'filtros': filtros,
         'filtros_activos': bool(termino or seleccion['liga'] or seleccion['categoria'] or seleccion['equipo']),
         'total_resultados': len(partidos),
+        **(_TEXTOS_MIS_LIGAS if solo_propias else _TEXTOS_PUBLICOS),
     })
 
 
-def _cascada(user, parametros):
+def _cascada(parametros, ambito):
     """Resuelve Liga -> Categoria -> Equipo, acotando cada nivel al de arriba.
 
     Si un nivel no pertenece al que lo contiene se descarta: asi cambiar de liga
     limpia sola la categoria vieja, y nadie llega a datos de otra liga pasando
     ids a mano en la URL.
+
+    `ambito` es el conjunto de ligas del que parte la pantalla y lo decide quien
+    llama: la publica pasa `ligas_visibles` y la del tablero
+    `ligas_administradas`. Recibirlo en vez de calcularlo aca es lo que hace que
+    los desplegables no ofrezcan ligas que la pantalla no va a mostrar.
     """
-    ligas = ligas_visibles(user).order_by('nombre')
+    ligas = ambito.order_by('nombre')
     categorias = Categoria.objects.filter(liga__in=ligas).order_by('liga__nombre', 'nombre')
     equipos = Equipo.objects.filter(liga__in=ligas).order_by('nombre')
 
