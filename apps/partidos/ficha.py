@@ -12,8 +12,6 @@ from apps.jugadores.models import Jugador
 
 from .models import Partido
 
-# Las lineas van de la delantera al arco para dibujarlas sobre la cancha de
-# arriba hacia abajo, igual que se ve un equipo desde la tribuna.
 LINEAS = [
     ('delantero', 'Delanteros'),
     ('medio', 'Mediocampistas'),
@@ -36,8 +34,6 @@ def armar(partido):
 
     posiciones = tabla.calcular(partido.categoria)
     lo_ocurrido = sucesos(partido) if partido.jugado else {'local': None, 'visitante': None}
-    # Una sola consulta para los dos equipos: si la categoria ya termino, cada
-    # escudo lleva al lado lo que gano.
     premios = palmares.trofeos_por_categoria([partido.categoria_id])
     de_equipos = premios.get(partido.categoria_id, {}).get('equipos', {})
 
@@ -77,10 +73,6 @@ def juegos(equipo):
     (`apps/equipos/perfil.py`): el rendimiento de un equipo se calcula igual se
     lo mire desde la ficha de un partido o desde su propio modal.
     """
-    # Se ordena por fecha y no por jornada: los partidos de liguilla llevan
-    # jornada 0 y ordenando por ese campo quedaban ANTES que el torneo regular,
-    # asi que "los ultimos cinco" de un equipo que ya jugo la liguilla mostraban
-    # sus ultimas cinco fechas del regular y escondian la eliminacion directa.
     partidos = Partido.objects.filter(
         Q(equipo_local=equipo) | Q(equipo_visitante=equipo),
         estado=Partido.ESTADO_FINALIZADO,
@@ -94,11 +86,7 @@ def juegos(equipo):
         propios = partido.goles_local if de_local else partido.goles_visitante
         ajenos = partido.goles_visitante if de_local else partido.goles_local
         jugados.append({
-            # El id va porque cada renglon de los ultimos cinco se puede pulsar
-            # para abrir la ficha de ese partido.
             'partido_id': partido.pk,
-            # Las dos etiquetas salen del modelo para que digan lo mismo en toda
-            # la aplicacion: 'Jornada 5' o 'Liguilla · Semifinal · Ida'.
             'etiqueta': partido.etiqueta,
             'corta': partido.etiqueta_corta,
             'rival': partido.equipo_visitante if de_local else partido.equipo_local,
@@ -114,8 +102,6 @@ def rendimiento(juegos):
     """Promedios del equipo en el torneo, a partir de sus marcadores."""
     jugados = len(juegos)
     if not jugados:
-        # Un equipo recien inscrito no tiene con que promediar. Se devuelven
-        # ceros para que la ficha se dibuje igual, marcada como sin datos.
         return {
             'jugados': 0, 'goles_favor': 0, 'goles_contra': 0,
             'favor_promedio': 0, 'contra_promedio': 0, 'diferencia_promedio': 0,
@@ -136,8 +122,6 @@ def rendimiento(juegos):
     }
 
 
-# Cada metrica dice cuantos decimales mostrar y hacia donde esta lo bueno:
-# en goles concedidos gana el numero mas chico, no el mas grande.
 METRICAS = [
     ('Goles a favor por juego', 'favor_promedio', 2, 'alto'),
     ('Goles concedidos por juego', 'contra_promedio', 2, 'bajo'),
@@ -172,9 +156,6 @@ def _con_decimales(valor, decimales):
     return f'{valor:.{decimales}f}'
 
 
-# El ancho de las barras sale redondeado a multiplos de 5 porque en el template
-# se aplica con una clase (.ancho-45) y no con un style inline: son 21 clases en
-# vez de 101, y la diferencia con el valor exacto no llega a los 3 puntos.
 PASO_ANCHO = 5
 
 
@@ -228,8 +209,6 @@ def historial(partido):
 
     cruces, gano_local, empates, gano_visitante = [], 0, 0, 0
     for previo in previos:
-        # 'uno' es siempre el club que hoy juega de local, sin importar de que
-        # lado estuvo aquella vez.
         uno_de_local = previo.equipo_local.nombre == local.nombre
         goles_uno = previo.goles_local if uno_de_local else previo.goles_visitante
         goles_otro = previo.goles_visitante if uno_de_local else previo.goles_local
@@ -242,8 +221,6 @@ def historial(partido):
             empates += 1
 
         cruces.append({
-            # Igual que en los ultimos cinco: el cruce se puede pulsar para
-            # abrir la ficha de aquel partido.
             'partido_id': previo.pk,
             'categoria': previo.categoria,
             'etiqueta': previo.etiqueta,
@@ -338,14 +315,9 @@ def sucesos(partido):
             marcador[lado]['goles'].append({
                 'jugador': actuacion.jugador, 'cantidad': actuacion.goles, 'en_contra': False,
                 'de_penal': actuacion.goles_de_penal,
-                # Si TODOS sus goles fueron de penal no hace falta el numero: la
-                # etiqueta sola ya lo dice, y "2 · 2 de penal" se lee peor.
                 'todos_de_penal': actuacion.goles_de_penal == actuacion.goles,
             })
         if actuacion.goles_en_contra:
-            # Lleva las mismas claves que el renglon normal aunque siempre valgan
-            # cero: un gol en contra no puede ser de penal, y asi los dos tipos de
-            # renglon se recorren igual sin tener que preguntar cual es cual.
             marcador[lado]['goles'].append({
                 'jugador': actuacion.jugador, 'cantidad': actuacion.goles_en_contra, 'en_contra': True,
                 'de_penal': 0, 'todos_de_penal': False,

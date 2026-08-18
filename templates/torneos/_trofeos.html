@@ -1,23 +1,8 @@
-{% comment %}
-Los premios de un equipo o de un jugador, para poner al lado de su nombre.
 
-Recibe `trofeos`: una lista de {etiqueta, imagen} que arma
-apps/torneos/palmares.py. Si no ganó nada no dibuja nada, ni siquiera el
-contenedor, para no dejar huecos en las tablas.
-
-`tam` elige el tamaño según el peso de la pantalla:
-    (vacío)  18 px — tablas densas: posiciones, goleo, asistencias, porterías
-    'md'     28 px — tarjetas y listas: equipos, plantilla, llaves del cuadro
-    'lg'     44 px — encabezados: perfil del equipo, plantilla
-    'xl'     80 px — detalle del equipo, al tamaño de su escudo
-{% endcomment %}
 {% if trofeos %}
     <span class="trofeos{% if tam %} trofeos-{{ tam }}{% endif %}">
         {% for trofeo in trofeos %}
-            {% comment %}
-            El title da el detalle al pasar el mouse y el alt lo dice en voz alta:
-            un icono dorado no se entiende solo.
-            {% endcomment %}
+
             <img src="{{ trofeo.imagen }}" alt="{{ trofeo.etiqueta }}" title="{{ trofeo.etiqueta }}" class="trofeo" loading="lazy" decoding="async">
         {% endfor %}
     </span>

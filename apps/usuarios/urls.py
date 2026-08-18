@@ -4,8 +4,6 @@ from . import views
 urlpatterns = [
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
-    # Las dos piezas del cierre por inactividad: una mantiene viva la sesion
-    # mientras se trabaja, la otra explica que paso cuando ya se vencio.
     path('sesion/renovar/', views.sesion_renovar, name='sesion-renovar'),
     path('sesion/expirada/', views.sesion_expirada, name='sesion-expirada'),
     path('dashboard/', views.dashboard, name='dashboard'),

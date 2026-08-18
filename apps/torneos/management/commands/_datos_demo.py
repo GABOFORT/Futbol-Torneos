@@ -26,11 +26,6 @@ cada jornada, y el cuadro de la liguilla depende de cuantos entren:
 Con un solo cupo para todas, dos tercios de `liguilla.py` no se ejecutaban nunca.
 """
 
-# Un club puede compartir cancha con otro (Inter y Milan en San Siro, Roma y
-# Lazio en el Olimpico). Por eso la sede se nombra aparte del club.
-#
-# Los primeros ocho de cada lista son los clubes grandes: como las categorias
-# chicas toman los primeros, son los que aparecen en todas.
 BUNDESLIGA = [
     ('Bayern Munchen', 'Allianz Arena', 48.218967, 11.624700),
     ('Borussia Dortmund', 'Signal Iduna Park', 51.492500, 7.451669),
@@ -136,9 +131,6 @@ LA_LIGA = [
 ]
 
 
-# Nombres por pais. Se separan varon / mujer porque el sexo define el limite de
-# edad, asi que un nombre que no corresponde al sexo cargado desorienta al leer
-# la plantilla.
 NOMBRES = {
     'de': {
         'varon': ['Lukas', 'Jonas', 'Leon', 'Finn', 'Noah', 'Elias', 'Paul', 'Ben',
@@ -199,15 +191,6 @@ NOMBRES = {
 }
 
 
-# Como esta cada categoria y con cuantos equipos. Se reparten a proposito para
-# que el sistema quede con pantallas en todos los estados posibles y no solo con
-# torneos terminados.
-#
-#   terminada      -> regular completo + liguilla completa + palmares grabado
-#   liguilla       -> regular completo, liguilla a mitad de camino
-#   mitad          -> el torneo regular por la mitad
-#   arranque       -> calendario generado, casi nada jugado, fechas por delante
-#   sin_calendario -> equipos inscritos, sin partidos (inscripcion abierta)
 LIGAS = [
     {
         'nombre': 'Bundesliga',
@@ -215,12 +198,11 @@ LIGAS = [
         'inicio': (2026, 2, 7),
         'final': (2026, 11, 28),
         'clubes': BUNDESLIGA,
-        # (nombre, limite de edad, cupo de equipos, perfil)
         'categorias': [
             ('Sub-11', 'U11', 20, 'terminada'),
             ('Sub-13', 'U13', 12, 'liguilla'),
-            ('Sub-15', 'U15', 9, 'mitad'),        # impar: uno descansa por jornada
-            ('Sub-17', 'U17', 6, 'arranque'),     # cuadro de semifinales
+            ('Sub-15', 'U15', 9, 'mitad'),
+            ('Sub-17', 'U17', 6, 'arranque'),
         ],
     },
     {
@@ -230,7 +212,7 @@ LIGAS = [
         'final': (2026, 11, 21),
         'clubes': LIGA_MX,
         'categorias': [
-            ('Sub-13', 'U13', 15, 'terminada'),   # impar
+            ('Sub-13', 'U13', 15, 'terminada'),
             ('Sub-15', 'U15', 10, 'mitad'),
             ('Sub-17', 'U17', 6, 'sin_calendario'),
         ],
@@ -244,7 +226,7 @@ LIGAS = [
         'categorias': [
             ('Sub-9', 'U9', 20, 'terminada'),
             ('Sub-11', 'U11', 16, 'liguilla'),
-            ('Sub-13', 'U13', 11, 'mitad'),       # impar
+            ('Sub-13', 'U13', 11, 'mitad'),
             ('Sub-15', 'U15', 8, 'arranque'),
             ('Sub-17', 'U17', 4, 'sin_calendario'),
         ],
@@ -257,7 +239,7 @@ LIGAS = [
         'clubes': SERIE_A,
         'categorias': [
             ('Sub-15', 'U15', 14, 'terminada'),
-            ('Sub-17', 'U17', 3, 'terminada'),    # con 3 equipos la liguilla es la final
+            ('Sub-17', 'U17', 3, 'terminada'),
         ],
     },
     {
@@ -268,17 +250,15 @@ LIGAS = [
         'clubes': LA_LIGA,
         'categorias': [
             ('Sub-7', 'U7', 18, 'terminada'),
-            ('Sub-9', 'U9', 13, 'terminada'),     # impar
+            ('Sub-9', 'U9', 13, 'terminada'),
             ('Sub-11', 'U11', 10, 'liguilla'),
             ('Sub-13', 'U13', 8, 'mitad'),
-            ('Sub-15', 'U15', 5, 'terminada'),    # impar, cuadro de semifinales
+            ('Sub-15', 'U15', 5, 'terminada'),
             ('Sub-17', 'U17', 3, 'arranque'),
         ],
     },
 ]
 
-# Cuantos jugadores lleva cada equipo. Se sortea dentro del rango: los planteles
-# de verdad no tienen todos la misma cantidad.
 JUGADORES_MINIMO = 13
 JUGADORES_MAXIMO = 20
 
@@ -295,7 +275,6 @@ def posiciones_para(cantidad):
     """
     posiciones = ['portero'] * min(2, cantidad)
     resto = cantidad - len(posiciones)
-    # Cinco defensas y cinco medios por cada cuatro delanteros, redondeando.
     defensas = round(resto * 5 / 14)
     medios = round(resto * 5 / 14)
     delanteros = resto - defensas - medios

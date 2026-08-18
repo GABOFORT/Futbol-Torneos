@@ -1,0 +1,34 @@
+{% if field.name == 'categorias' %}
+    {% include 'equipos/_categorias_checkboxes.html' %}
+{% elif field.name == 'sede' %}
+
+    {% include 'partidos/_selector_sede.html' %}
+{% elif field.field.widget.input_type == 'radio' %}
+    {% include '_radios.html' %}
+{% elif field.field.widget.input_type == 'checkbox' %}
+    <label class="ajuste" for="{{ field.id_for_label }}">
+        {{ field }}
+        <span class="ajuste-texto">
+            <span class="ajuste-nombre">{{ field.label }}</span>
+            {% if field.help_text %}
+                <span class="ajuste-nota">{{ field.help_text }}</span>
+            {% endif %}
+            {% for error in field.errors %}
+                <span class="error-campo">{{ error }}</span>
+            {% endfor %}
+        </span>
+    </label>
+{% else %}
+
+    <div data-campo="{{ field.name }}">
+        <label class="block text-sm font-medium text-gray-700"
+               for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}
+            <p class="mt-2 text-sm text-gray-500">{{ field.help_text }}</p>
+        {% endif %}
+        {% for error in field.errors %}
+            <p class="error-campo">{{ error }}</p>
+        {% endfor %}
+    </div>
+{% endif %}

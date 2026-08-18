@@ -1,33 +1,13 @@
-{% comment %}
-La ficha del partido. **Es un fragmento**: no extiende base.html.
 
-Se usa por dos caminos y por eso vive aparte:
-
-  - dentro del modal del calendario, del perfil de equipo y de la llave de
-    liguilla, que la piden con `?modal=1`;
-  - dentro de `partido_detalle.html`, que es la pagina completa.
-
-Es de solo lectura y no lleva formulario, asi que el JS del modal solo le
-engancha el boton de cerrar. Sirve de previa y de cronica a la vez: antes del
-partido muestra con que llega cada equipo, y despues suma quien anoto.
-
-`en_modal` decide si se dibuja la ✕ de cerrar: en la pagina completa no hay nada
-que cerrar, y ese boton ahi no lleva a ningun lado.
-
-Las secciones que comparan a los dos equipos recorren `lados`, que trae un
-bloque completo por equipo desde ficha.py.
-{% endcomment %}
 <div class="ficha-modal">
 
-    {% comment %} La cabecera queda fija arriba: en una ficha larga el marcador
-    y el boton de cerrar tienen que seguir a la vista al bajar. {% endcomment %}
     <header class="ficha-cabecera">
         <div class="ficha-cabecera-fila">
             <div class="ficha-torneo">
                 {% include 'usuarios/_logo_liga.html' with liga=partido.categoria.liga %}
                 <div>
                     <p class="ficha-liga">{{ partido.categoria.liga.nombre }}</p>
-                    {# `etiqueta` dice "Jornada 5" o "Semifinal · Ida" según corresponda. #}
+
                     <p class="ficha-categoria">{{ partido.categoria.nombre }} · {{ partido.etiqueta }}</p>
                 </div>
             </div>
@@ -38,7 +18,7 @@ bloque completo por equipo desde ficha.py.
 
         <div class="ficha-cruce">
             <div class="ficha-lado">
-                {# Abre el perfil del equipo: el modal reemplaza esta ficha por la del equipo. #}
+
                 <button type="button" class="open-modal equipo-boton"
                         data-url="{% url 'equipo-perfil' partido.equipo_local.pk %}"
                         aria-label="Ver el perfil de {{ partido.equipo_local.nombre }}">
@@ -47,7 +27,7 @@ bloque completo por equipo desde ficha.py.
                 </button>
                 <p class="ficha-localia">Local</p>
                 {% include 'torneos/_trofeos.html' with trofeos=lados.0.trofeos tam='md' %}
-                {# En liguilla los penales solo definen quién pasa: no suman punto. #}
+
                 {% if partido.ganador_penales_id == partido.equipo_local_id %}
                     <span class="chip-penales">{% if partido.es_liguilla %}Ganó penales{% else %}+1 penales{% endif %}</span>
                 {% endif %}
@@ -57,14 +37,11 @@ bloque completo por equipo desde ficha.py.
                 {% if partido.jugado %}
                     <p class="ficha-cifras">{{ partido.goles_local }} <span>-</span> {{ partido.goles_visitante }}</p>
                     {% if partido.tanda %}
-                        {% comment %} La tanda va debajo del marcador: no son goles del partido. {% endcomment %}
+
                         <p class="ficha-tanda">{{ partido.penales_local }} <span>-</span> {{ partido.penales_visitante }} en penales</p>
                     {% endif %}
                     <span class="insignia insignia-final">Finalizado</span>
-                    {% comment %}
-                    Sin esto un 3-0 por ausencia se lee igual que un 3-0 jugado.
-                    Va debajo del marcador porque lo explica.
-                    {% endcomment %}
+
                     {% if partido.ganado_por_default %}
                         <p class="ficha-default">{{ partido.aviso_default }}</p>
                     {% endif %}
@@ -111,11 +88,6 @@ bloque completo por equipo desde ficha.py.
 
     <div class="ficha-cuerpo">
 
-        {% comment %} ---- Donde se juega ----
-        El mapa es un iframe de Google con output=embed, el mismo recurso que usa
-        la pagina '¿Donde estamos?': no necesita llave de API ni cuenta. Va
-        primero porque para quien tiene que llevar al nino es el dato mas urgente
-        de toda la ficha. {% endcomment %}
         <section class="ficha-seccion">
             <h3 class="ficha-titulo">Dónde se juega</h3>
             {% if partido.sede %}
@@ -143,7 +115,6 @@ bloque completo por equipo desde ficha.py.
             {% endif %}
         </section>
 
-        {% comment %} ---- Posicion en la tabla ---- {% endcomment %}
         {% if hay_puestos %}
             <section class="ficha-seccion">
                 <h3 class="ficha-titulo">En la tabla de posiciones</h3>
@@ -172,7 +143,6 @@ bloque completo por equipo desde ficha.py.
             </section>
         {% endif %}
 
-        {% comment %} ---- Comparativa de rendimiento ---- {% endcomment %}
         <section class="ficha-seccion">
             <h3 class="ficha-titulo">Estadísticas del equipo general</h3>
             {% if sin_rendimiento %}
@@ -186,13 +156,7 @@ bloque completo por equipo desde ficha.py.
                                 <span class="ficha-metrica-nombre">{{ fila.etiqueta }}</span>
                                 <span class="ficha-metrica-valor {% if fila.gana_otro %}ficha-metrica-gana{% endif %}">{{ fila.valor_otro }}</span>
                             </div>
-                            {% comment %} Las dos barras crecen desde el centro hacia
-                            afuera, para que la comparacion se lea de un vistazo.
 
-                            El ancho va como clase (.ancho-45) y no como style inline:
-                            un style con una etiqueta de Django adentro hace que el
-                            editor lo lea como CSS roto y marque un error que no existe.
-                            Las clases estan en el bloque de estilos de base.html. {% endcomment %}
                             <div class="ficha-barras">
                                 <div class="ficha-barra ficha-barra-izq">
                                     <span class="ancho-{{ fila.ancho_uno }}"></span>
@@ -208,7 +172,6 @@ bloque completo por equipo desde ficha.py.
             {% endif %}
         </section>
 
-        {% comment %} ---- Ultimos cinco partidos ---- {% endcomment %}
         <section class="ficha-seccion">
             <h3 class="ficha-titulo">Últimos cinco partidos</h3>
             <div class="ficha-duo">
@@ -217,12 +180,7 @@ bloque completo por equipo desde ficha.py.
                         <p class="ficha-columna-titulo">{{ lado.equipo.nombre }}</p>
                         {% if lado.ultimos %}
                             <ul class="ficha-forma">
-                                {% comment %}
-                                Cada renglon abre la ficha de ese partido. No hace falta
-                                JS nuevo: el listener de _modal.html es global y funciona
-                                sobre el HTML que se inyecta, asi que el clic reemplaza
-                                esta ficha por la del partido elegido.
-                                {% endcomment %}
+
                                 {% for juego in lado.ultimos %}
                                     <li class="ficha-forma-item open-modal"
                                         data-url="{% url 'partido-detalle' juego.partido_id %}?modal=1"
@@ -243,7 +201,6 @@ bloque completo por equipo desde ficha.py.
             </div>
         </section>
 
-        {% comment %} ---- Cara a cara ---- {% endcomment %}
         <section class="ficha-seccion">
             <h3 class="ficha-titulo">Cara a cara</h3>
             {% if historial.total %}
@@ -263,7 +220,7 @@ bloque completo por equipo desde ficha.py.
                 </div>
                 <ul class="ficha-cruces">
                     {% for cruce in historial.cruces %}
-                        {# Igual que los ultimos cinco: el cruce abre la ficha de aquel partido. #}
+
                         <li class="ficha-cruce-item open-modal"
                             data-url="{% url 'partido-detalle' cruce.partido_id %}?modal=1"
                             role="button" tabindex="0"
@@ -285,7 +242,6 @@ bloque completo por equipo desde ficha.py.
             {% endif %}
         </section>
 
-        {% comment %} ---- Lo que paso en este partido ---- {% endcomment %}
         {% if hay_sucesos %}
             <section class="ficha-seccion">
                 <h3 class="ficha-titulo">Lo que pasó en el partido</h3>
@@ -301,10 +257,7 @@ bloque completo por equipo desde ficha.py.
                                             <span class="ficha-renglon-nombre">
                                                 {{ gol.jugador.nombre }} {{ gol.jugador.apellido }}
                                                 {% if gol.en_contra %}<span class="ficha-etiqueta-contra">en contra</span>{% endif %}
-                                                {% comment %}
-                                                Si todos sus goles fueron de penal alcanza con decirlo;
-                                                el numero solo aparece cuando mezclo penales con jugada.
-                                                {% endcomment %}
+
                                                 {% if gol.de_penal %}
                                                     <span class="ficha-etiqueta-penal">{% if gol.todos_de_penal %}de penal{% else %}{{ gol.de_penal }} de penal{% endif %}</span>
                                                 {% endif %}
@@ -334,7 +287,6 @@ bloque completo por equipo desde ficha.py.
             </section>
         {% endif %}
 
-        {% comment %} ---- Figuras del torneo ---- {% endcomment %}
         {% if hay_figuras %}
             <section class="ficha-seccion">
                 <h3 class="ficha-titulo">Figuras del torneo</h3>
@@ -360,7 +312,6 @@ bloque completo por equipo desde ficha.py.
             </section>
         {% endif %}
 
-        {% comment %} ---- Plantel sobre la cancha ---- {% endcomment %}
         <section class="ficha-seccion">
             <h3 class="ficha-titulo">Plantel por posición</h3>
             <p class="ficha-nota ficha-nota-arriba">

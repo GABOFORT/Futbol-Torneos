@@ -15,9 +15,6 @@ Vive en `usuarios` junto al resto de las utilidades transversales (`estaticos`,
 el panorama de liga y los graficos.
 """
 
-# Las clases van de 5 en 5: son 21 en vez de 101, y la diferencia con el valor
-# exacto no se nota en una barra. El numero exacto, cuando importa, se muestra
-# escrito al lado.
 PASO = 5
 
 

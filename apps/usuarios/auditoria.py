@@ -60,8 +60,6 @@ def ip_de(request):
     """
     if request is None:
         return '?'
-    # X-Forwarded-For queda como respaldo por si algun dia se pone Waitress
-    # detras de un proxy de confianza; hoy nunca llega.
     for cabecera in ('HTTP_X_IP_CLIENTE', 'HTTP_X_FORWARDED_FOR'):
         valor = request.META.get(cabecera, '')
         if valor:
@@ -69,7 +67,6 @@ def ip_de(request):
             break
     else:
         candidata = request.META.get('REMOTE_ADDR', '') or '?'
-    # Solo en IPv4: una IPv6 lleva dos puntos de por si y cortarla la destruiria.
     if candidata.count(':') == 1:
         candidata = candidata.split(':')[0]
     return candidata

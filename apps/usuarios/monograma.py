@@ -21,38 +21,29 @@ no `hash()` porque `hash()` de un texto cambia en cada arranque de Python.
 import hashlib
 from urllib.parse import quote
 
-# Colores oscuros y saturados, que es lo que deja leer un texto blanco encima.
-# Estan elegidos para distinguirse entre si de un vistazo, no solo por nombre.
-#
-# Son veinte y no doce por el problema del palomar: una categoria puede tener
-# hasta 20 equipos, y con doce colores caian dos clubes del mismo color en la
-# misma tabla. Con veinte, cada equipo de la categoria mas grande puede tener
-# el suyo.
 COLORES = [
-    '#1d4ed8',  # azul
-    '#b91c1c',  # rojo
-    '#047857',  # verde
-    '#7c3aed',  # violeta
-    '#b45309',  # ambar
-    '#0f766e',  # petroleo
-    '#be123c',  # carmin
-    '#4338ca',  # indigo
-    '#15803d',  # verde ingles
-    '#a16207',  # mostaza
-    '#0369a1',  # celeste oscuro
-    '#9d174d',  # frambuesa
-    '#c2410c',  # naranja quemado
-    '#065f46',  # esmeralda oscuro
-    '#1e40af',  # azul rey
-    '#831843',  # vino
-    '#3f6212',  # oliva
-    '#7e22ce',  # purpura
-    '#0e7490',  # cian oscuro
-    '#92400e',  # marron
+    '#1d4ed8',
+    '#b91c1c',
+    '#047857',
+    '#7c3aed',
+    '#b45309',
+    '#0f766e',
+    '#be123c',
+    '#4338ca',
+    '#15803d',
+    '#a16207',
+    '#0369a1',
+    '#9d174d',
+    '#c2410c',
+    '#065f46',
+    '#1e40af',
+    '#831843',
+    '#3f6212',
+    '#7e22ce',
+    '#0e7490',
+    '#92400e',
 ]
 
-# Palabras que no aportan a las iniciales: 'Real Madrid' tiene que dar RM, pero
-# '1. FC Koln' tiene que dar FK y no '1F'.
 IGNORADAS = {'de', 'del', 'la', 'las', 'el', 'los', 'y', 'fc', 'cf', 'sc', 'ac', 'club'}
 
 
@@ -85,7 +76,6 @@ def monograma(nombre):
     con `object-fit: cover` que con `contain`.
     """
     letras = iniciales_de(nombre)
-    # Con tres o mas letras hay que achicar la tipografia o se sale del circulo.
     tamano = 26 if len(letras) <= 2 else 20
     svg = (
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">'

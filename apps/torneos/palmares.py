@@ -36,18 +36,77 @@ def cerrar_si_termino(partido):
 
     La final se juega a ida y vuelta, asi que no alcanza con que este partido
     este jugado: la categoria recien termina cuando la serie tiene ganador.
+
+    Solo la final del cuadro principal cierra la categoria: la mini-liguilla
+    tambien tiene una fase 'final' y no corona al campeon del torneo.
     """
     from apps.partidos import liguilla
 
     if partido.fase != Partido.FASE_FINAL or not partido.jugado:
+        return None
+    if partido.cuadro != Partido.CUADRO_PRINCIPAL:
+        return None
+    if partido.es_de_torneo:
         return None
 
     final = next(
         (s for s in liguilla.series(partido.categoria, Partido.FASE_FINAL)), None
     )
     if final is None or final['ganador'] is None:
-        return None   # todavia falta la vuelta, o quedo sin definir
+        return None
     return cerrar(partido.categoria)
+
+
+def cerrar_torneo_si_termino(partido):
+    """Graba el palmarés de un torneo relámpago cuando se juega su final.
+
+    Es el equivalente de `cerrar_si_termino` para los relámpago, que no tienen
+    temporada: el podio sale del cuadro y no hay tabla final que congelar.
+
+    **En un relámpago solo se premia a los equipos.** No hay bota de oro, ni
+    guante de oro, ni trofeo de asistencias: son distinciones de temporada, y
+    aqui un jugador puede levantarlas con tres partidos en una tarde.
+    """
+    from apps.partidos import relampago
+    from .models import Palmares
+
+    if partido.fase != Partido.FASE_FINAL or not partido.jugado:
+        return None
+
+    torneo = getattr(partido.categoria.liga, 'torneo', None)
+    if torneo is None:
+        return None
+
+    cuadro = relampago.cuadro(torneo)
+    if cuadro is None or cuadro['campeon'] is None:
+        return None
+
+    categoria = torneo.categoria
+    datos = {
+        'liga_nombre': torneo.nombre,
+        'categoria_nombre': f'Relámpago · {torneo.equipos} equipos',
+        'es_torneo': True,
+        'campeon': cuadro['campeon'].nombre,
+        'subcampeon': cuadro['subcampeon'].nombre if cuadro['subcampeon'] else '',
+        'tercero': cuadro['tercer_lugar'].nombre if cuadro['tercer_lugar'] else '',
+        'goleadores': '',
+        'goles_del_goleador': 0,
+        'asistidores': '',
+        'asistencias_del_asistidor': 0,
+        'vallas': '',
+        'goles_recibidos': 0,
+        'tabla_final': [],
+    }
+
+    existente = Palmares.objects.filter(categoria=categoria).first()
+    if existente:
+        cambios = [c for c, valor in datos.items() if getattr(existente, c) != valor]
+        if cambios:
+            for campo, valor in datos.items():
+                setattr(existente, campo, valor)
+            existente.save(update_fields=list(datos))
+        return existente
+    return Palmares.objects.create(categoria=categoria, **datos)
 
 
 def reabrir(categoria):
@@ -103,7 +162,6 @@ def cerrar(categoria):
 
     categoria.cerrada = True
     categoria.fecha_cierre = timezone.now()
-    # La inscripcion se cierra tambien: una categoria terminada no recibe equipos.
     categoria.inscripcion_abierta = False
     categoria.save(update_fields=['cerrada', 'fecha_cierre', 'inscripcion_abierta'])
 
@@ -200,13 +258,6 @@ def _mejores_jugadores(categoria, campo):
     return [f'{j.nombre} {j.apellido} ({j.equipo.nombre})' for j in empatados], tope
 
 
-# --------------------------------------------------------------------------
-# Los trofeos en pantalla
-# --------------------------------------------------------------------------
-
-# Las distinciones de equipo, en orden de importancia. La imagen va aca y no en
-# el template para que sea la misma en todas las pantallas: si algun dia cambia
-# el arte, se cambia en un solo lugar.
 TROFEOS_EQUIPO = [
     ('campeon', 'Campeón', 'img/copa-transparente.png'),
     ('subcampeon', 'Subcampeón', 'img/copa-transparente-plata.png'),
@@ -258,11 +309,6 @@ def trofeos_por_categoria(categorias):
                 jugadores.setdefault(quien, []).append(
                     {'etiqueta': etiqueta, 'imagen': url_estatico(imagen)}
                 )
-                # El premio individual tambien luce en el escudo de su club: que
-                # ahi juegue el goleador del torneo es un merito del equipo, y
-                # asi se ve en el listado sin tener que abrir la tabla de goleo.
-                # La etiqueta nombra al jugador para que no se confunda con un
-                # premio de equipo.
                 if club:
                     equipos.setdefault(club, []).append(
                         {'etiqueta': f'{etiqueta} · {quien}', 'imagen': url_estatico(imagen)}

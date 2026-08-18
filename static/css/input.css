@@ -2,8 +2,4 @@
 
 @source "../../templates/**/*.html";
 
-/* Tambien los .py: StyledFormMixin (apps/usuarios/forms.py) define ahi las
-   clases de todos los campos de formulario. Sin esta linea Tailwind no las ve
-   y al recompilar los formularios quedarian sin estilo, sin ningun error que
-   lo avise. */
 @source "../../apps/**/*.py";

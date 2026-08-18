@@ -1,14 +1,5 @@
-// El limite de ligas solo existe para el Administrador de Liga.
-//
-// Un Administrador General no tiene cuota (crea las que quiera) y un Entrenador
-// no crea ligas: para esos dos el campo desaparece en vez de quedar pidiendo un
-// numero que no se va a usar.
-//
-// Esconder el campo es solo la mitad: el `clean` del formulario repite la regla
-// en el servidor, porque un POST armado a mano igual puede mandarlo.
-//
-// Este script NO crea ni borra nodos, solo alterna `hidden`: crear nodos desde
-// el JS despierta al observador del DOM y termina trabando la pagina.
+
+
 (function () {
   function actualizar(contenedor) {
     var rol = contenedor.querySelector('[data-rol]');
@@ -27,8 +18,6 @@
     actualizar(campo.closest('form') || document);
   });
 
-  // Al editar un usuario el formulario ya llega con su rol cargado, asi que hay
-  // que evaluarlo apenas aparece. Se vigila solo la aparicion del selector de rol.
   new MutationObserver(function (cambios) {
     var aparecio = cambios.some(function (cambio) {
       return Array.prototype.some.call(cambio.addedNodes, function (nodo) {

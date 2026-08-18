@@ -3,18 +3,6 @@
 
 {% block titulo %}{{ titulo_pagina }}{% endblock %}
 
-{% comment %}
-Sirve a DOS pantallas y por eso los textos llegan por contexto: `partido_list`
-(el calendario público, todas las ligas activas) y `partidos_de_mis_ligas` (la
-entrada desde el tablero, solo las propias). Las pastillas de jornada, los
-filtros y la ficha del partido se comparten tal cual.
-{% endcomment %}
-
-{% comment %}
-Leaflet se carga solo aca: es la unica pantalla donde se marca una cancha en el
-mapa. Va sin defer porque el modal lo inyecta por fetch y necesita que L ya
-exista cuando se abre.
-{% endcomment %}
 {% block cabecera_extra %}
     {% if puede_gestionar %}
         <link rel="stylesheet" href="{% static_v 'vendor/leaflet/leaflet.css' %}">
@@ -44,10 +32,6 @@ exista cuando se abre.
         {% include '_filtros.html' with etiqueta_resultados='partido' %}
     </div>
 
-    {% comment %}
-    Las jornadas van como pastillas y no como desplegable: se ve de un golpe
-    cuantas hay, en cual estas y se salta de una a otra con un clic.
-    {% endcomment %}
     <div class="selector-jornadas" data-jornadas>
         <span class="etiqueta-jornadas">Jornada</span>
         <div class="tira-jornadas">
@@ -71,7 +55,7 @@ exista cuando se abre.
                     {% include 'usuarios/_logo_liga.html' with liga=grupo.categoria.liga %}
                     <div>
                         <p class="text-xs uppercase tracking-[0.2em] font-semibold text-green-700">{{ grupo.categoria.liga.nombre }} · {{ grupo.categoria.nombre }}</p>
-                        {# En liguilla la etiqueta es la fase (Semifinal, Final); si no, la jornada. #}
+
                         <h2 class="text-2xl font-bold text-green-900">{{ grupo.etiqueta }}</h2>
                     </div>
                 </div>
@@ -84,35 +68,21 @@ exista cuando se abre.
 
             <div class="grid gap-4 lg:grid-cols-2">
                 {% for partido in grupo.partidos %}
-                    {% comment %}
-                    La tarjeta entera abre la ficha del partido. Los botones de
-                    adentro tambien llevan .open-modal, y el listener toma el
-                    .open-modal mas cercano al clic: al pulsar un boton gana el
-                    boton, no la tarjeta.
-                    {% endcomment %}
+
                     <article class="tarjeta-partido open-modal {% if partido.jugado %}tarjeta-jugada{% endif %}"
                              data-url="{% url 'partido-detalle' partido.pk %}?modal=1"
                              role="button" tabindex="0"
                              aria-label="Ver ficha de {{ partido.equipo_local.nombre }} contra {{ partido.equipo_visitante.nombre }}">
                         <div class="cruce">
                             <div class="lado-equipo">
-                                {% comment %}
-                                El escudo y el nombre abren el perfil del equipo.
-                                Van dentro de la tarjeta, que abre el partido: el
-                                manejador toma el .open-modal mas cercano al clic,
-                                asi que aca gana el equipo.
-                                {% endcomment %}
+
                                 <button type="button" class="open-modal equipo-boton"
                                         data-url="{% url 'equipo-perfil' partido.equipo_local.pk %}"
                                         aria-label="Ver el perfil de {{ partido.equipo_local.nombre }}">
                                     <img src="{{ partido.equipo_local.escudo_url }}" alt="Escudo de {{ partido.equipo_local.nombre }}" class="escudo-cruce" loading="lazy" decoding="async">
                                     <span class="nombre-cruce">{{ partido.equipo_local.nombre }}</span>
                                 </button>
-                                {% comment %}
-                                En el torneo regular ganar los penales suma un punto;
-                                en la liguilla no suma nada, solo define quién pasa.
-                                Decir "+1" ahí sería mentir.
-                                {% endcomment %}
+
                                 {% if partido.ganador_penales_id == partido.equipo_local_id %}
                                     {% if partido.es_liguilla %}
                                         <span class="chip-penales" title="Ganó la tanda de penales">Ganó penales</span>
@@ -126,7 +96,7 @@ exista cuando se abre.
                                 {% if partido.jugado %}
                                     <p class="marcador-cifras">{{ partido.goles_local }} <span>-</span> {{ partido.goles_visitante }}</p>
                                     {% if partido.ganado_por_default %}
-                                        {% comment %} En la tarjeta va la version corta; el nombre del ausente esta en la ficha. {% endcomment %}
+
                                         <p class="marcador-nota"><span class="marca-default">Por default</span></p>
                                     {% elif partido.empatado %}
                                         <p class="marcador-nota">Empate</p>
@@ -153,10 +123,6 @@ exista cuando se abre.
                             </div>
                         </div>
 
-                        {% comment %}
-                        En liguilla los dos partidos de una llave cruzan a los
-                        mismos equipos: sin decir cuál es, no se distinguen.
-                        {% endcomment %}
                         {% if partido.tramo %}
                             <span class="chip-tramo">{{ partido.tramo }}</span>
                         {% endif %}
@@ -166,16 +132,13 @@ exista cuando se abre.
                                 {% if partido.fecha %}
                                     {{ partido.fecha|date:'d/m/Y' }} · {{ partido.fecha|date:'H:i' }}
                                     {% if partido.fue_movido %}
-                                        {# Se muestra aunque el partido ya este finalizado: importa saber para cuando era. #}
+
                                         <span class="fecha-anterior">antes: {{ partido.fecha_original|date:'d/m/Y H:i' }}</span>
                                     {% endif %}
                                 {% else %}
                                     <span class="sin-dato">Sin fecha asignada</span>
                                 {% endif %}
-                                {% comment %}
-                                La cancha va debajo de la fecha porque se lee junto con ella:
-                                el cuando y el donde son la misma pregunta para quien va a ir.
-                                {% endcomment %}
+
                                 <span class="sede-partido">
                                     {% if partido.sede %}
                                         {{ partido.sede.nombre }}
@@ -202,11 +165,7 @@ exista cuando se abre.
 
                             {% if partido.se_puede_gestionar %}
                                 <div class="acciones-partido">
-                                    {% comment %}
-                                    Una sola accion por momento: antes de la hora se toca el cuando,
-                                    desde la hora en adelante el marcador, y con resultado cargado
-                                    queda cerrado salvo para el Administrador General.
-                                    {% endcomment %}
+
                                     {% if partido.jugado %}
                                         {% if es_superadmin %}
                                             <button data-url="{% url 'partido-resultado' partido.pk %}?modal=1" class="open-modal btn-accion">Corregir resultado</button>
@@ -224,11 +183,7 @@ exista cuando se abre.
                 {% endfor %}
 
                 {% if grupo.descansa %}
-                    {% comment %}
-                    Con cantidad impar de equipos siempre queda uno afuera. Va como
-                    tarjeta y no como aviso al costado para que se lea de un golpe
-                    quien no juega, igual que se leen los cruces.
-                    {% endcomment %}
+
                     <article class="tarjeta-descansa {% if grupo.descanso_propio %}tarjeta-descansa-propia{% endif %}">
                         <img src="{{ grupo.descansa.escudo_url }}" alt="Escudo de {{ grupo.descansa.nombre }}" class="escudo-descansa" loading="lazy" decoding="async">
                         <div>

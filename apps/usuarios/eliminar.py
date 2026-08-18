@@ -32,7 +32,6 @@ def entrenadores_sin_equipo_tras_borrar(equipos):
     candidatos = Usuario.objects.filter(
         role=Usuario.ROLE_ENTRENADOR, equipos__pk__in=ids,
     ).distinct()
-    # Los que conservan algun equipo fuera de la tanda que se borra se quedan.
     sin_nada = [u.pk for u in candidatos if not u.equipos.exclude(pk__in=ids).exists()]
     return Usuario.objects.filter(pk__in=sin_nada)
 
@@ -55,20 +54,12 @@ def vista_eliminar(request, instancia, etiqueta, url_listado, mensaje_ok, arrast
         if bloqueo:
             messages.error(request, bloqueo)
         else:
-            # Se guardan ANTES de borrar: despues del delete() la instancia se
-            # queda sin pk y la linea de la bitacora saldria con "None".
             identificador, quien, desde = instancia.pk, request.user, ip_de(request)
             try:
-                # Todo junto o nada: sin la transaccion, un error a mitad de
-                # camino dejaria la liga sin parte de sus equipos.
                 with transaction.atomic():
                     if antes_de_borrar:
                         antes_de_borrar()
                     instancia.delete()
-                # WARNING y no INFO: un borrado es irreversible y arrastra en
-                # cascada (una liga se lleva equipos, jugadores y partidos). Es
-                # la linea que se va a buscar el dia que alguien pregunte "quien
-                # borro esto", asi que tiene que destacar entre el resto.
                 auditoria.warning(
                     'BORRADO %s (id=%s) por usuario=%s (id=%s) desde ip=%s',
                     etiqueta, identificador, quien.username, quien.pk, desde,
@@ -79,9 +70,6 @@ def vista_eliminar(request, instancia, etiqueta, url_listado, mensaje_ok, arrast
                     'BORRADO RECHAZADO %s (id=%s) por usuario=%s desde ip=%s: registros asociados',
                     etiqueta, identificador, quien.username, desde,
                 )
-                # Red de seguridad: el chequeo previo ya deberia haberlo frenado,
-                # pero si alguien crea un equipo justo entre el GET y el POST
-                # conviene un mensaje y no la pantalla de error de Django.
                 messages.error(request, f'No se pudo eliminar {etiqueta}: tiene registros asociados.')
         if modal:
             return JsonResponse({'success': True})

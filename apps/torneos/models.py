@@ -1,6 +1,7 @@
 import datetime
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
@@ -14,14 +15,6 @@ class Liga(models.Model):
         'Logo de la liga', upload_to='logos-ligas/', blank=True, null=True,
         help_text='Opcional. Si lo dejas vacío se muestran las iniciales de la liga.',
     )
-    # La identidad visual de la liga: se pinta detrás de todas sus pantallas, en
-    # lugar del gris neutro del sistema. Va en Liga y no en Categoria porque la
-    # marca es de la liga; una portada por categoria multiplicaria las imagenes
-    # sin que nadie distinga de cual es cual.
-    #
-    # Nunca se muestra tal cual: siempre lleva un velo encima (ver .fondo-liga en
-    # sistema.css). Sin el, una foto oscura o muy cargada deja el texto ilegible,
-    # y el sistema entero esta armado sobre fondo claro con tarjetas blancas.
     portada = models.ImageField(
         'Portada de la liga', upload_to='portadas-ligas/', blank=True, null=True,
         help_text='Opcional. Se muestra de fondo en las pantallas de esta liga horizontal.',
@@ -40,9 +33,6 @@ class Liga(models.Model):
     fecha_pago = models.DateField('Fecha del último pago', null=True, blank=True)
     dias_gracia = models.PositiveIntegerField('Días de gracia', default=3)
 
-    # `cerrada` no es lo mismo que `activa`: activa=False la esconde del publico,
-    # y una liga terminada es justo lo que hay que mostrar. Se cierra sola cuando
-    # todas sus categorias terminaron su final.
     cerrada = models.BooleanField('Liga concluida', default=False)
     fecha_cierre = models.DateTimeField('Concluida el', null=True, blank=True)
 
@@ -55,8 +45,6 @@ class Liga(models.Model):
 
     def save(self, *args, **kwargs):
         achicar_imagen(self.logo)
-        # La portada se reduce con su propio tope: se muestra a pantalla completa
-        # y con los 512 px del resto de las imagenes quedaria pixelada.
         achicar_imagen(self.portada, tope=TOPE_PANTALLA_PX)
         super().save(*args, **kwargs)
 
@@ -88,7 +76,6 @@ class Liga(models.Model):
         try:
             return self.fecha_pago.replace(year=anio_siguiente, month=mes_siguiente)
         except ValueError:
-            # día 31 en un mes que no lo tiene: cae al último día de ese mes
             siguiente_mes_inicio = datetime.date(anio_siguiente, mes_siguiente, 1)
             ultimo_dia = (siguiente_mes_inicio.replace(day=28) + datetime.timedelta(days=4)).replace(day=1) - datetime.timedelta(days=1)
             return ultimo_dia
@@ -114,9 +101,6 @@ class Liga(models.Model):
             return None
         return (vencimiento - datetime.date.today()).days
 
-    # Cuanto queda visible una liga concluida antes de que el superadmin pueda
-    # eliminarla. Es para que la gente alcance a ver como termino: si se borrara
-    # al cerrar, no quedaria nada que mostrar.
     DIAS_EN_VITRINA = 30
 
     @property
@@ -150,9 +134,6 @@ class Sede(models.Model):
     liga = models.ForeignKey(Liga, on_delete=models.CASCADE, related_name='sedes')
     nombre = models.CharField('Nombre de la cancha', max_length=150)
     direccion = models.CharField('Dirección', max_length=255, blank=True)
-    # Con 6 decimales se distingue un punto de otro a menos de un metro, de
-    # sobra para ubicar una cancha. Los grados de latitud llegan a 3 enteros
-    # (-180 a 180 en longitud), asi que 9 digitos en total.
     latitud = models.DecimalField('Latitud', max_digits=9, decimal_places=6)
     longitud = models.DecimalField('Longitud', max_digits=9, decimal_places=6)
 
@@ -160,8 +141,6 @@ class Sede(models.Model):
         verbose_name = 'Sede'
         verbose_name_plural = 'Sedes'
         ordering = ['nombre']
-        # Dos canchas con el mismo nombre en la misma liga serian imposibles de
-        # distinguir en el desplegable al programar un partido.
         unique_together = ('liga', 'nombre')
 
     def __str__(self):
@@ -210,8 +189,63 @@ class Categoria(models.Model):
     inscripcion_abierta = models.BooleanField('Inscripción abierta', default=True)
     activa = models.BooleanField('Categoría activa', default=True)
 
-    # Se cierra sola al cargar el resultado de la final. Igual que en Liga, no
-    # se reutiliza `activa`: una categoria terminada tiene que seguir visible.
+    VUELTA_UNICA = 1
+    VUELTA_IDA_Y_VUELTA = 2
+
+    VUELTAS_CHOICES = [
+        (VUELTA_UNICA, 'Una vuelta · todos se enfrentan una vez'),
+        (VUELTA_IDA_Y_VUELTA, 'Ida y vuelta · todos se enfrentan dos veces'),
+    ]
+
+    vueltas = models.PositiveSmallIntegerField(
+        'Vueltas del torneo regular',
+        choices=VUELTAS_CHOICES,
+        default=VUELTA_UNICA,
+        help_text='Con ida y vuelta se duplican las jornadas y se invierte la localía en la segunda.',
+    )
+
+    empate_define_penales = models.BooleanField(
+        'El empate se define en penales',
+        default=True,
+        help_text='Si lo desmarcas, un empate en jornada vale 1 punto para cada uno y no habra ganador.',
+    )
+
+    libre = models.BooleanField(
+        'Categoría libre',
+        default=False,
+        help_text='Sin restricción: entra cualquier jugador, de cualquier edad, peso y sexo.',
+    )
+
+    EDAD_MINIMA_CHOICES = [(edad, f'{edad} años') for edad in range(30, 81)]
+
+    edad_minima = models.PositiveSmallIntegerField(
+        'Categoría con edad mínima',
+        choices=EDAD_MINIMA_CHOICES,
+        null=True,
+        blank=True,
+        help_text='Vacío es sin edad mínima.',
+    )
+
+    PESO_MINIMO_CHOICES = [(kilos, f'{kilos} kg') for kilos in range(50, 101)]
+
+    peso_minimo = models.PositiveSmallIntegerField(
+        'Categoría con peso mínimo',
+        choices=PESO_MINIMO_CHOICES,
+        null=True,
+        blank=True,
+        help_text='Requisito para poder inscribirse. Se verifica en báscula: el sistema '
+                  'no registra el peso de cada jugador.',
+    )
+
+    MINIMO_EQUIPOS_MINI_LIGUILLA = 12
+    EQUIPOS_MINI_LIGUILLA = 4
+
+    mini_liguilla = models.BooleanField(
+        'Mini-liguilla de consolación',
+        default=False,
+        help_text='Los puestos 9 a 12 juegan su propio cuadro. Necesita 12 equipos o más.',
+    )
+
     cerrada = models.BooleanField('Categoría concluida', default=False)
     fecha_cierre = models.DateTimeField('Concluida el', null=True, blank=True)
 
@@ -229,6 +263,8 @@ class Categoria(models.Model):
         Devuelve el texto del motivo para que quien valide no tenga que volver
         a razonar la regla ni redactar el mensaje.
         """
+        from apps.partidos import altas
+
         if not self.inscripcion_abierta:
             return f'La categoría {self.nombre} tiene la inscripción cerrada.'
         inscritos = self.equipos.count()
@@ -237,21 +273,12 @@ class Categoria(models.Model):
                 f'La categoría {self.nombre} ya llegó a su cupo de {self.cupo_equipos} '
                 f'equipo(s).'
             )
-        return ''
+        return altas.motivo_para_no_agregar(self)
 
     @property
     def admite_equipos(self):
         return not self.motivo_para_no_recibir_equipos()
 
-    # Las mujeres entran con un año mas que el limite de la categoria: en U17
-    # juega una jugadora de 18, en U15 una de 16. Es un solo año, no dos.
-    #
-    # Va como constante y no como campo configurable por el mismo motivo que
-    # Partido.MARCADOR_DEFAULT: es reglamento, igual en todas las ligas, y un
-    # campo mas seria una decision para nada en cada alta de categoria.
-    #
-    # Todas las categorias son mixtas: no hay rama varonil ni femenil. Lo que
-    # define el limite es el sexo del jugador, no el de la categoria.
     ANIOS_EXTRA_FEMENINO = 1
 
     @property
@@ -307,18 +334,74 @@ class Categoria(models.Model):
             return None
         return datetime.date(self.anio_temporada - maxima, 1, 1)
 
+    @property
+    def nacimiento_maximo(self):
+        """La fecha de nacimiento mas reciente que alcanza la edad minima.
+
+        Espejo de `nacimiento_minimo_para()`: como la edad se cuenta por año, es
+        el 31 de diciembre del año en que nacio el jugador mas joven admitido.
+        None cuando la categoria no pide edad minima.
+        """
+        if self.edad_minima is None:
+            return None
+        return datetime.date(self.anio_temporada - self.edad_minima, 12, 31)
+
     def edad_en_temporada(self, fecha_nacimiento):
         """Los años que cumple el jugador durante la temporada."""
         return self.anio_temporada - fecha_nacimiento.year
 
     def acepta(self, fecha_nacimiento, sexo=None):
-        """Si el jugador entra en la categoria. Sin limite cargado no se restringe nada.
-
-        Sin `sexo` se aplica el limite estricto, el de los varones.
-        """
-        if not self.limite_edad or not fecha_nacimiento:
+        """Si la edad del jugador entra en la categoria."""
+        if self.libre or not fecha_nacimiento:
             return True
-        return self.edad_en_temporada(fecha_nacimiento) <= self.edad_maxima_para(sexo)
+        edad = self.edad_en_temporada(fecha_nacimiento)
+        if self.limite_edad and edad > self.edad_maxima_para(sexo):
+            return False
+        if self.edad_minima and edad < self.edad_minima:
+            return False
+        return True
+
+    def rechazo_para(self, fecha_nacimiento=None, sexo=None):
+        """Por que este jugador no entra como `(campo, mensaje)`, o None si entra.
+
+        Solo mira la edad. El peso minimo de la categoria es un requisito que se
+        verifica en bascula, fuera del sistema: no se registra por jugador y por
+        lo tanto no se puede —ni se debe— validar aca.
+        """
+        if self.libre:
+            return None
+
+        if fecha_nacimiento:
+            edad = self.edad_en_temporada(fecha_nacimiento)
+            if self.limite_edad and edad > self.edad_maxima_para(sexo):
+                return ('fecha_nacimiento', (
+                    f'La categoría {self.nombre} es {self.limite_edad}: admite hasta '
+                    f'{self.edad_maxima} años en varones y {self.edad_maxima_femenino} '
+                    f'en mujeres. Este jugador cumple {edad} en la temporada '
+                    f'{self.anio_temporada}.'
+                ))
+            if self.edad_minima and edad < self.edad_minima:
+                return ('fecha_nacimiento', (
+                    f'La categoría {self.nombre} admite de {self.edad_minima} años para '
+                    f'arriba. Este jugador cumple {edad} en la temporada '
+                    f'{self.anio_temporada}.'
+                ))
+
+        return None
+
+    @property
+    def restricciones_texto(self):
+        """La puerta de entrada de la categoria resumida en una linea."""
+        if self.libre:
+            return 'Libre · sin restricción de edad ni peso'
+        partes = []
+        if self.limite_edad:
+            partes.append(self.limites_texto)
+        if self.edad_minima:
+            partes.append(f'desde {self.edad_minima} años')
+        if self.peso_minimo:
+            partes.append(f'desde {self.peso_minimo} kg')
+        return ' · '.join(partes)
 
     @property
     def limites_texto(self):
@@ -332,6 +415,227 @@ class Categoria(models.Model):
             return ''
         return f'hasta {self.edad_maxima} años · {self.edad_maxima_femenino} en mujeres'
 
+    @property
+    def admite_mini_liguilla(self):
+        """Si hay equipos suficientes para armar el cuadro de consolacion."""
+        return self.equipos.count() >= self.MINIMO_EQUIPOS_MINI_LIGUILLA
+
+    @property
+    def juega_mini_liguilla(self):
+        """Si esta categoria va a tener mini-liguilla: la pidieron Y alcanza."""
+        return self.mini_liguilla and self.admite_mini_liguilla
+
+    @property
+    def motivo_sin_mini_liguilla(self):
+        """Por que no habra mini-liguilla aunque este pedida, o '' si si habra."""
+        if not self.mini_liguilla:
+            return ''
+        faltan = self.MINIMO_EQUIPOS_MINI_LIGUILLA - self.equipos.count()
+        if faltan > 0:
+            return (
+                f'La mini-liguilla necesita {self.MINIMO_EQUIPOS_MINI_LIGUILLA} equipos '
+                f'y en esta categoría hay {self.equipos.count()}: faltan {faltan}.'
+            )
+        return ''
+
+    @property
+    def ajustes_congelados(self):
+        """Si ya no se puede cambiar como se juega esta categoria."""
+        return self.partidos.exists()
+
+    def clean(self):
+        """Las combinaciones que no pueden existir.
+
+        Se juntan todos los errores y se lanzan de una: corregir uno y descubrir
+        el siguiente al volver a guardar es peor que verlos juntos.
+        """
+        super().clean()
+
+        errores = {}
+        errores.update(self._error_de_cupo())
+        errores.update(self._error_de_restricciones())
+        if errores:
+            raise ValidationError(errores)
+
+    def _error_de_cupo(self):
+        """El cupo tiene que dar para los puestos 9 a 12 si hay mini-liguilla."""
+        if not self.mini_liguilla:
+            return {}
+        if self.cupo_equipos is None or self.cupo_equipos >= self.MINIMO_EQUIPOS_MINI_LIGUILLA:
+            return {}
+        return {'cupo_equipos': (
+            f'La mini-liguilla juega los puestos 9 a 12, así que necesita '
+            f'{self.MINIMO_EQUIPOS_MINI_LIGUILLA} equipos y el cupo es '
+            f'{self.cupo_equipos}. Sube el cupo a {self.MINIMO_EQUIPOS_MINI_LIGUILLA} '
+            f'o más, o desmarca la mini-liguilla.'
+        )}
+
+    def _error_de_restricciones(self):
+        """Quien puede inscribirse. Hay una sola puerta de entrada por categoria.
+
+        Manda en cascada: `libre` gana sobre todo, y un limite U gana sobre los
+        minimos. El que gana limpia a los demas en vez de rechazar, porque la
+        pantalla ya los esconde: un valor que sobrevive ahi es residuo de una
+        edicion anterior, no algo que el usuario acabe de pedir.
+        """
+        if self.libre:
+            self.limite_edad = ''
+            self.edad_minima = None
+            self.peso_minimo = None
+            return {}
+
+        if self.limite_edad:
+            self.edad_minima = None
+            self.peso_minimo = None
+            return {}
+
+        if not (self.edad_minima or self.peso_minimo):
+            return {'libre': (
+                'Elegí una opción: un límite de edad (U5 a U17), una edad mínima, '
+                'un peso mínimo, o palomeá "Categoría libre" si puede entrar cualquiera.'
+            )}
+
+        return {}
+
+
+class TorneoQuerySet(models.QuerySet):
+    def terminados(self):
+        """Los que ya jugaron su final."""
+        from apps.partidos.models import Partido
+
+        return self.filter(
+            liga__categorias__partidos__fase=Partido.FASE_FINAL,
+            liga__categorias__partidos__estado=Partido.ESTADO_FINALIZADO,
+        ).distinct()
+
+    def en_curso(self):
+        """Los que todavia no terminan. Son los que ocupan cuota.
+
+        Se resuelve en la consulta y no recorriendo torneo por torneo: la cuota
+        se comprueba en cada alta y con `terminado` serian tantas consultas como
+        torneos tenga el admin.
+        """
+        return self.exclude(pk__in=self.terminados().values('pk'))
+
+
+class Torneo(models.Model):
+    """Un torneo relámpago: un solo día, eliminación directa, 8 o 16 equipos.
+
+    Se apoya en una Liga con una única Categoría. No es un rodeo: así los
+    equipos, jugadores, partidos y actuaciones son los mismos de siempre, y el
+    entrenador carga su plantilla con las pantallas que ya conoce. La Liga
+    aporta el nombre, el logo, la portada y la descripción; aquí solo vive lo
+    propio del torneo.
+
+    Las ligas con torneo quedan fuera del apartado de ligas: los cuatro sitios
+    que las listan las descartan.
+    """
+
+    EQUIPOS_OCHO = 8
+    EQUIPOS_DIECISEIS = 16
+
+    EQUIPOS_CHOICES = [
+        (EQUIPOS_OCHO, '8 equipos · cuartos, semifinal y final'),
+        (EQUIPOS_DIECISEIS, '16 equipos · octavos, cuartos, semifinal y final'),
+    ]
+
+    liga = models.OneToOneField(
+        Liga, on_delete=models.CASCADE, related_name='torneo')
+    fecha = models.DateField(
+        'Día del torneo',
+        help_text='Se juega entero en esta fecha.',
+    )
+    equipos = models.PositiveSmallIntegerField(
+        'Equipos que participan',
+        choices=EQUIPOS_CHOICES,
+        default=EQUIPOS_OCHO,
+    )
+    creado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name='torneos_creados',
+        verbose_name='Creado por',
+    )
+
+    objects = TorneoQuerySet.as_manager()
+
+    class Meta:
+        verbose_name = 'Torneo'
+        verbose_name_plural = 'Torneos'
+        ordering = ['-fecha']
+
+    def __str__(self):
+        return self.liga.nombre
+
+    @property
+    def nombre(self):
+        return self.liga.nombre
+
+    @property
+    def categoria(self):
+        return self.liga.categorias.first()
+
+    @property
+    def inscritos(self):
+        categoria = self.categoria
+        return categoria.equipos.count() if categoria else 0
+
+    @property
+    def completo(self):
+        return self.inscritos == self.equipos
+
+    @property
+    def faltan(self):
+        return max(0, self.equipos - self.inscritos)
+
+    @property
+    def sorteado(self):
+        return self.categoria is not None and self.categoria.partidos.exists()
+
+    @property
+    def _final_jugada(self):
+        from apps.partidos.models import Partido
+
+        if not self.sorteado:
+            return None
+        return self.categoria.partidos.filter(
+            fase=Partido.FASE_FINAL, estado=Partido.ESTADO_FINALIZADO).first()
+
+    @property
+    def campeon(self):
+        final = self._final_jugada
+        return final.ganador if final else None
+
+    @property
+    def terminado(self):
+        return self.campeon is not None
+
+    DIAS_EN_VITRINA = 30
+
+    @property
+    def fecha_cierre(self):
+        """Cuando termino, que es cuando se jugo su final.
+
+        Se deduce en vez de guardarse: el torneo no tiene estado propio, y un
+        campo aparte podria quedar desincronizado si se corrige el resultado de
+        la final.
+        """
+        final = self._final_jugada
+        return final.fecha if final and final.ganador else None
+
+    @property
+    def dias_en_vitrina(self):
+        """Dias que le quedan de exhibicion. 0 cuando ya se puede eliminar."""
+        cierre = self.fecha_cierre
+        if cierre is None:
+            return None
+        transcurridos = (timezone.now() - cierre).days
+        return max(0, self.DIAS_EN_VITRINA - transcurridos)
+
+    @property
+    def lista_para_eliminar(self):
+        return self.dias_en_vitrina == 0
+
 
 class Palmares(models.Model):
     """Lo que quedo de una categoria terminada: el podio y los premiados.
@@ -340,16 +644,23 @@ class Palmares(models.Model):
     calculo esta en apps/torneos/palmares.py, junto con el razonamiento de por
     que se congela en vez de calcularse al vuelo.
 
-    Casi todo va como texto y no como clave foranea a proposito: pasado el mes
-    de exhibicion, el superadmin elimina la liga con sus equipos, jugadores y
-    partidos, y esta fila tiene que poder seguir contando quien gano.
+    Casi todo va como texto y no como clave foranea a proposito: los nombres del
+    campeon y de los premiados tienen que seguir leyendose aunque los equipos y
+    los jugadores ya no existan.
+
+    **Al eliminar la liga o el torneo, esta fila se va con ellos.** Borrar es
+    borrar: si el Administrador General decide que ese torneo no tiene que
+    quedar, tampoco debe seguir apareciendo en la vitrina. Se hace explicito en
+    `liga_delete` y `torneo_delete`, no con un CASCADE: la relacion es
+    SET_NULL para que borrar una sola categoria no se lleve por delante el
+    palmares de toda la temporada.
     """
 
     liga_nombre = models.CharField('Liga', max_length=150)
     categoria_nombre = models.CharField('Categoría', max_length=120)
 
-    # La referencia sirve para enlazar a las pantallas de la categoria mientras
-    # exista. Al borrar la liga queda en null y sobreviven los nombres.
+    es_torneo = models.BooleanField('Torneo relámpago', default=False)
+
     categoria = models.ForeignKey(
         'torneos.Categoria',
         on_delete=models.SET_NULL,
@@ -364,8 +675,6 @@ class Palmares(models.Model):
     subcampeon = models.CharField('Subcampeón', max_length=140, blank=True)
     tercero = models.CharField('Tercer lugar', max_length=140, blank=True)
 
-    # Los premios compartidos se guardan separados por ' / ': puede haber mas de
-    # un ganador y el empate no se rompe con un criterio inventado.
     goleadores = models.CharField('Bota de oro', max_length=400, blank=True)
     goles_del_goleador = models.PositiveIntegerField('Goles', default=0)
 
@@ -375,9 +684,6 @@ class Palmares(models.Model):
     vallas = models.CharField('Guante de oro', max_length=400, blank=True)
     goles_recibidos = models.PositiveIntegerField('Goles recibidos', default=0)
 
-    # La tabla final completa, para mostrar quienes participaron y en que puesto
-    # termino cada uno cuando ya no queden ni los equipos. Va como JSON y no como
-    # tabla aparte porque no se filtra ni se ordena: se muestra entera o nada.
     tabla_final = models.JSONField('Tabla final', default=list, blank=True)
 
     class Meta:

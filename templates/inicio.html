@@ -6,25 +6,8 @@
 {% block og_titulo %}BUHO Sports League · BUHO Sports League{% endblock %}
 {% block og_descripcion %}Partidos de hoy, tablas de posiciones, goleadores y campeones de todas las categorías. Consulta libre, sin registro.{% endblock %}
 
-{% comment %}
-La portada, para quien entra sin cuenta.
-
-El orden de las secciones sigue lo que esa persona viene a buscar: primero
-cuando y donde se juega hoy, despues como va su equipo, y recien al final los
-premios y las temporadas terminadas.
-
-Todo sale de `portada.py`. Ningun bloque se muestra vacio: si no hay partidos
-hoy, la seccion no aparece en vez de decir "sin datos".
-{% endcomment %}
-
 {% block contenido %}
 
-{% comment %}
----- Franja de marcadores ----
-Va arriba de todo, como en cualquier sitio deportivo: es lo primero que mira
-quien entra. Se desplaza en horizontal para que entren muchos partidos sin
-empujar la página hacia abajo.
-{% endcomment %}
 {% if franja %}
     <div class="franja">
         <div class="franja-interior">
@@ -59,7 +42,6 @@ empujar la página hacia abajo.
     </div>
 {% endif %}
 
-{% comment %} ---- Encabezado con el proximo partido ---- {% endcomment %}
 <section class="hero">
     <div class="hero-interior">
         <div class="hero-texto">
@@ -75,10 +57,7 @@ empujar la página hacia abajo.
         </div>
 
         {% if destacado %}
-            {% comment %}
-            El partido destacado no lo marca nadie a mano: es el cruce con los
-            dos equipos mejor ubicados de su tabla entre los que se vienen.
-            {% endcomment %}
+
             <a href="{% url 'partido-detalle' destacado.pk %}" class="hero-partido">
                 <p class="hero-partido-etiqueta">Partido destacado</p>
                 <div class="hero-cruce">
@@ -110,7 +89,6 @@ empujar la página hacia abajo.
     </div>
 </section>
 
-{% comment %} ---- Las cuatro cifras ---- {% endcomment %}
 <section class="ancho-pagina">
     <div class="portada-cifras">
         <div class="portada-cifra">
@@ -136,15 +114,8 @@ empujar la página hacia abajo.
     </div>
 </section>
 
-{% comment %}
----- Tus equipos ----
-El hueco donde `seguir.js` inserta los próximos partidos de los equipos que el
-visitante sigue. Llega vacío: lo que sigue está guardado en su navegador, no en
-el servidor, así que el HTML de la portada no puede saberlo de antemano.
-{% endcomment %}
 <div id="mis-equipos"></div>
 
-{% comment %} ---- Torneos en juego ---- {% endcomment %}
 {% if torneos %}
     <section class="ancho-pagina">
         <div class="seccion-cabecera">
@@ -177,7 +148,44 @@ el servidor, así que el HTML de la portada no puede saberlo de antemano.
     </section>
 {% endif %}
 
-{% comment %} ---- Partidos de hoy ---- {% endcomment %}
+{% if relampagos %}
+    <section class="ancho-pagina">
+        <div class="seccion-cabecera">
+            <h2 class="seccion-titulo">Torneos relámpago</h2>
+            <a href="{% url 'torneo-list' %}" class="seccion-enlace">Ver todos los torneos →</a>
+        </div>
+        <p class="seccion-nota">Se juegan en un solo día, por eliminación directa. El empate se define en penales.</p>
+        <div class="torneos">
+            {% for r in relampagos %}
+                <a href="{% url 'torneo-detalle' r.torneo.pk %}" class="torneo">
+                    <div class="torneo-cabecera">
+                        {% include 'usuarios/_logo_liga.html' with liga=r.liga clase='logo-liga-sm' %}
+                        <div class="torneo-identidad">
+                            <p class="torneo-liga">Relámpago · {{ r.fecha|date:'d/m/Y' }}</p>
+                            <p class="torneo-nombre">{{ r.liga.nombre }}</p>
+                        </div>
+                        <span class="torneo-estado torneo-relampago">Relámpago</span>
+                    </div>
+                    <div class="torneo-cifras">
+                        <span>{{ r.equipos }} equipos</span>
+                        <span>eliminación directa</span>
+                    </div>
+                    {% if r.terminado %}
+                        <p class="torneo-campeon">
+                            <img src="{{ imagen_copa }}" alt="Copa de campeón" class="torneo-copa" loading="lazy" decoding="async">
+                            {{ r.campeon.nombre }}
+                        </p>
+                    {% elif r.sorteado %}
+                        <p class="torneo-nota">Cuadro sorteado · en juego</p>
+                    {% else %}
+                        <p class="torneo-nota">{{ r.inscritos }} de {{ r.equipos }} equipos inscritos</p>
+                    {% endif %}
+                </a>
+            {% endfor %}
+        </div>
+    </section>
+{% endif %}
+
 {% if partidos_hoy %}
     <section class="ancho-pagina">
         <div class="seccion-cabecera">
@@ -220,7 +228,7 @@ el servidor, así que el HTML de la portada no puede saberlo de antemano.
         </div>
     </section>
 {% elif proximos %}
-    {% comment %} Sin partidos hoy se muestran los que vienen: la portada nunca queda muda. {% endcomment %}
+
     <section class="ancho-pagina">
         <div class="seccion-cabecera">
             <h2 class="seccion-titulo">Próximos partidos</h2>
@@ -255,18 +263,11 @@ el servidor, así que el HTML de la portada no puede saberlo de antemano.
     </section>
 {% endif %}
 
-{% comment %} ---- Figura de la semana y ultimos resultados ---- {% endcomment %}
 {% if figura or resultados %}
     <section class="ancho-pagina">
         <div class="dos-columnas">
             {% if figura %}
-                {% comment %}
-                Antes esto era un número grande y la palabra "participaciones",
-                que no cuenta nada: 4 no dice si metió cuatro goles o dio cuatro
-                pases. Ahora la tarjeta responde las tres preguntas que uno se
-                hace —quién es, qué hizo y en qué partido— y cada dato lleva a
-                algún lado.
-                {% endcomment %}
+
                 <div>
                     <div class="seccion-cabecera">
                         <h2 class="seccion-titulo">Jugador del momento</h2>
@@ -341,7 +342,6 @@ el servidor, así que el HTML de la portada no puede saberlo de antemano.
     </section>
 {% endif %}
 
-{% comment %} ---- Los lideres: goleo, asistencias y vallas ---- {% endcomment %}
 {% if goleadores or asistidores or vallas %}
     <section class="ancho-pagina">
         <div class="seccion-cabecera">
@@ -412,7 +412,6 @@ el servidor, así que el HTML de la portada no puede saberlo de antemano.
     </section>
 {% endif %}
 
-{% comment %} ---- Ultimos campeones ---- {% endcomment %}
 {% if campeones %}
     <section class="ancho-pagina">
         <div class="seccion-cabecera">

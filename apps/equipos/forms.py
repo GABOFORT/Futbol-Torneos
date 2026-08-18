@@ -44,18 +44,16 @@ class EquipoCreateForm(StyledFormMixin, forms.Form):
 
     def __init__(self, user, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Solo se ofrecen las que todavia admiten equipos: con la inscripcion
-        # abierta y sin llegar al cupo. El conteo se hace en la consulta para no
-        # traer todas y descartarlas despues.
-        self.fields['categorias'].queryset = Categoria.objects.filter(
+        disponibles = Categoria.objects.filter(
             liga__in=ligas_administradas(user), inscripcion_abierta=True
         ).annotate(
             inscritos=Count('equipos')
         ).filter(
             inscritos__lt=F('cupo_equipos')
         ).select_related('liga').order_by('liga__nombre', 'nombre')
-        # Depende de quien esta creando el equipo, asi que se resuelve aca y no
-        # en la definicion del campo: un admin de liga solo ofrece sus entrenadores.
+        self.fields['categorias'].queryset = disponibles.exclude(
+            pk__in=[c.pk for c in disponibles if c.motivo_para_no_recibir_equipos()]
+        )
         self.fields['entrenador'].queryset = Usuario.objects.entrenadores(user).order_by(
             'first_name', 'last_name', 'username'
         )
@@ -64,8 +62,6 @@ class EquipoCreateForm(StyledFormMixin, forms.Form):
         categorias = self.cleaned_data['categorias']
         if not categorias:
             raise forms.ValidationError('Selecciona al menos una categoría.')
-        # Se revalida aunque el desplegable ya las filtre: entre que se abrio el
-        # formulario y se guardo, la categoria pudo cerrarse o llenarse.
         motivos = [m for m in (c.motivo_para_no_recibir_equipos() for c in categorias) if m]
         if motivos:
             raise forms.ValidationError(motivos)
@@ -96,8 +92,6 @@ class EquipoForm(StyledFormMixin, forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['liga'].queryset = ligas_administradas(user)
         entrenadores = Usuario.objects.entrenadores(user)
-        # Al editar hay que conservar al entrenador ya asignado aunque no sea de
-        # este admin; si no, guardar cualquier otro cambio lo dejaria invalido.
         if self.instance.pk and self.instance.entrenador_id:
             entrenadores = entrenadores | Usuario.objects.filter(pk=self.instance.entrenador_id)
         self.fields['entrenador'].queryset = entrenadores.distinct().order_by(
@@ -110,8 +104,6 @@ class EquipoForm(StyledFormMixin, forms.ModelForm):
         categoria = cleaned_data.get('categoria')
         if liga and categoria and categoria.liga_id != liga.id:
             self.add_error('categoria', 'Esta categoría no pertenece a la liga seleccionada.')
-        # Solo si lo estan cambiando de categoria: un equipo que ya vive en una
-        # categoria cerrada tiene que poder seguir editandose.
         if categoria and categoria.pk != self.instance.categoria_id:
             motivo = categoria.motivo_para_no_recibir_equipos()
             if motivo:

@@ -11,7 +11,7 @@
                 <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">Plantilla</p>
                 <h1 class="text-3xl font-bold text-green-900 flex flex-wrap items-center gap-2">
                     {{ equipo.nombre }}
-                    {# Los premios del club, si la categoría ya terminó. #}
+
                     {% include 'torneos/_trofeos.html' with trofeos=trofeos_equipo tam='lg' %}
                 </h1>
                 <p class="text-gray-600 mt-2">{{ equipo.liga.nombre }} · {{ equipo.categoria.nombre }}</p>
@@ -46,7 +46,7 @@
                             <div class="flex items-center gap-3">
                                 {% include 'jugadores/_avatar.html' %}
                                 <span>{{ jugador.nombre }} {{ jugador.apellido }}</span>
-                                {# Bota de oro o trofeo de asistencias, si lo ganó. #}
+
                                 {% include 'torneos/_trofeos.html' with trofeos=jugador.trofeos tam='md' %}
                             </div>
                         </td>
@@ -71,7 +71,7 @@
                         {% if puede_gestionar %}
                             <td class="col-acciones px-6 py-4">
                                 <div class="acciones">
-                                    {# El estado se cambia desde el formulario de Editar. #}
+
                                     <button data-url="{% url 'jugador-edit' jugador.pk %}?modal=1" class="open-modal btn-accion">
                                         <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />

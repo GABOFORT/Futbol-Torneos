@@ -33,9 +33,6 @@ from apps.estadisticas import tabla
 
 from .models import Partido
 
-# Como se enfrentan los clasificados en la primera ronda, por posicion en la
-# tabla (0 es el primero). El 1o contra el ultimo que entro, el 2o contra el
-# anteultimo, y asi: los dos mejores solo se pueden cruzar en la final.
 CRUCES_INICIALES = {
     8: [(0, 7), (3, 4), (1, 6), (2, 5)],
     4: [(0, 3), (1, 2)],
@@ -44,7 +41,7 @@ CRUCES_INICIALES = {
 
 
 def formato(categoria):
-    """Con cuantos equipos se juega la liguilla y en que ronda arranca.
+    """Con cuantos equipos se juega la liguilla principal y en que ronda arranca.
 
     Devuelve None cuando la categoria no da ni para una final.
     """
@@ -56,6 +53,20 @@ def formato(categoria):
     if equipos >= 2:
         return {'clasifican': 2, 'fase': Partido.FASE_FINAL}
     return None
+
+
+PRIMER_PUESTO_MINI = 8
+
+
+def formato_mini(categoria):
+    """Con cuantos equipos se juega la mini-liguilla, o None si no la hay."""
+    if not categoria.juega_mini_liguilla:
+        return None
+    return {
+        'clasifican': categoria.EQUIPOS_MINI_LIGUILLA,
+        'fase': Partido.FASE_SEMIFINAL,
+        'desde': PRIMER_PUESTO_MINI,
+    }
 
 
 def ya_empezo(categoria):
@@ -75,7 +86,6 @@ def motivo_para_no_iniciar(categoria):
     if not regulares.exists():
         return 'Todavía no se generaron los partidos del torneo regular.'
 
-    # Un partido cancelado no se va a jugar nunca: no puede frenar la liguilla.
     pendientes = regulares.exclude(
         estado__in=[Partido.ESTADO_FINALIZADO, Partido.ESTADO_CANCELADO]
     ).count()
@@ -97,7 +107,7 @@ def es_ida_y_vuelta(fase):
 
 
 def iniciar(categoria):
-    """Crea la primera ronda con los mejores de la tabla. Devuelve los partidos.
+    """Crea la primera ronda de cada cuadro. Devuelve todos los partidos creados.
 
     Los clasificados salen de la tabla del torneo regular, que ya sabe resolver
     puntos, diferencia de gol y el punto extra por penales.
@@ -106,23 +116,45 @@ def iniciar(categoria):
     if config is None or ya_empezo(categoria):
         return []
 
-    posiciones = tabla.calcular(categoria)[:config['clasifican']]
-    clasificados = [fila['equipo'] for fila in posiciones]
+    posiciones = tabla.calcular(categoria)
 
-    partidos = []
-    for numero, (mejor, peor) in enumerate(CRUCES_INICIALES[config['clasifican']]):
-        # La siembra se guarda con el partido porque es lo que desempata si el
-        # global termina igualado. Va en base 1: el primero de la tabla es el 1o.
-        partidos += _armar_llave(
-            categoria, config['fase'], numero,
-            (clasificados[mejor], mejor + 1),
-            (clasificados[peor], peor + 1),
-        )
+    partidos = _armar_cuadro(
+        categoria, Partido.CUADRO_PRINCIPAL, config['fase'],
+        posiciones[:config['clasifican']], desde=0,
+    )
+
+    mini = formato_mini(categoria)
+    if mini is not None:
+        tramo = posiciones[mini['desde']:mini['desde'] + mini['clasifican']]
+        if len(tramo) == mini['clasifican']:
+            partidos += _armar_cuadro(
+                categoria, Partido.CUADRO_CONSOLACION, mini['fase'],
+                tramo, desde=mini['desde'],
+            )
+
     Partido.objects.bulk_create(partidos)
     return partidos
 
 
-def _armar_llave(categoria, fase, orden, mejor, peor):
+def _armar_cuadro(categoria, cuadro, fase, filas, desde):
+    """Las llaves de la primera ronda de un cuadro, sin guardarlas todavia.
+
+    `desde` es cuantos puestos quedaron por encima, para que la siembra guardada
+    sea la posicion real en la tabla y no el lugar dentro del tramo.
+    """
+    equipos = [fila['equipo'] for fila in filas]
+    partidos = []
+    for numero, (mejor, peor) in enumerate(CRUCES_INICIALES[len(equipos)]):
+        partidos += _armar_llave(
+            categoria, fase, numero,
+            (equipos[mejor], desde + mejor + 1),
+            (equipos[peor], desde + peor + 1),
+            cuadro=cuadro,
+        )
+    return partidos
+
+
+def _armar_llave(categoria, fase, orden, mejor, peor, cuadro=Partido.CUADRO_PRINCIPAL):
     """Los partidos de una llave: la ida y la vuelta, o uno solo si no lleva vuelta.
 
     `mejor` y `peor` llegan como (equipo, siembra), ya ordenados por siembra.
@@ -134,31 +166,33 @@ def _armar_llave(categoria, fase, orden, mejor, peor):
         return Partido(
             categoria=categoria,
             fase=fase,
+            cuadro=cuadro,
             orden=orden,
             vuelta=vuelta,
-            jornada=0,   # la liguilla no es una jornada mas del calendario
+            jornada=0,
             equipo_local=local[0], siembra_local=local[1],
             equipo_visitante=visitante[0], siembra_visitante=visitante[1],
         )
 
     if not es_ida_y_vuelta(fase):
-        # Partido unico: lo recibe el mejor sembrado.
         return [partido(mejor, peor, False)]
 
     return [partido(peor, mejor, False), partido(mejor, peor, True)]
 
 
-def series(categoria, fase=None):
-    """Las llaves de la liguilla, con el global y quien paso ya resueltos.
+def series(categoria, fase=None, cuadro=Partido.CUADRO_PRINCIPAL):
+    """Las llaves de un cuadro, con el global y quien paso ya resueltos.
 
-    Una llave son los dos partidos de un mismo (fase, orden). Se devuelve una
-    entrada por llave, ordenada como se dibuja el cuadro.
+    Una llave son los dos partidos de un mismo (fase, orden) dentro de un
+    cuadro. Se devuelve una entrada por llave, ordenada como se dibuja.
 
     El global se expresa desde el punto de vista de cada equipo y no de
     local/visitante, porque la localia se invierte entre la ida y la vuelta:
     sumar 'goles_local' de los dos partidos mezclaria a los dos equipos.
     """
-    partidos = Partido.objects.filter(categoria=categoria).exclude(fase=Partido.FASE_REGULAR)
+    partidos = (Partido.objects
+                .filter(categoria=categoria, cuadro=cuadro)
+                .exclude(fase=Partido.FASE_REGULAR))
     if fase is not None:
         partidos = partidos.filter(fase=fase)
     partidos = partidos.select_related(
@@ -186,8 +220,6 @@ def _resolver(llave):
     """Completa una llave con el global, si esta terminada y quien paso."""
     ida, vuelta = llave['ida'], llave['vuelta']
     referencia = ida or vuelta
-    # El "uno" de la llave es siempre el mejor sembrado, sin importar de que
-    # lado jugo cada partido. Asi el global se lee igual en los dos encuentros.
     if referencia.siembra_local is not None and referencia.siembra_visitante is not None:
         de_local_es_mejor = referencia.siembra_local <= referencia.siembra_visitante
     else:
@@ -218,16 +250,12 @@ def _resolver(llave):
         elif goles_otro > goles_uno:
             ganador = otro
         elif llave['fase'] == Partido.FASE_FINAL:
-            # La final no se puede coronar por una tabla que ya termino: se
-            # patea al terminar la vuelta.
             ultimo = vuelta or ida
             ganador = ultimo.ganador_penales
             if ganador:
                 motivo = 'Se definió desde el punto penal'
         else:
-            # El resto de las rondas las decide la tabla del torneo regular: es
-            # la ventaja que el equipo se gano durante todo el ano.
-            ganador = uno   # `uno` es, por construccion, el mejor sembrado
+            ganador = uno
             motivo = f'Global empatado: pasa el {siembra_uno}º de la tabla'
 
     llave.update({
@@ -243,9 +271,6 @@ def _resolver(llave):
     return llave
 
 
-# Que rondas dejan de valer cuando una se rehace. Si cambia un semifinalista,
-# la final y el tercer lugar que salian de ahi tampoco sirven. El tercer lugar y
-# la final no alimentan nada, asi que no arrastran a nadie.
 DERIVADAS = {
     Partido.FASE_SEMIFINAL: [Partido.FASE_TERCERO, Partido.FASE_FINAL],
 }
@@ -272,51 +297,44 @@ def avanzar(partido):
     if not partido.es_liguilla:
         return {'creados': [], 'rehechas': []}
 
-    # La ronda son sus llaves, no sus partidos: hasta que no se juegan la ida y
-    # la vuelta no se sabe quien paso.
-    ronda = series(partido.categoria, partido.fase)
+    cuadro = partido.cuadro
+
+    ronda = series(partido.categoria, partido.fase, cuadro)
     if any(llave['ganador'] is None for llave in ronda):
-        return {'creados': [], 'rehechas': []}   # la ronda todavia no esta resuelta
+        return {'creados': [], 'rehechas': []}
 
     siguientes = _cruces_siguientes(partido.fase, ronda)
     if not siguientes:
-        return {'creados': [], 'rehechas': []}   # el tercer lugar y la final no alimentan nada
+        return {'creados': [], 'rehechas': []}
 
     creados, rehechas = [], []
     for fase, cruces in siguientes.items():
         existentes = {}
-        for p in Partido.objects.filter(categoria=partido.categoria, fase=fase):
+        for p in Partido.objects.filter(categoria=partido.categoria, fase=fase, cuadro=cuadro):
             existentes.setdefault(p.orden, []).append(p)
 
         if not existentes:
-            creados += _crear(partido.categoria, fase, cruces)
+            creados += _crear(partido.categoria, fase, cruces, cuadro)
             continue
 
-        # Se revisa llave por llave y no la ronda entera: si cambio una sola,
-        # la otra semifinal sigue siendo valida y no tiene por que perder su
-        # fecha, su cancha y su resultado.
         cambio_alguno = False
         for numero, (uno, otro) in enumerate(cruces):
             de_la_llave = existentes.get(numero, [])
             mejor, peor = sorted([uno, otro], key=lambda par: par[1] or 99)
             if not de_la_llave:
-                creados += _crear_llave(partido.categoria, fase, numero, mejor, peor)
+                creados += _crear_llave(partido.categoria, fase, numero, mejor, peor, cuadro)
                 continue
             actuales = {de_la_llave[0].equipo_local_id, de_la_llave[0].equipo_visitante_id}
             if actuales == {mejor[0].id, peor[0].id}:
-                continue   # son los mismos dos: no hay nada que rehacer
-            # Cambiaron los protagonistas: se borra la llave entera y se rearma,
-            # porque la localia de la ida y la vuelta depende de las siembras.
+                continue
             Partido.objects.filter(pk__in=[p.pk for p in de_la_llave]).delete()
-            creados += _crear_llave(partido.categoria, fase, numero, mejor, peor)
+            creados += _crear_llave(partido.categoria, fase, numero, mejor, peor, cuadro)
             cambio_alguno = True
 
         if cambio_alguno:
             rehechas.append(dict(Partido.FASE_CHOICES)[fase])
-            # Las rondas que salian de esta ya no valen: se armaron con un
-            # resultado que acaba de borrarse.
             derivadas = Partido.objects.filter(
-                categoria=partido.categoria, fase__in=DERIVADAS.get(fase, [])
+                categoria=partido.categoria, cuadro=cuadro, fase__in=DERIVADAS.get(fase, [])
             )
             rehechas += sorted({p.get_fase_display() for p in derivadas})
             derivadas.delete()
@@ -324,9 +342,9 @@ def avanzar(partido):
     return {'creados': creados, 'rehechas': rehechas}
 
 
-def _crear_llave(categoria, fase, orden, mejor, peor):
+def _crear_llave(categoria, fase, orden, mejor, peor, cuadro=Partido.CUADRO_PRINCIPAL):
     """Crea la ida y la vuelta de una llave que falta dentro de una ronda existente."""
-    partidos = _armar_llave(categoria, fase, orden, mejor, peor)
+    partidos = _armar_llave(categoria, fase, orden, mejor, peor, cuadro=cuadro)
     Partido.objects.bulk_create(partidos)
     return partidos
 
@@ -345,8 +363,6 @@ def _cruces_siguientes(fase, ronda):
             ],
         }
     if fase == Partido.FASE_SEMIFINAL:
-        # La final y el tercer lugar salen juntos de la misma ronda: los que
-        # ganan van a una y los que pierden a la otra.
         return {
             Partido.FASE_TERCERO: [(_cae(ronda[0]), _cae(ronda[1]))],
             Partido.FASE_FINAL: [(_pasa(ronda[0]), _pasa(ronda[1]))],
@@ -378,26 +394,26 @@ def _con_siembra(llave, equipo):
     return (equipo, llave['siembra_otro'])
 
 
-def _crear(categoria, fase, cruces):
-    """Crea las llaves de una fase, salvo que ya existan.
+def _crear(categoria, fase, cruces, cuadro=Partido.CUADRO_PRINCIPAL):
+    """Crea las llaves de una fase dentro de un cuadro, salvo que ya existan.
 
     Cada cruce llega como ((equipo, siembra), (equipo, siembra)).
 
     La guarda de existencia importa porque corregir un resultado vuelve a
     disparar el avance, y sin ella se duplicaria la ronda siguiente.
     """
-    if Partido.objects.filter(categoria=categoria, fase=fase).exists():
+    if Partido.objects.filter(categoria=categoria, fase=fase, cuadro=cuadro).exists():
         return []
 
     partidos = []
     for numero, (uno, otro) in enumerate(cruces):
         mejor, peor = sorted([uno, otro], key=lambda par: par[1] or 99)
-        partidos += _armar_llave(categoria, fase, numero, mejor, peor)
+        partidos += _armar_llave(categoria, fase, numero, mejor, peor, cuadro=cuadro)
     Partido.objects.bulk_create(partidos)
     return partidos
 
 
-def cuadro(categoria):
+def cuadro(categoria, cual=Partido.CUADRO_PRINCIPAL):
     """El cuadro completo, partido en dos mitades que convergen en la final.
 
     Se devuelve asi para poder dibujarlo como el cuadro de una liguilla de
@@ -412,12 +428,10 @@ def cuadro(categoria):
     """
     from apps.torneos import palmares
 
-    llaves = series(categoria)
+    llaves = series(categoria, cuadro=cual)
     if not llaves:
         return None
 
-    # Los premios de la temporada, si ya termino: van al lado del nombre de cada
-    # equipo dentro de la llave. Una sola consulta para todo el cuadro.
     de_equipos = palmares.trofeos_por_categoria([categoria.id if hasattr(categoria, 'id') else categoria])
     de_equipos = next(iter(de_equipos.values()), {}).get('equipos', {})
     for llave in llaves:
@@ -427,7 +441,6 @@ def cuadro(categoria):
     etiquetas = dict(Partido.FASE_CHOICES)
     izquierda, derecha = [], []
 
-    # La final y el tercer lugar no se reparten: van al centro y abajo.
     for fase in (Partido.FASE_CUARTOS, Partido.FASE_SEMIFINAL):
         cruces = [s for s in llaves if s['fase'] == fase]
         if not cruces:
@@ -444,14 +457,24 @@ def cuadro(categoria):
     final = next((s for s in llaves if s['fase'] == Partido.FASE_FINAL), None)
     tercero = next((s for s in llaves if s['fase'] == Partido.FASE_TERCERO), None)
 
+    es_mini = cual == Partido.CUADRO_CONSOLACION
     return {
         'izquierda': izquierda,
-        # Se invierte para dibujarla de adentro hacia afuera: pegada al centro
-        # queda la semifinal y en el borde los cuartos, como en el espejo.
         'derecha': list(reversed(derecha)),
         'final': final,
         'tercero': tercero,
         'campeon': final['ganador'] if final else None,
         'subcampeon': final['perdedor'] if final else None,
         'tercer_lugar': tercero['ganador'] if tercero else None,
+        'es_mini': es_mini,
+        'titulo': 'Mini-liguilla' if es_mini else 'Liguilla',
+        'subtitulo': (
+            'Los puestos 9 a 12 del torneo regular' if es_mini
+            else 'Los mejores del torneo regular'
+        ),
     }
+
+
+def mini(categoria):
+    """El cuadro de la mini-liguilla, o None si esta categoria no la juega."""
+    return cuadro(categoria, Partido.CUADRO_CONSOLACION)

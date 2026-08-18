@@ -15,21 +15,11 @@ from pathlib import Path
 from decouple import Csv, config
 from django.utils.csp import CSP
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-# Sin `default` a proposito: es un secreto y no puede vivir en el codigo, que si
-# se versiona. Si falta en el .env el arranque revienta con UndefinedValueError,
-# que es lo que se busca: mejor no arrancar que arrancar con una clave conocida
-# —con ella se firman las sesiones, asi que se podrian falsificar.
 SECRET_KEY = config('SECRET_KEY')
 
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = config(
@@ -38,141 +28,41 @@ ALLOWED_HOSTS = config(
     cast=Csv(),
 )
 
-# IIS termina el TLS y reenvia por HTTP simple a Waitress (ver web.config,
-# ReverseProxyInboundRule1). Sin esto Django cree que toda peticion es HTTP,
-# lo que rompe la verificacion de CSRF cuando se entra por HTTPS (el Origin
-# que manda el navegador es https:// pero Django arma http:// para comparar).
-# El nombre NO es el convencional X-Forwarded-Proto, y es a proposito: Waitress
-# borra toda cabecera que empiece por "X-Forwarded-" salvo que se le declare un
-# proxy de confianza al arrancar. O sea que esta linea, con el nombre de siempre,
-# NUNCA funciono: Django creyo que toda peticion era HTTP desde el primer dia.
-#
-# Eso explica el bucle infinito de redirecciones del 11/08/2026 al intentar
-# activar SECURE_SSL_REDIRECT desde Django, que en su momento se atribuyo al
-# proxy y quedo apagado (FORZAR_HTTPS=False). El motivo real era este.
-#
-# Se comprobo interceptando lo que Waitress le entrega a Django. El nombre nuevo
-# lo escribe IIS en web.config, y sobrevive porque no empieza por X-Forwarded.
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_ESQUEMA_ORIGINAL', 'https')
 
 CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='', cast=Csv())
 
-# Marca las cookies de sesion y de CSRF como "solo por HTTPS": asi el navegador
-# se niega a mandarlas si alguien entra por http:// sin la ese. Sin esto, esa
-# visita manda el identificador de sesion en claro y quien comparta la red se
-# queda con ella sin necesitar la contrasena.
-#
-# Sale del .env y no de DEBUG para no diferenciar entornos en el codigo: en
-# produccion va True, y en desarrollo False, porque ahi se entra por http://
-# localhost y con True el login no guardaria la sesion —seria imposible entrar.
 COOKIES_SEGURAS = config('COOKIES_SEGURAS', default=False, cast=bool)
 SESSION_COOKIE_SECURE = COOKIES_SEGURAS
 CSRF_COOKIE_SECURE = COOKIES_SEGURAS
 
-# Manda a https:// a quien entre por http://. El puerto 80 esta abierto, asi que
-# sin esto el sitio se sirve igual en texto plano: las cookies marcadas arriba
-# no viajarian, pero el usuario y la contrasena que se escriben en el formulario
-# de login si, porque van en el cuerpo del POST.
-#
-# Depende de que el proxy avise por que esquema entro la peticion original (ver
-# SECURE_PROXY_SSL_HEADER arriba). El web.config de IIS lo manda —regla
-# ReverseProxyInboundRule1, variable HTTP_X_FORWARDED_PROTO—; si eso se rompiera,
-# Django creeria que toda peticion es HTTP y redirigiria en bucle. Por eso sale
-# del .env: se apaga sin tocar el codigo ni volver a desplegar.
 FORZAR_HTTPS = config('FORZAR_HTTPS', default=False, cast=bool)
 SECURE_SSL_REDIRECT = FORZAR_HTTPS
 
-# El desafio de Let's Encrypt tiene que poder responderse por http:// simple.
-# Hoy no llega hasta aca —IIS lo sirve del disco antes, ver web.config—, pero si
-# esa regla se perdiera en un cambio futuro, sin esta excepcion la renovacion del
-# certificado empezaria a fallar sin que nadie se entere hasta que vence.
 SECURE_REDIRECT_EXEMPT = [r'^\.well-known/acme-challenge/']
 
-# Cuanto vive una sesion sin actividad. Antes no habia nada puesto, y el default
-# de Django son DOS SEMANAS contadas desde el login: la computadora del club
-# quedaba con la sesion del administrador abierta media temporada, y cualquiera
-# que se sentara ahi entraba sin saber la contrasena.
-#
-# Sale del .env porque es una decision de operacion, no de codigo: si a los
-# entrenadores 20 minutos les resulta corto se sube sin volver a desplegar.
 SESSION_COOKIE_AGE = config('SESION_MINUTOS', default=20, cast=int) * 60
 
-# Esto es lo que convierte el tope de arriba en "20 minutos de INACTIVIDAD" y no
-# en "20 minutos desde que entro". Sin esta linea el reloj arranca en el login y
-# no se reinicia nunca: a quien estuviera cargando resultados lo sacaba a mitad
-# del trabajo. Con esto la cookie se reescribe en cada peticion y el reloj vuelve
-# a cero.
-#
-# Cuesta un UPDATE a django_session por peticion. Con el volumen de este sitio
-# —una liga amateur, decenas de usuarios— no se nota.
 SESSION_SAVE_EVERY_REQUEST = True
 
-# Cerrar el navegador cierra la sesion. Es la otra mitad del problema de la
-# maquina compartida: nadie pulsa "Salir", simplemente cierran la ventana.
-#
-# Ojo: esto solo le quita el vencimiento a la COOKIE (pasa a ser de sesion del
-# navegador). El vencimiento del lado del servidor lo sigue marcando
-# SESSION_COOKIE_AGE de arriba, asi que los 20 minutos valen igual.
 SESSION_EXPIRE_AT_BROWSER_CLOSE = config(
     'SESION_CIERRA_CON_NAVEGADOR', default=True, cast=bool
 )
 
-# Cuantos segundos antes del vencimiento se le avisa al usuario. Lo lee el
-# template del aviso (templates/_aviso_sesion.html) y de ahi lo toma
-# static/js/sesion.js. Vive aca para que el aviso y el vencimiento real no
-# puedan quedar descoordinados si manana se cambia SESION_MINUTOS.
 SESION_AVISO_SEGUNDOS = config('SESION_AVISO_SEGUNDOS', default=120, cast=int)
 
-# Content-Security-Policy: le dice al navegador de donde puede cargar scripts.
-# Es la red debajo del trapecio — si manana se cuela un XSS, el navegador se
-# niega a ejecutar el script inyectado y el ataque queda en un error de consola.
-#
-# Va en modo REPORTE (SECURE_CSP_REPORT_ONLY y no SECURE_CSP) a proposito. En
-# ese modo el navegador ANOTA en la consola lo que bloquearia pero NO BLOQUEA
-# NADA, asi que es imposible que rompa una pantalla. Hace falta porque las
-# plantillas todavia tienen scripts y estilos en linea (los toasts y el modal de
-# base.html, el --portada del <body>): con la politica en modo bloqueo, esos
-# dejarian de funcionar hoy mismo.
-#
-# El plan es navegar el sitio con la consola abierta, mover esos inline a
-# archivos de static/js/, y recien entonces renombrar esta variable a
-# SECURE_CSP para que empiece a bloquear de verdad. No antes.
 SECURE_CSP_REPORT_ONLY = {
-    # Todo lo que no se nombre abajo: solo desde este mismo dominio.
     'default-src': [CSP.SELF],
     'script-src': [CSP.SELF],
-    # UNSAFE_INLINE en los estilos y no en los scripts: el atributo style= del
-    # <body> (la portada de cada liga) y los de Tailwind son inevitables hoy, y
-    # un estilo inyectado no ejecuta codigo. En script-src seria regalar la
-    # proteccion entera, que es justo lo que se quiere evitar.
     'style-src': [CSP.SELF, CSP.UNSAFE_INLINE],
-    # data: porque los monogramas de equipo sin escudo se generan como SVG
-    # embebido (ver apps/usuarios/monograma.py).
-    #
-    # tile.openstreetmap.org: los mosaicos del mapa de canchas. Leaflet los
-    # pide como <img>, asi que van aca y no en connect-src. Sin esta linea el
-    # mapa de sedes se veria gris entero al pasar a modo bloqueo.
     'img-src': [CSP.SELF, 'data:', 'https://*.tile.openstreetmap.org'],
-    # Nominatim es el buscador de direcciones que usa el formulario de sede
-    # (static/js/sedes.js): se consulta por fetch, o sea connect-src.
-    #
-    # Leaflet en si NO va aca: esta vendorizado en static/vendor/leaflet/, o
-    # sea que sale de este mismo dominio y ya lo cubre 'self'.
     'connect-src': [CSP.SELF, 'https://nominatim.openstreetmap.org'],
-    # Que nadie pueda meter el sitio en un <iframe> ajeno: es la version
-    # moderna de X-Frame-Options, contra el clickjacking.
     'frame-ancestors': [CSP.NONE],
-    # Impide que un <base> inyectado redirija todas las rutas relativas de la
-    # pagina a un servidor ajeno.
     'base-uri': [CSP.SELF],
-    # Nada de <object>/<embed>: el sitio no usa ninguno y son via de ejecucion.
     'object-src': [CSP.NONE],
-    # Los formularios solo pueden enviarse a este dominio.
     'form-action': [CSP.SELF],
 }
 
-
-# Application definition
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -181,16 +71,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # Habilita el lookup __unaccent, para buscar sin importar acentos ni ñ.
     'django.contrib.postgres',
-    # Permite reemplazar plantillas de widgets desde templates/django/forms/.
     'django.forms',
 
-    # Cuenta los intentos fallidos de login y bloquea al que insiste. Sin esto
-    # se pueden probar contrasenas sin limite: el sitio esta en internet y una
-    # cuenta con clave floja cae sola con tiempo.
     'axes',
-    # Apps del proyecto
     'apps.usuarios',
     'apps.torneos',
     'apps.equipos',
@@ -201,13 +85,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    # Solo actua con DEBUG=True; con DEBUG=False Django lo descarta al arrancar.
     'futbol.middleware.NoCacheEnDesarrolloMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    # Manda la cabecera de Content-Security-Policy (ver SECURE_CSP_REPORT_ONLY
-    # arriba). Viene con Django 6, no hace falta instalar nada. Va pegado a
-    # SecurityMiddleware porque son de la misma familia: cabeceras de seguridad
-    # que se agregan a la respuesta ya armada.
     'django.middleware.csp.ContentSecurityPolicyMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -215,30 +94,9 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # Va al final y despues de AuthenticationMiddleware: necesita request.user
-    # ya resuelto para poder anotar quien fallo el intento.
     'axes.middleware.AxesMiddleware',
 ]
 
-# Recarga el navegador al guardar un archivo. Es una herramienta de DESARROLLO
-# y hasta hoy quedaba montada tambien en produccion, donde no hacia nada util:
-# su middleware ya se autodescarta con DEBUG=False y su endpoint ya responde 404
-# por su cuenta (lo comprueba la propia vista del paquete).
-#
-# Se monta solo con DEBUG porque igual no tiene por que estar ahi: ese endpoint
-# es un flujo de eventos que mantiene TOMADO un hilo de Waitress por conexion, y
-# Waitress arranca con cuatro (iniciar_produccion.bat no le pasa --threads). El
-# dia que alguien encienda DEBUG en el servidor para depurar algo, cuatro
-# peticiones a esa URL dejarian el sitio sin responder. Es el mismo agotamiento
-# de hilos que ya obligo a mover los estaticos a IIS, por otra puerta.
-#
-# NO rompe la regla de no diferenciar entornos en el codigo: DEBUG sale del
-# .env, asi que este archivo queda IDENTICO en produccion y en desarrollo y lo
-# unico que cambia el comportamiento es la variable de entorno. En la maquina de
-# desarrollo, con DEBUG=True, la recarga automatica sigue funcionando igual.
-#
-# El middleware va en la POSICION 0, que es donde estaba: tiene que envolver a
-# todos los demas para poder inyectar su script en el HTML ya armado.
 if DEBUG:
     INSTALLED_APPS.append('django_browser_reload')
     MIDDLEWARE.insert(0, 'django_browser_reload.middleware.BrowserReloadMiddleware')
@@ -260,26 +118,16 @@ TEMPLATES = [
     },
 ]
 
-# Hace que los widgets de formulario se busquen tambien en templates/, para
-# poder reemplazar el de subida de archivos por uno con mejor presentacion.
 FORM_RENDERER = 'django.forms.renderers.TemplatesSetting'
 
 WSGI_APPLICATION = 'futbol.wsgi.application'
 
-
-# Database
-# https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': config('DB_NAME', default='SISTEMA-FUTBOL'),
         'USER': config('DB_USER', default='sistema_user'),
-        # Sin `default`, igual que SECRET_KEY: la contrasena de la base es un
-        # secreto y el default quedaba escrito en un archivo versionado. Ademas,
-        # si faltaba la variable el proyecto arrancaba igual contra esa clave en
-        # vez de avisar. Nombre, host y puerto si conservan default: no son
-        # secretos y dejan que un clon nuevo levante sin configurar nada.
         'PASSWORD': config('DB_PASSWORD'),
         'HOST': config('DB_HOST', default='localhost'),
         'PORT': config('DB_PORT', default='5432'),
@@ -288,63 +136,23 @@ DATABASES = {
 
 AUTH_USER_MODEL = 'usuarios.Usuario'
 
-# Axes tiene que ir PRIMERO: es el que corta el intento cuando la cuenta esta
-# bloqueada, antes de que el backend de siempre se ponga a comparar el hash.
-# Si fuera segundo, el bloqueo no serviria de nada.
 AUTHENTICATION_BACKENDS = [
     'axes.backends.AxesStandaloneBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-# Cuantos intentos fallidos se toleran antes de bloquear.
 AXES_FAILURE_LIMIT = config('AXES_FAILURE_LIMIT', default=5, cast=int)
 
-# Cuanto dura el bloqueo, en horas. Se cuenta desde el ultimo intento fallido.
-# Un cuarto de hora frena de sobra un ataque automatizado —que necesita miles
-# de intentos por minuto para servir de algo— sin dejar afuera media tarde a
-# quien simplemente se equivoco de contrasena.
 AXES_COOLOFF_TIME = config('AXES_COOLOFF_HORAS', default=0.25, cast=float)
 
-# Se bloquea la COMBINACION usuario+IP, no el usuario solo ni la IP sola.
-# Solo el usuario dejaria que cualquiera bloquee la cuenta del administrador
-# fallando aposta cinco veces. Solo la IP dejaria afuera a toda una liga que
-# comparte la conexion del club porque uno se equivoco.
-#
-# La lista ANIDADA es lo que significa "combinacion", y la diferencia no es
-# cosmetica. Escrito plano —['username', 'ip_address']— axes entiende dos reglas
-# INDEPENDIENTES: bloquea por usuario O por IP. Estuvo asi desde que se instalo
-# y el 11/08/2026 dejo el sitio entero sin poder entrar: alguien fallo 8 veces
-# con el usuario 'PREMIER' y eso bloqueo la IP, que detras de IIS es la misma
-# para todo el mundo. Cualquiera podia tumbar el acceso de todos con cinco
-# intentos fallidos y un usuario inventado.
 AXES_LOCKOUT_PARAMETERS = [['username', 'ip_address']]
 
-# De donde saca axes la IP del cliente.
-#
-# Sin esto mira REMOTE_ADDR, que detras de IIS es SIEMPRE 127.0.0.1: la conexion
-# la abre el proxy, no el visitante. O sea que la mitad "IP" del bloqueo de
-# arriba no distinguia a nadie: todos los usuarios compartian la misma.
-#
-# Se apunta a nuestra propia funcion en vez de usar las opciones AXES_IPWARE_*
-# porque esas SOLO funcionan si esta instalado el paquete django-ipware, y no lo
-# esta: axes las ignora en silencio y se queda con REMOTE_ADDR. Se probo, y por
-# eso esta escrito aca. Ademas asi la bitacora y el bloqueo resuelven la IP con
-# el mismo criterio, que antes no pasaba.
-#
-# La funcion explica por que se puede confiar en la cabecera; el resumen es que
-# el web.config la sobreescribe, asi que el cliente no la puede inventar.
 AXES_CLIENT_IP_CALLABLE = 'apps.usuarios.auditoria.ip_de'
 
-# Entrar bien borra los fallos acumulados: si alguien se equivoco tres veces y
-# a la cuarta acerto, no tiene por que arrastrar el contador.
 AXES_RESET_ON_SUCCESS = True
 
-# Lo que ve quien queda bloqueado. Sin esto Axes devuelve un 403 pelado, que no
-# le explica nada a un entrenador que solo se equivoco de contrasena.
 AXES_LOCKOUT_TEMPLATE = 'usuarios/bloqueado.html'
 
-# Password validation
-# https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -362,9 +170,6 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
-# Internationalization
-# https://docs.djangoproject.com/en/6.0/topics/i18n/
-
 LANGUAGE_CODE = 'es-mx'
 
 TIME_ZONE = 'America/Mexico_City'
@@ -374,22 +179,11 @@ USE_I18N = True
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/6.0/howto/static-files/
-
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = '/media/'
-# Carpeta donde se guardan las imagenes que suben los usuarios (escudos, logos
-# y fotos). Se define en el .env para que apunte a un lugar distinto en cada
-# maquina sin tocar el codigo, y sobre todo para que en el servidor quede fuera
-# del proyecto: si estuviera adentro, un despliegue la borraria con todo.
-# Sin la variable usa media/ dentro del proyecto, para que un clon nuevo ande.
-# El `or`, igual que en CARPETA_LOGS: sin el, un MEDIA_ROOT declarado pero vacio
-# —que es como este archivo documenta "usa media/ del proyecto"— dejaba las
-# imagenes en el directorio desde el que se lanzo el servidor.
 MEDIA_ROOT = config('MEDIA_ROOT', default='') or str(BASE_DIR / 'media')
 
 LANGUAGE_CODE = 'es-mx'
@@ -401,31 +195,11 @@ LOGIN_REDIRECT_URL = '/usuarios/dashboard/'
 LOGOUT_REDIRECT_URL = '/usuarios/login/'
 
 
-# Bitacoras
-# ---------------------------------------------------------------------------
-# Antes no habia ningun LOGGING configurado, y eso significaba dos cosas malas
-# a la vez: los errores 500 no quedaban registrados EN NINGUN LADO (con
-# DEBUG=False Django los manda por correo a ADMINS, que tampoco estaba puesto),
-# y no habia rastro de logins fallidos, bloqueos ni borrados.
-#
-# El costo de no tener esto no se paga el dia que se configura, se paga el dia
-# del incidente: sin bitacora, "no hay evidencia de que nos atacaran" y "no nos
-# atacaron" se escriben igual, y solo una de las dos es verdad.
-
-# Fuera de STATIC_ROOT y de MEDIA_ROOT a proposito: esas dos carpetas Django las
-# sirve por URL (ver futbol/urls.py), asi que un log ahi adentro seria
-# descargable desde el navegador por cualquiera.
-# El `or` no sobra: decouple aplica el `default` solo si la variable NO ESTA en
-# el .env. Si esta pero vacia (`CARPETA_LOGS=`, que es como se documenta "usa la
-# de por defecto") devuelve cadena vacia, y Path('') es Path('.') — las bitacoras
-# habrian ido a parar al directorio desde el que se lanzo Waitress.
 CARPETA_LOGS = Path(config('CARPETA_LOGS', default='') or (BASE_DIR / 'logs'))
 CARPETA_LOGS.mkdir(parents=True, exist_ok=True)
 
 LOGGING = {
     'version': 1,
-    # False y no True: en True se apagan los loggers que Django ya trae puestos,
-    # incluido django.security, que es justo el que interesa escuchar.
     'disable_existing_loggers': False,
     'formatters': {
         'detallado': {
@@ -437,10 +211,6 @@ LOGGING = {
         'archivo_seguridad': {
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': CARPETA_LOGS / 'seguridad.log',
-            # Con tope y con historia: 5 MB por archivo y 10 de respaldo. El
-            # tope importa mas de lo que parece — sin el, un ataque de fuerza
-            # bruta llena el disco escribiendo su propia bitacora y tira el
-            # servidor, que es justo lo que se queria evitar.
             'maxBytes': 5 * 1024 * 1024,
             'backupCount': 10,
             'formatter': 'detallado',
@@ -456,28 +226,21 @@ LOGGING = {
         },
     },
     'loggers': {
-        # Host header invalido, fallos de CSRF, SuspiciousOperation. Es lo que
-        # deja ver si alguien esta hurgando el sitio.
         'django.security': {
             'handlers': ['archivo_seguridad'],
             'level': 'INFO',
             'propagate': False,
         },
-        # Los 500 con su traza. Sin esto se perdian enteros.
         'django.request': {
             'handlers': ['archivo_errores'],
             'level': 'ERROR',
             'propagate': False,
         },
-        # Intentos fallidos y bloqueos. Axes ya los venia emitiendo desde que se
-        # instalo; lo que faltaba era decirle a Python donde escribirlos.
         'axes': {
             'handlers': ['archivo_seguridad'],
             'level': 'INFO',
             'propagate': False,
         },
-        # Logger propio, para lo que se registra a mano: hoy los borrados
-        # (ver apps/usuarios/eliminar.py).
         'futbol.auditoria': {
             'handlers': ['archivo_seguridad'],
             'level': 'INFO',

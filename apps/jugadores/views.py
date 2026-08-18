@@ -35,9 +35,6 @@ def jugador_list(request, equipo_id):
 
     jugadores = list(equipo.jugadores.order_by('apellido', 'nombre'))
 
-    # Los premios de la temporada, si la categoria ya termino: los del club van
-    # en el encabezado y los individuales al lado de quien los gano. Una sola
-    # consulta para toda la plantilla.
     premios = palmares.trofeos_por_categoria([equipo.categoria_id]).get(equipo.categoria_id, {})
     de_jugadores = premios.get('jugadores', {})
     for jugador in jugadores:

@@ -4,9 +4,6 @@ from django.conf import settings
 from django.contrib.staticfiles import finders
 from django.templatetags.static import static
 
-# El mtime no cambia entre peticiones fuera de desarrollo, asi que se resuelve
-# una sola vez por archivo. En DEBUG no se cachea nunca, que es justamente
-# cuando el archivo se esta editando.
 _versiones = {}
 
 
@@ -40,8 +37,6 @@ def _version_de(ruta):
         try:
             version = str(int(os.path.getmtime(absoluta)))
         except OSError:
-            # Si el archivo no se puede leer se devuelve la URL pelada: es
-            # preferible un estatico cacheado a que reviente la pagina entera.
             version = ''
 
     if not settings.DEBUG:

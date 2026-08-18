@@ -2,19 +2,6 @@
 
 {% block titulo %}Estadísticas - {{ liga.nombre }}{% endblock %}
 
-{% comment %}
-El panorama de la liga.
-
-Antes esta pantalla era una lista de nombres de categorías y no decía nada: para
-saber quién iba primero había que entrar a cada una. Ahora la tarjeta responde
-sola las tres preguntas con que se llega: quién lidera, cuánto falta para que
-termine, y quién es el goleador.
-
-Cuando a una categoría le falta un dato no se muestra un "sin datos": se dice
-qué hay que hacer para tenerlo, que casi siempre lo puede resolver quien está
-mirando la pantalla.
-{% endcomment %}
-
 {% block contenido %}
 <div class="max-w-[100rem] mx-auto p-6">
     <div class="mb-8 flex items-center gap-4">
@@ -28,7 +15,6 @@ mirando la pantalla.
         </div>
     </div>
 
-    {% comment %} ---- Los números de la liga ---- {% endcomment %}
     <section class="panel-cifras">
         <div class="cifra">
             <p class="cifra-numero">{{ panel.equipos }}<span class="cifra-de">/{{ panel.cupo }}</span></p>
@@ -44,7 +30,7 @@ mirando la pantalla.
         <div class="cifra">
             <p class="cifra-numero">{{ panel.jugados }}<span class="cifra-de">/{{ panel.partidos }}</span></p>
             <p class="cifra-titulo">Partidos jugados</p>
-            {% comment %} La barra dice de un vistazo si el torneo va por la mitad o recién arranca. {% endcomment %}
+
             <div class="barra" role="img" aria-label="{{ panel.avance }}% del calendario jugado">
                 <span class="ancho-{{ panel.avance }}"></span>
             </div>
@@ -58,10 +44,6 @@ mirando la pantalla.
         </div>
     </section>
 
-    {% comment %}
-    Datos que el sistema recién puede contar. Solo aparecen si hay alguno: en
-    cero no aportan y ensucian la cabecera.
-    {% endcomment %}
     {% if panel.goles_de_penal or panel.por_default or panel.sin_fecha %}
         <div class="panel-notas">
             {% if panel.goles_de_penal %}
@@ -82,7 +64,6 @@ mirando la pantalla.
         <a href="{% url 'estadisticas-porteros' %}?liga={{ liga.pk }}" class="btn-accion">Porterías menos vencidas</a>
     </div>
 
-    {% comment %} ---- Una tarjeta por categoría ---- {% endcomment %}
     <div class="rejilla-ligas">
         {% for ficha in tarjetas %}
             <a href="{% url 'estadisticas-categoria' ficha.categoria.pk %}" class="tarjeta-categoria">
@@ -99,7 +80,7 @@ mirando la pantalla.
 
                 {% if ficha.lider %}
                     <div class="tarjeta-categoria-cuerpo">
-                        {% comment %} El líder es lo primero que se busca al entrar. {% endcomment %}
+
                         <div class="destacado">
                             <p class="destacado-etiqueta">Líder</p>
                             <div class="destacado-fila">
@@ -137,10 +118,7 @@ mirando la pantalla.
                         </p>
                     </footer>
                 {% else %}
-                    {% comment %}
-                    Sin partidos jugados no hay tabla ni goleador. En vez de dejar
-                    la tarjeta muda se dice cuál es el siguiente paso.
-                    {% endcomment %}
+
                     <p class="tarjeta-categoria-vacia">
                         {% if ficha.pendiente %}{{ ficha.pendiente }}{% else %}Todavía no hay partidos jugados.{% endif %}
                     </p>

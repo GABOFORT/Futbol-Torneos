@@ -3,7 +3,6 @@
 
 {% block titulo %}{{ title }} - Partidos{% endblock %}
 
-{% comment %} Leaflet solo aca, para el mapa donde se marca la cancha. {% endcomment %}
 {% block cabecera_extra %}
     <link rel="stylesheet" href="{% static_v 'vendor/leaflet/leaflet.css' %}">
     <script src="{% static_v 'vendor/leaflet/leaflet.js' %}"></script>
@@ -22,7 +21,7 @@
             {{ form.non_field_errors }}
             {% for field in form %}
                 {% if field.name == 'sede' %}
-                    {# El desplegable de canchas viene con el mapa para marcar una nueva. #}
+
                     {% include 'partidos/_selector_sede.html' %}
                 {% else %}
                     <div>

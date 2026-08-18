@@ -19,12 +19,6 @@ from django import template
 
 register = template.Library()
 
-# Donde buscar la liga, en orden de preferencia. Cada entrada es la variable que
-# la vista pudo haber dejado en el contexto y el camino desde ahi hasta la liga.
-#
-# El orden va de lo mas especifico a lo mas general: si una pantalla manda
-# `categoria` y ademas `liga`, las dos apuntan a la misma, pero `liga` es la que
-# la vista eligio nombrar y es la que manda.
 CAMINOS = (
     ('liga', ()),
     ('categoria', ('liga',)),

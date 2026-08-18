@@ -7,17 +7,6 @@
 {% block og_titulo %}Canchas · BUHO Sports League{% endblock %}
 {% block og_descripcion %}Dónde se juega cada partido, con mapa y cómo llegar.{% endblock %}
 
-{% comment %}
-El mapa de canchas.
-
-Las coordenadas ya estaban cargadas y el mapa construido para elegir la cancha
-de un partido, pero no existía ninguna pantalla que las mostrara todas juntas:
-quien viene a ver dónde juega su hijo el sábado no tenía a dónde ir.
-
-Leaflet se carga sólo en esta página, no en base.html: son 150 KB que no tienen
-por qué viajar en el resto del sitio.
-{% endcomment %}
-
 {% block cabecera_extra %}
     <link rel="stylesheet" href="{% static_v 'vendor/leaflet/leaflet.css' %}">
     <script src="{% static_v 'vendor/leaflet/leaflet.js' %}"></script>
@@ -34,11 +23,7 @@ por qué viajar en el resto del sitio.
     </div>
 
     {% if sedes %}
-        {% comment %}
-        Los datos de cada pin viajan en atributos del listado y no en un JSON
-        aparte: así la página funciona sin JS —la lista es la misma información,
-        con su enlace a Google Maps— y el mapa se arma leyendo el DOM.
-        {% endcomment %}
+
         <div id="mapa-sedes" class="mapa-sedes"
              data-centro-lat="{{ centro.lat|stringformat:'.6f' }}"
              data-centro-lon="{{ centro.lon|stringformat:'.6f' }}"></div>

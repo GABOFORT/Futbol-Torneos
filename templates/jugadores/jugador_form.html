@@ -16,7 +16,7 @@
                 {% if field.field.widget.input_type == 'radio' %}
                     {% include '_radios.html' %}
                 {% else %}
-                    {# data-campo permite que el JS ubique un campo segun otro. #}
+
                     <div data-campo="{{ field.name }}">
                         <label class="block text-sm font-medium text-gray-700">{{ field.label }}</label>
                         {{ field }}

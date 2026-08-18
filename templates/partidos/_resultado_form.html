@@ -1,17 +1,4 @@
-{% comment %}
-Formulario de resultado con goleadores y asistencias. **Es un fragmento**: no
-extiende base.html.
 
-Se abre dentro del modal del calendario, que lo pide con `?modal=1`; y también
-como página completa desde `resultado_form_pagina.html`, para que entrar por la
-dirección directa no devuelva HTML crudo.
-
-No usa modal_form.html porque necesita dos secciones de filas que se agregan y
-quitan, con contadores que verifican contra el marcador. Mantiene los mismos
-ganchos (#modal-form, #modal-close, #modal-cancel) para que el modal siga
-funcionando igual; `en_modal` decide si se dibujan los que solo tienen sentido
-adentro del modal.
-{% endcomment %}
 <div class="rounded-[2rem] bg-white p-5 sm:p-8 shadow-2xl w-full max-w-lg sm:max-w-3xl max-h-[85vh] overflow-y-auto">
     <div class="flex items-start justify-between border-b border-green-100 pb-4 mb-6">
         <div>
@@ -41,12 +28,7 @@ adentro del modal.
         {{ form.non_field_errors }}
 
         <section class="grid gap-4 sm:grid-cols-2">
-            {% comment %}
-            'no_se_presento' y 'ganador_penales' ocupan la fila entera: son
-            preguntas de sí o no sobre todo el partido, no el dato de un equipo.
-            Compartiendo fila con "Goles de X" el texto de ayuda empujaba la
-            grilla y los dos marcadores quedaban en renglones distintos.
-            {% endcomment %}
+
             {% for field in form %}
                 <div data-campo="{{ field.name }}" {% if field.name == 'ganador_penales' or field.name == 'no_se_presento' %}class="sm:col-span-2"{% endif %}>
                     <label class="block text-sm font-medium text-gray-700">{{ field.label }}</label>
@@ -55,18 +37,10 @@ adentro del modal.
                     {% for error in field.errors %}<p class="mt-1 text-sm text-red-600">{{ error }}</p>{% endfor %}
                 </div>
             {% endfor %}
-            {% comment %}
-            El aviso del default vive aca y no lo crea el JS: crear y borrar nodos
-            desde el script despertaba al observador del DOM y la pagina se
-            trababa al usar el desplegable. Asi el JS solo lo muestra o lo esconde.
-            {% endcomment %}
+
             <p class="aviso-default" data-aviso-default hidden></p>
             {% if form.sin_penales %}
-                {% comment %}
-                En cuartos, semis y tercer lugar el formulario no trae los campos de
-                penales. Sin este aviso, quien carga el resultado no sabria como se
-                resuelve un empate.
-                {% endcomment %}
+
                 <p class="aviso-sin-penales sm:col-span-2">{{ form.sin_penales }}</p>
             {% endif %}
         </section>
@@ -84,7 +58,6 @@ adentro del modal.
         </div>
     </form>
 
-    {# Plantilla oculta que el JS clona cada vez que se agrega una fila. #}
     <template id="plantilla-fila">
         <div class="fila-actuacion">
             <select name="__CAMPO___jugador" class="filtro-select select-actuacion">

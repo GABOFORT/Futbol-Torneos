@@ -1,21 +1,4 @@
-{% load sesion %}{% comment %}
-Aviso de sesion por vencer. Lo maneja static/js/sesion.js.
-
-Se incluye desde base.html SOLO para usuarios autenticados: un visitante sin
-cuenta no tiene sesion que vencer, y cargarle esto seria un temporizador
-corriendo de gusto en su telefono.
-
-Toda la configuracion viaja en atributos `data-` y no escrita en el JS, por dos
-motivos. El primero es que los segundos salen de settings.py (SESSION_COOKIE_AGE
-y SESION_AVISO_SEGUNDOS), asi que cambiar SESION_MINUTOS en el .env ajusta el
-aviso solo, sin tocar codigo. El segundo es la CSP: un <script> con valores
-incrustados seria codigo en linea, justo lo que la politica va a prohibir
-(ver SECURE_CSP_REPORT_ONLY en settings.py).
-
-El markup arranca con `hidden`. Si el JS no corre —esta apagado, fallo la red—
-no se ve absolutamente nada y la sesion igual vence a los 20 minutos: el aviso
-es una cortesia, no el mecanismo. Lo que protege es el servidor.
-{% endcomment %}
+{% load sesion %}
 
 <div id="sesion-aviso"
      class="sesion-fondo"
@@ -32,11 +15,6 @@ es una cortesia, no el mecanismo. Lo que protege es el servidor.
 
     <div class="sesion-tarjeta" role="document">
 
-        {% comment %}
-        El anillo es decorativo: el dato real es el texto del medio, que va en
-        aria-live para que un lector de pantalla lo cante. Sin aria-hidden en el
-        SVG, algunos lectores leen los numeros del path uno por uno.
-        {% endcomment %}
         <div class="sesion-reloj">
             <svg class="sesion-anillo" viewBox="0 0 120 120" aria-hidden="true" focusable="false">
                 <circle class="sesion-anillo-fondo" cx="60" cy="60" r="52"></circle>
@@ -57,11 +35,7 @@ es una cortesia, no el mecanismo. Lo que protege es el servidor.
             <button type="button" id="sesion-seguir" class="sesion-boton">
                 Seguir conectado
             </button>
-            {% comment %}
-            Cerrar sesion es un POST de verdad, con su token: el mismo criterio
-            que el boton de salir de la barra. Por GET, un sitio ajeno podria
-            cerrarle la sesion a cualquiera con un <img loading="lazy" decoding="async">.
-            {% endcomment %}
+
             <form action="{% url 'logout' %}" method="post" class="sesion-forma-salir">
                 {% csrf_token %}
                 <button type="submit" class="sesion-boton sesion-boton-tenue">Cerrar sesión ahora</button>

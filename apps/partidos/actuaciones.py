@@ -29,9 +29,6 @@ def leer(datos, jugadores_validos):
     goleadores = datos.getlist('gol_jugador')
     cantidades = datos.getlist('gol_cantidad')
     en_contra = datos.getlist('gol_en_contra')
-    # Va como input numerico y no como casilla porque una misma fila puede tener
-    # 3 goles y solo 1 de penal. Al viajar siempre (aunque sea 0) queda alineado
-    # por indice con las otras listas, sin el truco que necesita la casilla.
     de_penal = datos.getlist('gol_de_penal')
     for indice, jugador_id in enumerate(goleadores):
         if not jugador_id.isdigit() or int(jugador_id) not in permitidos:
@@ -40,9 +37,6 @@ def leer(datos, jugadores_validos):
         if not cantidad:
             continue
         if _marcado(en_contra, indice):
-            # Un gol en contra no puede ser de penal: al penal lo patea el rival,
-            # y si entra es gol suyo, no en contra de nadie. Se ignora sin avisar
-            # porque el formulario ya deshabilita el campo al marcar la casilla.
             filas[int(jugador_id)]['goles_en_contra'] += cantidad
             continue
         filas[int(jugador_id)]['goles'] += cantidad
@@ -74,15 +68,11 @@ def errores(filas, partido, goles_local, goles_visitante):
         (partido.equipo_local.nombre, equipos['local'], equipos['visitante'], goles_local),
         (partido.equipo_visitante.nombre, equipos['visitante'], equipos['local'], goles_visitante),
     ):
-        # El marcador de un equipo son los goles de sus jugadores mas los que el
-        # rival se hizo en su propia puerta.
         asignados = propios['goles'] + contra_del_rival['goles_en_contra']
         if asignados != marcador:
             problemas.append(
                 f'{etiqueta}: marcaste {marcador} gol(es) pero asignaste {asignados}.'
             )
-        # No hay asistencia sin gol que asistir, y un penal no se asiste: lo
-        # patea un jugador solo, sin nadie que le pase la pelota.
         penales = propios['goles_de_penal']
         asistibles = marcador - penales
         if propios['asistencias'] > asistibles:

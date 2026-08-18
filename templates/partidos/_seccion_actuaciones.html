@@ -1,7 +1,4 @@
-{% comment %}
-Una seccion de filas (Goles o Asistencias). El contador de la derecha compara
-lo asignado contra el marcador y se pone en verde al cuadrar.
-{% endcomment %}
+
 <section class="seccion-actuaciones" data-seccion="{{ seccion }}">
     <div class="cabecera-actuaciones">
         <h3>{{ titulo }}</h3>
@@ -25,15 +22,12 @@ lo asignado contra el marcador y se pone en verde al cuadrar.
                 </select>
                 <input type="number" name="{{ seccion }}_cantidad" min="1" max="20" value="{{ fila.cantidad }}" class="cantidad-actuacion" aria-label="Cantidad">
                 {% if seccion == 'gol' %}
-                    {% comment %}
-                    El penal va como numero y no como casilla porque un mismo
-                    goleador puede tener 3 goles y solo 1 desde los once pasos.
-                    {% endcomment %}
+
                     <label class="campo-penal" data-solo-goles {% if fila.de_penal %}data-activo{% endif %}>
                         <span>De penal</span>
                         <input type="number" name="gol_de_penal" min="0" max="{{ fila.cantidad }}"
                                value="{{ fila.de_penal|default:0 }}" class="penal-actuacion" aria-label="Goles de penal">
-                        {# El tope a la vista: el limite es por goleador, no del partido. #}
+
                         <small class="penal-tope" data-penal-tope></small>
                     </label>
                     <label class="check-en-contra" data-solo-goles>

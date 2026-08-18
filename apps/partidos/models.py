@@ -15,15 +15,10 @@ class Partido(models.Model):
         (ESTADO_CANCELADO, 'Cancelado'),
     ]
 
-    # Los dos estados de un partido que todavia se va a jugar. Se usan juntos
-    # para no tener que enumerarlos en cada consulta y olvidarse de uno.
     ESTADOS_POR_JUGARSE = (ESTADO_PROGRAMADO, ESTADO_REPROGRAMADO)
 
-    # Fase de la liguilla. Vacio es el torneo regular, el de todos contra todos.
-    # Los partidos de liguilla no cuentan para la tabla de posiciones ni para
-    # las porterias menos vencidas: esas tablas miden el torneo regular, y si
-    # entraran los de liguilla se moverian solas despues de terminado.
     FASE_REGULAR = ''
+    FASE_OCTAVOS = 'octavos'
     FASE_CUARTOS = 'cuartos'
     FASE_SEMIFINAL = 'semifinal'
     FASE_TERCERO = 'tercero'
@@ -31,20 +26,24 @@ class Partido(models.Model):
 
     FASE_CHOICES = [
         (FASE_REGULAR, 'Torneo regular'),
+        (FASE_OCTAVOS, 'Octavos de final'),
         (FASE_CUARTOS, 'Cuartos de final'),
         (FASE_SEMIFINAL, 'Semifinal'),
         (FASE_TERCERO, 'Tercer lugar'),
         (FASE_FINAL, 'Final'),
     ]
 
-    # El orden en que se juegan, para saber que ronda alimenta a cual: el tercer
-    # lugar y la final se juegan al final, y en ese orden se muestran.
-    ORDEN_FASES = [FASE_CUARTOS, FASE_SEMIFINAL, FASE_TERCERO, FASE_FINAL]
+    ORDEN_FASES = [FASE_OCTAVOS, FASE_CUARTOS, FASE_SEMIFINAL, FASE_TERCERO, FASE_FINAL]
 
-    # Las rondas de eliminacion van a ida y vuelta; la final y el tercer lugar
-    # se definen en un solo encuentro. Son los dos partidos que cierran el
-    # torneo y se juegan como una definicion, no como una serie.
     FASES_PARTIDO_UNICO = (FASE_TERCERO, FASE_FINAL)
+
+    CUADRO_PRINCIPAL = 'principal'
+    CUADRO_CONSOLACION = 'consolacion'
+
+    CUADRO_CHOICES = [
+        (CUADRO_PRINCIPAL, 'Liguilla principal'),
+        (CUADRO_CONSOLACION, 'Mini-liguilla'),
+    ]
 
     categoria = models.ForeignKey(
         'torneos.Categoria',
@@ -71,19 +70,23 @@ class Partido(models.Model):
         default=0,
         help_text='Qué llave del cuadro ocupa. Define qué cruce alimenta a cuál en la ronda siguiente.',
     )
-    # La liguilla se juega a doble partido: cada llave son dos encuentros y pasa
-    # el que suma mas goles entre los dos. `fase` + `orden` identifican la llave,
-    # y este campo distingue cual de los dos partidos es.
-    # El tercer lugar es la excepcion: va a partido unico y siempre es ida.
+    cuadro = models.CharField(
+        'Cuadro',
+        max_length=20,
+        choices=CUADRO_CHOICES,
+        default=CUADRO_PRINCIPAL,
+        help_text='En qué cuadro de eliminación se juega. Los del torneo regular quedan en el principal.',
+    )
+    fuera_de_jornada = models.BooleanField(
+        'Partido pendiente',
+        default=False,
+        help_text='No pertenece a ninguna jornada. Se juega aparte, cuando los dos equipos puedan.',
+    )
     vuelta = models.BooleanField(
         'Partido de vuelta',
         default=False,
         help_text='La llave se juega ida y vuelta. La vuelta la recibe el mejor ubicado en la tabla.',
     )
-    # En que lugar de la tabla termino cada uno el torneo regular. Se guarda al
-    # armar el cruce y viaja con el equipo a la ronda siguiente: es lo que
-    # resuelve el empate, y en semifinales el local ya no es necesariamente el
-    # mejor sembrado, asi que no alcanza con saber quien juega de local.
     siembra_local = models.PositiveIntegerField('Siembra del local', null=True, blank=True)
     siembra_visitante = models.PositiveIntegerField('Siembra del visitante', null=True, blank=True)
     fecha = models.DateTimeField('Fecha y hora', null=True, blank=True)
@@ -122,14 +125,8 @@ class Partido(models.Model):
         verbose_name='Ganador de los penales',
         help_text='Solo cuando el partido termina empatado. Suma un punto extra.',
     )
-    # El marcador de la tanda, para poder mostrarla como en television. Se
-    # guarda aparte de los goles porque un penal convertido en la tanda no es un
-    # gol del partido: el marcador sigue siendo el empate.
     penales_local = models.PositiveIntegerField('Penales del local', null=True, blank=True)
     penales_visitante = models.PositiveIntegerField('Penales del visitante', null=True, blank=True)
-    # Se guarda QUE equipo falto y no un simple si/no: con el equipo se sabe
-    # tambien quien gano, y la ficha puede nombrarlo en vez de mostrar un 3-0
-    # pelado que se lee como un partido normal.
     no_se_presento = models.ForeignKey(
         'equipos.Equipo',
         on_delete=models.SET_NULL,
@@ -150,9 +147,6 @@ class Partido(models.Model):
         fecha = self.fecha.strftime('%Y-%m-%d') if self.fecha else 'sin fecha'
         return f'J{self.jornada}: {self.equipo_local} vs {self.equipo_visitante} - {fecha}'
 
-    # Marcador con el que se resuelve un partido que no se jugo por ausencia.
-    # Es el mismo en todas las ligas: no se configura por liga porque nadie lo
-    # cambia y un campo mas seria una decision para nada.
     MARCADOR_DEFAULT = 3
 
     @property
@@ -231,6 +225,21 @@ class Partido(models.Model):
         return self.fase != self.FASE_REGULAR
 
     @property
+    def es_consolacion(self):
+        """Si el partido pertenece a la mini-liguilla de los puestos 9 a 12."""
+        return self.es_liguilla and self.cuadro == self.CUADRO_CONSOLACION
+
+    @property
+    def es_de_torneo(self):
+        """Si es de un torneo relámpago y no de una liga.
+
+        Cambia dos reglas: la llave se cierra en un solo partido, y el empate se
+        define en penales en cualquier ronda, porque no hay tabla de posiciones
+        que pueda desempatar.
+        """
+        return hasattr(self.categoria.liga, 'torneo')
+
+    @property
     def tramo(self):
         """'Ida' o 'Vuelta'. Vacio en el torneo regular y en el tercer lugar.
 
@@ -252,6 +261,8 @@ class Partido(models.Model):
         """
         if not self.es_liguilla:
             return False
+        if self.es_de_torneo:
+            return True
         return self.vuelta or self.fase in self.FASES_PARTIDO_UNICO
 
     @property
@@ -269,16 +280,18 @@ class Partido(models.Model):
         Se resuelve en el modelo porque lo usan el calendario, la ficha, el
         perfil de equipo y el formulario de resultado, y tienen que decir lo mismo.
         """
+        if self.fuera_de_jornada and not self.es_liguilla:
+            return 'Partido pendiente'
         if not self.es_liguilla:
             return f'Jornada {self.jornada}'
-        partes = ['Liguilla', self.get_fase_display()]
+        cuadro = 'Mini-liguilla' if self.es_consolacion else 'Liguilla'
+        partes = [cuadro, self.get_fase_display()]
         if self.tramo:
             partes.append(self.tramo)
         return ' · '.join(partes)
 
-    # Version abreviada de cada fase, para los lugares donde solo entran unos
-    # pocos caracteres: la rachita de los ultimos cinco, las listas apretadas.
     FASE_CORTA = {
+        FASE_OCTAVOS: '8vos',
         FASE_CUARTOS: '4tos',
         FASE_SEMIFINAL: 'Semi',
         FASE_TERCERO: '3er',
@@ -287,10 +300,14 @@ class Partido(models.Model):
 
     @property
     def etiqueta_corta(self):
-        """'J5' o '4tos I'. Para cuando no hay lugar para el nombre completo."""
+        """'J5', '4tos I', o 'mSemi I' si es de la mini-liguilla."""
+        if self.fuera_de_jornada and not self.es_liguilla:
+            return 'Pend.'
         if not self.es_liguilla:
             return f'J{self.jornada}'
         corta = self.FASE_CORTA.get(self.fase, self.get_fase_display())
+        if self.es_consolacion:
+            corta = f'm{corta}'
         return f'{corta} {self.tramo[:1]}' if self.tramo else corta
 
     @property
@@ -311,13 +328,12 @@ class Partido(models.Model):
         if self.goles_local < self.goles_visitante:
             return self.equipo_visitante
 
-        # Empatados. En la final se patea: es el ultimo partido del torneo y no
-        # se puede coronar campeon a nadie por una tabla que ya termino.
+        if self.es_liguilla and self.es_de_torneo:
+            return self.ganador_penales
+
         if self.fase == self.FASE_FINAL:
             return self.ganador_penales
 
-        # En las rondas anteriores decide la tabla, sin penales: es la ventaja
-        # que el equipo se gano durante todo el torneo regular.
         if self.es_liguilla:
             if self.siembra_local is not None and self.siembra_visitante is not None:
                 return (
@@ -326,7 +342,6 @@ class Partido(models.Model):
                 )
             return None
 
-        # Torneo regular: el empate no tiene ganador, solo el punto extra.
         return self.ganador_penales
 
     @property
@@ -454,8 +469,6 @@ class Actuacion(models.Model):
         verbose_name_plural = 'Actuaciones'
         ordering = ['-goles', '-asistencias']
         constraints = [
-            # Un jugador aparece una sola vez por partido: si anoto dos veces
-            # es la misma fila con goles=2, no dos filas.
             models.UniqueConstraint(
                 fields=['partido', 'jugador'],
                 name='una_actuacion_por_jugador_y_partido',

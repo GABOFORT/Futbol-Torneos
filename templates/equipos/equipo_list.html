@@ -2,13 +2,6 @@
 
 {% block titulo %}{{ titulo_pagina }}{% endblock %}
 
-{% comment %}
-Sirve a DOS pantallas y por eso los textos llegan por contexto: `equipo_list`
-(el directorio público, todas las ligas activas) y `equipos_de_mis_ligas` (la
-entrada desde el tablero, solo las propias). La cuadrícula, la ficha y los
-filtros se comparten tal cual; lo único distinto es de qué ligas se parte.
-{% endcomment %}
-
 {% block contenido %}
 <div class="max-w-7xl mx-auto p-6">
     <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
@@ -91,12 +84,7 @@ filtros se comparten tal cual; lo único distinto es de qué ligas se parte.
             {% endfor %}
         </div>
     {% empty %}
-        {% comment %}
-        Vacío por filtro y vacío de verdad no son lo mismo: al admin de una liga
-        recién creada, "no coinciden con la búsqueda" le hace revisar un filtro
-        que no puso. Lo que necesita saber es que su liga todavía no tiene
-        equipos, y por dónde crear el primero.
-        {% endcomment %}
+
         {% if filtros_activos %}
             <p class="text-gray-500">No hay equipos que coincidan con la búsqueda.</p>
         {% else %}

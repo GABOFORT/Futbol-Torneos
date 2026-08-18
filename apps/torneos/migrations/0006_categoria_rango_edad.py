@@ -8,7 +8,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # RenameField conserva la columna y sus datos: no se borra nada.
         migrations.RenameField(
             model_name='categoria',
             old_name='fecha_inicio',

@@ -5,12 +5,16 @@ from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
+from apps.partidos import altas
 from apps.partidos.models import Partido
 
 from apps.torneos.models import Categoria, Liga
 from apps.usuarios.eliminar import vista_eliminar
 from apps.usuarios.filtros import buscar, campo_texto, campo_opciones, hay_filtros
-from apps.usuarios.permissions import admin_liga_required, ligas_administradas, ligas_visibles
+from apps.usuarios.permissions import (
+    admin_liga_required, ligas_administradas, ligas_visibles,
+    ligas_y_torneos_administrados, ligas_y_torneos_visibles,
+)
 
 from apps.torneos import palmares
 
@@ -18,14 +22,7 @@ from . import perfil
 from .forms import EquipoCreateForm, EquipoForm, EquipoFormacionForm
 from .models import Equipo
 
-# Los encabezados de las dos lecturas del directorio. Van por contexto y no
-# escritos en la plantilla porque la plantilla es la misma: lo que cambia es de
-# donde se entra, y el titulo tiene que decirlo. `vacio` es el mensaje cuando no
-# hay nada Y no hay filtros puestos —con filtros, el mensaje correcto es que la
-# busqueda no encontro nada, que es otra cosa—.
 _TEXTOS_PUBLICOS = {
-    # `titulo_pagina` va aparte del encabezado: es el nombre de la pestaña del
-    # navegador, donde un titulo largo se corta y no se distingue de otro.
     'titulo_pagina': 'Equipos',
     'seccion': 'Equipos',
     'encabezado': 'Equipos por liga y categoría',
@@ -77,9 +74,6 @@ def equipos_de_mis_ligas(request):
 def _directorio(request, solo_propias):
     user = request.user
 
-    # El entrenador tiene otra lectura de esta pantalla: sus equipos, sin
-    # directorio ni filtros. No se pregunta en la version del tablero porque ahi
-    # no llega —`admin_liga_required` lo saca antes—.
     if not solo_propias and user.is_authenticated and user.role == user.ROLE_ENTRENADOR and not user.is_superuser:
         mis_equipos = list(
             Equipo.objects.filter(entrenador=user).select_related('liga', 'categoria').order_by('-fecha_creacion')
@@ -97,9 +91,6 @@ def _directorio(request, solo_propias):
             **_TEXTOS_PUBLICOS,
         })
 
-    # De que conjunto de ligas parte la pantalla. Es la unica diferencia entre
-    # las dos entradas, y de aca cuelga todo lo demas: el listado, el desplegable
-    # de ligas y el de categorias.
     ambito = ligas_administradas(user) if solo_propias else ligas_visibles(user)
     puede_administrar = user.is_authenticated and (user.is_superuser or user.role == user.ROLE_ADMIN_LIGA)
 
@@ -117,22 +108,14 @@ def _directorio(request, solo_propias):
         directorio = directorio.filter(categoria_id=int(categoria_id))
     directorio = list(directorio.order_by('liga__nombre', 'categoria__nombre', 'nombre'))
 
-    # Los premios de las temporadas ya cerradas, colgados de cada equipo. Un solo
-    # lote para todas las categorias del listado, no una consulta por tarjeta.
     premios = palmares.trofeos_por_categoria({e.categoria_id for e in directorio})
     for equipo in directorio:
         equipo.trofeos = premios.get(equipo.categoria_id, {}).get('equipos', {}).get(equipo.nombre, [])
 
-    # Las categorias del desplegable se acotan a la liga elegida: con 13
-    # categorias repartidas en 7 ligas, ofrecerlas todas juntas confunde.
     categorias = Categoria.objects.filter(liga__in=ambito)
     if liga_id.isdigit():
         categorias = categorias.filter(liga_id=int(liga_id))
 
-    # Los desplegables se arman sobre `ambito` y no sobre todas las ligas. Si no,
-    # la pantalla del tablero ofreceria filtrar por una liga ajena y devolveria
-    # cero resultados sin explicar por que: un filtro que no puede encontrar nada
-    # es peor que no tener filtro.
     filtros = [
         campo_texto('q', 'Buscar', termino, 'Nombre del equipo o del entrenador'),
         campo_opciones('liga', 'Liga', liga_id, ambito.order_by('nombre').values_list('id', 'nombre'), vacio='Todas'),
@@ -144,7 +127,6 @@ def _directorio(request, solo_propias):
         'mis_equipos': Equipo.objects.none(),
         'puede_crear': puede_administrar,
         'solo_mis_equipos': False,
-        # Los filtros son para todos: el visitante entra a buscar su equipo.
         'puede_filtrar': True,
         'filtros': filtros,
         'filtros_activos': hay_filtros(filtros),
@@ -164,8 +146,9 @@ def equipo_create(request):
             entrenador = form.cleaned_data['entrenador']
             observaciones = form.cleaned_data['observaciones']
             categorias = form.cleaned_data['categorias']
+            avisos = []
             for categoria in categorias:
-                Equipo.objects.create(
+                equipo = Equipo.objects.create(
                     nombre=nombre,
                     escudo=escudo,
                     liga=categoria.liga,
@@ -173,7 +156,13 @@ def equipo_create(request):
                     entrenador=entrenador,
                     observaciones=observaciones,
                 )
+                if altas.hay_calendario(categoria):
+                    aviso = altas.resumen(altas.agregar(categoria, equipo))
+                    if aviso:
+                        avisos.append(f'{categoria.nombre}: {aviso}')
             messages.success(request, f'Se creó "{nombre}" en {categorias.count()} categoría(s).')
+            for aviso in avisos:
+                messages.info(request, aviso)
             if modal:
                 return JsonResponse({'success': True})
             return redirect('equipo-list')
@@ -219,10 +208,9 @@ def equipo_edit(request, pk):
 
 @admin_liga_required
 def equipo_delete(request, pk):
-    equipo = get_object_or_404(Equipo, pk=pk, liga__in=ligas_administradas(request.user))
+    equipo = get_object_or_404(
+        Equipo, pk=pk, liga__in=ligas_y_torneos_administrados(request.user))
 
-    # Jugador.equipo y Partido.equipo_local/visitante son CASCADE: se van con el
-    # equipo, asi que hay que decirlo antes y no despues.
     jugadores = equipo.jugadores.count()
     partidos = equipo.partidos_local.count() + equipo.partidos_visitante.count()
     arrastra = []
@@ -255,7 +243,7 @@ def equipo_perfil(request, pk):
     """
     equipo = get_object_or_404(
         Equipo.objects.select_related('liga', 'categoria', 'entrenador')
-        .filter(liga__in=ligas_visibles(request.user)),
+        .filter(liga__in=ligas_y_torneos_visibles(request.user)),
         pk=pk,
     )
     return render(request, 'equipos/_perfil_modal.html', perfil.armar(equipo))
@@ -275,17 +263,12 @@ def equipo_detail(request, pk):
     if user.is_authenticated and user.role == user.ROLE_ENTRENADOR and not user.is_superuser and not es_dueno:
         return HttpResponseForbidden('No puedes ver equipos de otras ligas.')
 
-    # Los premios de la temporada, si la categoria ya termino: los del club van
-    # en el encabezado y los individuales al lado de quien los gano.
     premios = palmares.trofeos_por_categoria([equipo.categoria_id]).get(equipo.categoria_id, {})
     de_jugadores = premios.get('jugadores', {})
     jugadores = list(equipo.jugadores.all())
     for jugador in jugadores:
         jugador.trofeos = de_jugadores.get(f'{jugador.nombre} {jugador.apellido}', [])
 
-    # Los partidos del equipo: es lo que viene a buscar quien entra a la pagina
-    # de un club. Estaban solo dentro del perfil en modal, que hay que saber que
-    # existe para abrirlo.
     de_este = Partido.objects.filter(
         Q(equipo_local=equipo) | Q(equipo_visitante=equipo)
     ).select_related('categoria', 'equipo_local', 'equipo_visitante', 'sede')
@@ -301,7 +284,5 @@ def equipo_detail(request, pk):
         'jugadores': jugadores,
         'trofeos_equipo': premios.get('equipos', {}).get(equipo.nombre, []),
         'puede_editar': es_dueno or puede_administrar,
-        # Eliminar es solo para admin de liga y superadmin: el entrenador dueño
-        # puede editar su equipo pero no borrarlo.
         'puede_administrar': puede_administrar,
     })

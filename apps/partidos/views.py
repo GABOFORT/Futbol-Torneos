@@ -10,25 +10,22 @@ from apps.jugadores.models import Jugador
 from apps.torneos import palmares
 from apps.torneos.models import Categoria, Sede
 from apps.usuarios.filtros import buscar, campo_texto, campo_opciones, campo_oculto
-from apps.usuarios.permissions import admin_liga_required, ligas_administradas, ligas_visibles
+from apps.usuarios.permissions import (
+    admin_liga_required, ligas_administradas, ligas_visibles,
+    ligas_y_torneos_administrados, ligas_y_torneos_visibles,
+)
 
-from . import actuaciones, ficha, liguilla, mes
+from . import actuaciones, ficha, liguilla, mes, relampago
 from .calendario import equipo_que_descansa
 from .forms import PartidoFechaForm, ResultadoForm, SedeForm
 from .models import Partido
 
-# Donde abre el mapa cuando la liga todavia no tiene ninguna cancha marcada.
-# Villahermosa, que es donde juega la liga real del sistema.
 CENTRO_POR_DEFECTO = ('17.989500', '-92.947500')
 
-# El valor de la pastilla que muestra la liguilla. No es un numero porque la
-# liguilla no es una jornada mas: son los cruces de eliminacion.
 VALOR_LIGUILLA = 'liguilla'
+VALOR_PENDIENTES = 'pendientes'
 
-# Los encabezados de las dos lecturas del calendario. Van por contexto porque la
-# plantilla es la misma y lo que cambia es desde donde se entra.
 _TEXTOS_PUBLICOS = {
-    # Aparte del encabezado: es el nombre de la pestaña del navegador.
     'titulo_pagina': 'Partidos',
     'seccion': 'Partidos',
     'encabezado': 'Calendario de partidos',
@@ -62,8 +59,6 @@ def calendario_mes(request):
         Partido.objects
         .filter(
             categoria__liga__in=ligas_visibles(request.user),
-            # Se piden los dias del mes completos: `fecha` es un datetime, asi
-            # que acotar por `date` incluye las 23:59 del ultimo dia.
             fecha__date__gte=desde,
             fecha__date__lte=hasta,
         )
@@ -112,23 +107,17 @@ def partidos_de_mis_ligas(request):
 def _calendario(request, solo_propias):
     user = request.user
     puede_gestionar = user.is_authenticated and (user.is_superuser or user.role == user.ROLE_ADMIN_LIGA)
-    # En la version del tablero no hay entrenadores: `admin_liga_required` los
-    # saca antes de llegar aca.
     es_entrenador = (
         not solo_propias
         and user.is_authenticated and user.role == user.ROLE_ENTRENADOR and not user.is_superuser
     )
 
-    # De que conjunto de ligas parte la pantalla. El entrenador ademas se queda
-    # solo con los partidos de los equipos que dirige.
     ambito = ligas_administradas(user) if solo_propias else ligas_visibles(user)
     partidos = Partido.objects.filter(categoria__liga__in=ambito)
     if es_entrenador:
         partidos = partidos.filter(Q(equipo_local__entrenador=user) | Q(equipo_visitante__entrenador=user))
 
     termino = request.GET.get('q', '')
-    # Por defecto se abre en la primera jornada: el torneo completo son cientos
-    # de partidos de una vez y no se entiende nada.
     jornada = request.GET.get('jornada', '1')
 
     seleccion, opciones = _cascada(request.GET, ambito)
@@ -147,31 +136,17 @@ def _calendario(request, solo_propias):
         )
     if jornada == VALOR_LIGUILLA:
         partidos = partidos.exclude(fase=Partido.FASE_REGULAR)
+    elif jornada == VALOR_PENDIENTES:
+        partidos = partidos.filter(fase=Partido.FASE_REGULAR, fuera_de_jornada=True)
     elif jornada.isdigit():
-        # La liguilla no es una jornada del calendario: tiene su propia pastilla
-        # y no debe colarse entre los partidos del torneo regular.
-        partidos = partidos.filter(jornada=int(jornada), fase=Partido.FASE_REGULAR)
+        partidos = partidos.filter(
+            jornada=int(jornada), fase=Partido.FASE_REGULAR, fuera_de_jornada=False)
 
     partidos = partidos.select_related(
         'categoria', 'categoria__liga', 'equipo_local', 'equipo_visitante', 'ganador_penales',
         'sede', 'sede_original',
     ).order_by('categoria__liga__nombre', 'categoria__nombre', 'fecha', 'id')
 
-    # Que partidos puede administrar, uno por uno. Hace falta por la pantalla
-    # publica: ahi `ligas_visibles` trae tambien las ligas ajenas, y con un solo
-    # flag para toda la pantalla le saldrian al admin los botones de programar y
-    # cargar resultado sobre partidos que no son suyos —al pulsarlos se comeria
-    # un 404 de `partido_edit`, que si acota por `ligas_administradas`—.
-    #
-    # En la pantalla del tablero todos los partidos son propios y la marca sale
-    # verdadera para todos, pero se calcula igual: la comprobacion es por
-    # partido, no por pantalla, y asi sigue siendo cierta si algun dia una liga
-    # cambia de manos. El boton se dibuja donde la accion existe.
-    #
-    # `ligas_administradas` solo se llama si hay alguien que pueda administrar:
-    # esa funcion pregunta por `user.es_super_admin()`, que un AnonymousUser no
-    # tiene, y el visitante sin cuenta —que es la mayoria del trafico de esta
-    # pantalla— reventaba con AttributeError.
     partidos = list(partidos)
     ids_propias = (
         set(ligas_administradas(user).values_list('id', flat=True))
@@ -180,13 +155,6 @@ def _calendario(request, solo_propias):
     for partido in partidos:
         partido.se_puede_gestionar = puede_gestionar and partido.categoria.liga_id in ids_propias
 
-    # Los filtros son para todos, no solo para quien administra. El visitante es
-    # justamente el que mas los necesita: entra a buscar el partido de SU equipo
-    # y sin ellos tiene que recorrer el calendario entero de doce categorias.
-    #
-    # Se acotan solos: `_cascada` los arma sobre el mismo `ambito` del que sale
-    # el listado, asi que los desplegables nunca ofrecen una liga que esta
-    # pantalla no vaya a mostrar.
     filtros = [
         campo_texto('q', 'Buscar', termino, 'Equipo, categoría o liga'),
         campo_opciones('liga', 'Liga', seleccion['liga'],
@@ -196,13 +164,10 @@ def _calendario(request, solo_propias):
         campo_opciones('equipo', 'Equipo', seleccion['equipo'],
                        opciones['equipos'].values_list('id', 'nombre'), vacio='Todos'),
     ]
-    # La jornada se elige con las pastillas, pero tiene que viajar con el resto.
     filtros.append(campo_oculto('jornada', jornada))
 
     grupos = _agrupar_por_jornada(partidos)
     if not grupos and jornada.isdigit():
-        # El equipo no juega esa jornada: descansa. Sin esto la pantalla diria
-        # "no hay partidos", que al entrenador no le explica nada.
         if seleccion['equipo']:
             en_descanso, propio = Equipo.objects.filter(pk=seleccion['equipo']), es_entrenador
         elif es_entrenador:
@@ -216,7 +181,8 @@ def _calendario(request, solo_propias):
         'puede_gestionar': puede_gestionar,
         'es_superadmin': user.is_authenticated and user.es_super_admin(),
         'jornadas': _pastillas_jornada(
-            request, jornada, opciones['total_jornadas'], opciones['hay_liguilla']
+            request, jornada, opciones['total_jornadas'], opciones['hay_liguilla'],
+            opciones['hay_pendientes'],
         ),
         'filtros': filtros,
         'filtros_activos': bool(termino or seleccion['liga'] or seleccion['categoria'] or seleccion['equipo']),
@@ -258,8 +224,6 @@ def _cascada(parametros, ambito):
 
     equipo = elegido('equipo', equipos)
 
-    # Las jornadas disponibles dependen de lo elegido: si se acota a una
-    # categoria, no tiene sentido ofrecer jornadas que ahi no existen.
     alcance = Partido.objects.filter(categoria__liga__in=ligas)
     if liga:
         alcance = alcance.filter(categoria__liga_id=liga)
@@ -267,28 +231,41 @@ def _cascada(parametros, ambito):
         alcance = alcance.filter(categoria_id=categoria)
     if equipo:
         alcance = alcance.filter(Q(equipo_local_id=equipo) | Q(equipo_visitante_id=equipo))
-    # Solo las jornadas del torneo regular: la liguilla tiene jornada 0 y su
-    # propia pastilla, no seria la jornada siguiente a la ultima.
-    total = alcance.filter(fase=Partido.FASE_REGULAR).aggregate(
+    total = alcance.filter(fase=Partido.FASE_REGULAR, fuera_de_jornada=False).aggregate(
         maximo=Max('jornada')
     )['maximo'] or 0
     hay_liguilla = alcance.exclude(fase=Partido.FASE_REGULAR).exists()
+    hay_pendientes = alcance.filter(
+        fase=Partido.FASE_REGULAR, fuera_de_jornada=True).exists()
 
     seleccion = {'liga': liga, 'categoria': categoria, 'equipo': equipo}
     disponibles = {
         'ligas': ligas, 'categorias': categorias, 'equipos': equipos,
         'total_jornadas': total, 'hay_liguilla': hay_liguilla,
+        'hay_pendientes': hay_pendientes,
     }
     return seleccion, disponibles
 
 
-def _pastillas_jornada(request, actual, total, hay_liguilla=False):
+def _rotulo_pastilla(numero):
+    if numero == '':
+        return 'Todas'
+    if numero == VALOR_LIGUILLA:
+        return 'Liguilla'
+    if numero == VALOR_PENDIENTES:
+        return 'Pendientes'
+    return numero
+
+
+def _pastillas_jornada(request, actual, total, hay_liguilla=False, hay_pendientes=False):
     """Una pastilla por jornada, conservando los demas filtros en el enlace.
 
     La liguilla va como una pastilla mas al final, pero solo cuando existe:
     hasta que no arranca no hay nada que mostrar ahi.
     """
     valores = [''] + list(range(1, total + 1))
+    if hay_pendientes:
+        valores.append(VALOR_PENDIENTES)
     if hay_liguilla:
         valores.append(VALOR_LIGUILLA)
 
@@ -300,7 +277,7 @@ def _pastillas_jornada(request, actual, total, hay_liguilla=False):
         else:
             parametros['jornada'] = str(numero)
         pastillas.append({
-            'etiqueta': 'Todas' if numero == '' else ('Liguilla' if numero == VALOR_LIGUILLA else numero),
+            'etiqueta': _rotulo_pastilla(numero),
             'valor': str(numero),
             'activa': str(numero) == (actual or ''),
             'url': f'{request.path}?{parametros.urlencode()}',
@@ -320,7 +297,8 @@ def _bloques_de_descanso(equipos, jornada, propio=False):
     """
     bloques = []
     for equipo in equipos.select_related('categoria', 'categoria__liga'):
-        if Partido.objects.filter(categoria=equipo.categoria, jornada=jornada).exists():
+        if Partido.objects.filter(
+                categoria=equipo.categoria, jornada=jornada, fuera_de_jornada=False).exists():
             bloques.append({
                 'categoria': equipo.categoria,
                 'jornada': jornada,
@@ -340,26 +318,25 @@ def _agrupar_por_jornada(partidos):
     """
     bloques = {}
     for partido in partidos:
-        # La ida y la vuelta de una misma ronda van en bloques separados: son
-        # fechas distintas y mezclarlas haria imposible saber cual es cual.
-        clave = (partido.categoria_id, partido.fase, partido.jornada, partido.vuelta)
+        clave = (partido.categoria_id, partido.fase, partido.jornada,
+                 partido.vuelta, partido.fuera_de_jornada)
         bloques.setdefault(clave, {
             'categoria': partido.categoria,
             'jornada': partido.jornada,
             'es_liguilla': partido.es_liguilla,
+            'fuera_de_jornada': partido.fuera_de_jornada,
             'etiqueta': partido.etiqueta,
             'partidos': [],
         })
         bloques[clave]['partidos'].append(partido)
 
     for bloque in bloques.values():
-        if bloque['es_liguilla']:
+        if bloque['es_liguilla'] or bloque['fuera_de_jornada']:
             bloque['descansa'] = None
             continue
         equipos = Equipo.objects.filter(categoria=bloque['categoria'])
         bloque['descansa'] = equipo_que_descansa(equipos, bloque['partidos'])
     return list(bloques.values())
-
 
 
 def partido_detalle(request, pk):
@@ -375,19 +352,13 @@ def partido_detalle(request, pk):
     ultimos cinco del rival se pueden pulsar, y sin esto le fallarian todos.
     """
     partido = get_object_or_404(
-        Partido.objects.filter(categoria__liga__in=ligas_visibles(request.user)).select_related(
+        Partido.objects.filter(
+            categoria__liga__in=ligas_y_torneos_visibles(request.user)).select_related(
             'categoria', 'categoria__liga', 'equipo_local', 'equipo_visitante',
             'ganador_penales', 'sede', 'sede_original', 'no_se_presento',
         ),
         pk=pk,
     )
-    # Con `?modal=1` se devuelve solo el fragmento, que es lo que el modal
-    # inyecta; sin el, la pagina completa con barra, estilos y pie. Es el mismo
-    # criterio que usan jugadores, categorias, equipos y usuarios.
-    #
-    # Antes esta vista devolvia siempre el fragmento, asi que entrar por un
-    # enlace normal —desde la portada o compartiendo la direccion— mostraba el
-    # HTML crudo, sin nada de diseño.
     modal = request.GET.get('modal') == '1'
     contexto = {'partido': partido, 'en_modal': modal, **ficha.armar(partido)}
     if modal:
@@ -397,10 +368,9 @@ def partido_detalle(request, pk):
 
 @admin_liga_required
 def partido_edit(request, pk):
-    partido = get_object_or_404(Partido, pk=pk, categoria__liga__in=ligas_administradas(request.user))
-    # Una vez cargado el resultado el partido queda cerrado: no se le cambia la
-    # fecha a algo que ya se jugo. La validacion esta aca y no solo en el
-    # boton, para que tampoco se llegue escribiendo la URL.
+    partido = get_object_or_404(
+        Partido, pk=pk,
+        categoria__liga__in=ligas_y_torneos_administrados(request.user))
     if partido.jugado:
         raise Http404('Este partido ya tiene resultado y no se puede reprogramar.')
 
@@ -452,27 +422,25 @@ def sede_create(request, pk):
     cancha, y de paso se valida con el mismo criterio que el resto: si el admin
     no administra esa liga, no llega ni a crearla.
     """
-    partido = get_object_or_404(Partido, pk=pk, categoria__liga__in=ligas_administradas(request.user))
+    partido = get_object_or_404(
+        Partido, pk=pk,
+        categoria__liga__in=ligas_y_torneos_administrados(request.user))
     form = SedeForm(partido.categoria.liga, request.POST)
     if form.is_valid():
         sede = form.save()
         return JsonResponse({'success': True, 'id': sede.pk, 'nombre': sede.nombre})
 
-    # Al JS le alcanza con el primer problema: el formulario del mapa tiene tres
-    # campos y mostrar la lista entera no ayuda a corregirlo.
     primero = next(iter(form.errors.values()))[0]
     return JsonResponse({'success': False, 'error': primero}, status=400)
 
 
 @admin_liga_required
 def partido_resultado(request, pk):
-    partido = get_object_or_404(Partido, pk=pk, categoria__liga__in=ligas_administradas(request.user))
-    # No se carga el resultado de un partido que todavia no se jugo.
+    partido = get_object_or_404(
+        Partido, pk=pk,
+        categoria__liga__in=ligas_y_torneos_administrados(request.user))
     if not partido.ya_empezo:
         raise Http404('Este partido todavía no empezó.')
-    # Corregir un resultado ya cargado queda reservado al superadmin: asi un
-    # error de tipeo no es definitivo, pero el partido queda cerrado en el uso
-    # diario.
     if partido.jugado and not request.user.es_super_admin():
         raise Http404('Este partido ya tiene resultado. Solo el Administrador General puede corregirlo.')
 
@@ -486,8 +454,6 @@ def partido_resultado(request, pk):
         form = ResultadoForm(request.POST, instance=partido)
         filas = actuaciones.leer(request.POST, plantel)
         if form.is_valid():
-            # En un partido ganado por default no hubo goles que repartir: el
-            # marcador lo puso el sistema, asi que no hay nada que cuadrar.
             por_default = form.cleaned_data.get('no_se_presento') is not None
             if por_default:
                 filas = {}
@@ -501,9 +467,6 @@ def partido_resultado(request, pk):
                 resultado = form.save(commit=False)
                 resultado.estado = Partido.ESTADO_FINALIZADO
                 resultado.save()
-                # Tambien corre con filas vacias: si se esta corrigiendo un
-                # partido que antes tenia goleadores y ahora es default, hay que
-                # borrar los que habian quedado.
                 actuaciones.guardar(resultado, filas)
                 if por_default:
                     messages.success(
@@ -513,15 +476,10 @@ def partido_resultado(request, pk):
                     )
                 else:
                     messages.success(request, 'Resultado y goleadores registrados.')
-                # Si este resultado cerro una ronda de liguilla, la siguiente
-                # queda armada sola con los ganadores. Si fue una correccion que
-                # cambio quien paso, la ronda siguiente se rehace.
-                avance = liguilla.avanzar(resultado)
+                motor = relampago if resultado.es_de_torneo else liguilla
+                avance = motor.avanzar(resultado)
 
                 if avance['rehechas']:
-                    # Al rehacerse se borro la final vieja, si la habia: el
-                    # campeon declarado ya no vale y la categoria vuelve a estar
-                    # en juego.
                     palmares.reabrir(resultado.categoria)
                     messages.warning(
                         request,
@@ -538,9 +496,9 @@ def partido_resultado(request, pk):
                         f'{nombres.lower()}. Solo falta ponerles fecha y cancha.',
                     )
 
-                # Si el que se acaba de cargar fue la final, la categoria queda
-                # terminada y se le graba el palmares.
-                premios = palmares.cerrar_si_termino(resultado)
+                premios = (palmares.cerrar_torneo_si_termino(resultado)
+                           if resultado.es_de_torneo
+                           else palmares.cerrar_si_termino(resultado))
                 if premios:
                     messages.success(
                         request,
@@ -557,9 +515,6 @@ def partido_resultado(request, pk):
     context = {
         'form': form,
         'partido': partido,
-        # La etiqueta aclara si es la ida o la vuelta: en liguilla los dos
-        # partidos de una llave tienen los mismos equipos y el titulo solo no
-        # alcanza para saber cual se esta cargando.
         'title': ('Corregir resultado' if partido.jugado else 'Resultado') +
                  f' · {partido.etiqueta}: {partido.equipo_local} vs {partido.equipo_visitante}',
         'plantel_local': [j for j in plantel if j.equipo_id == partido.equipo_local_id],
@@ -569,8 +524,6 @@ def partido_resultado(request, pk):
         'problemas': problemas,
         'en_modal': modal,
     }
-    # Igual que la ficha: con `?modal=1` va el fragmento, sin el la pagina
-    # completa. Entrar por la direccion directa devolvia HTML crudo.
     if modal:
         return render(request, 'partidos/_resultado_form.html', context)
     return render(request, 'partidos/resultado_form.html', context)
@@ -599,15 +552,12 @@ def _cargados(partido, filas, *campos):
     salida = []
     for fila in origen:
         if 'goles' in campos:
-            # Un gol normal y uno en contra son dos renglones distintos aunque
-            # sean del mismo jugador: se marcan con casillas diferentes.
             if fila.get('goles'):
                 salida.append({
                     'jugador_id': fila['jugador_id'], 'cantidad': fila['goles'],
                     'en_contra': False, 'de_penal': fila.get('goles_de_penal', 0),
                 })
             if fila.get('goles_en_contra'):
-                # El renglon en contra nunca lleva penales: van con los goles propios.
                 salida.append({
                     'jugador_id': fila['jugador_id'], 'cantidad': fila['goles_en_contra'],
                     'en_contra': True, 'de_penal': 0,

@@ -11,75 +11,14 @@
             <allowedServerVariables>
                 <add name="HTTP_X_FORWARDED_PROTO" />
                 <add name="HTTP_X_FORWARDED_FOR" />
-                <!--
-                    Las dos de abajo hacen el mismo trabajo que las de arriba,
-                    pero con nombre propio. NO es duplicar por gusto:
-
-                    OJO al editar este comentario: un comentario XML NO admite
-                    dos guiones seguidos. Escribir el nombre del flag de
-                    Waitress tal cual (con los dos guiones que lleva delante)
-                    invalida el archivo ENTERO, y entonces IIS responde 500.19 a
-                    todas las URLs. Paso el 11/08/2026 y tiro el sitio.
-
-                    Waitress BORRA toda cabecera que empiece por "X-Forwarded-"
-                    salvo que se lo arranque con el flag "trusted-proxy"
-                    (clear_untrusted_proxy_headers vale True de fabrica). O sea
-                    que las dos de arriba nunca llegaron a Django. Eso explica
-                    dos cosas que ya habiamos visto sin entender:
-                      - SECURE_SSL_REDIRECT entraba en bucle infinito el
-                        11/08/2026: Django creia que toda peticion era HTTP.
-                      - Todas las IPs se veian como 127.0.0.1.
-
-                    Se usan nombres propios en vez de configurar el flag de
-                    Waitress porque aca NO hay un servicio de Windows: el
-                    servidor se levanta a mano, y un flag olvidado en el arranque
-                    romperia el bloqueo de axes en silencio. Una cabecera con
-                    otro nombre funciona se arranque como se arranque.
-                -->
                 <add name="HTTP_X_IP_CLIENTE" />
                 <add name="HTTP_X_ESQUEMA_ORIGINAL" />
             </allowedServerVariables>
             <rules>
-                <!--
-                    Deja pasar el desafio de Let's Encrypt SIN mandarlo a Django.
-
-                    Va PRIMERO a proposito: la regla de abajo captura "(.*)", o sea
-                    todas las URLs, asi que sin esta el desafio terminaba en Django,
-                    que devuelve 404 y la validacion falla. Se comprobo: un archivo
-                    puesto en esa carpeta daba 404 antes de agregar esta regla.
-
-                    Importa porque el certificado se renueva solo (win-acme, tarea
-                    diaria) y la proxima renovacion real es en septiembre. Si falla,
-                    el certificado vence y el sitio queda inaccesible por HTTPS.
-
-                    `action type="None"` = no reescribas, que IIS lo sirva del disco.
-                    Solo afecta a /.well-known/acme-challenge/, que la aplicacion no
-                    usa para nada.
-                -->
                 <rule name="ExcluirDesafioACME" stopProcessing="true">
                     <match url="^\.well-known/acme-challenge/" />
                     <action type="None" />
                 </rule>
-                <!--
-                    Manda a https:// a quien entre por http://.
-
-                    Lo hace IIS y no Django a proposito. Django solo puede saber
-                    por que esquema entro la peticion si el proxy se lo cuenta en
-                    una cabecera; si eso falla, redirige en bucle y el sitio deja
-                    de cargar (paso el 11/08/2026 al intentarlo desde Django).
-                    IIS mira {HTTPS} directamente —sabe por que puerto entro la
-                    conexion—, asi que no hay forma de que se equivoque.
-
-                    Ademas corta antes: no llega a molestar a Django.
-
-                    Va DESPUES de ExcluirDesafioACME para que la validacion del
-                    certificado se siga sirviendo por http simple, y ANTES del
-                    proxy para no reenviar algo que ya se va a redirigir.
-
-                    redirectType="Found" (302) y no 301: el 301 lo cachea el
-                    navegador y cuesta deshacerlo si hubiera que revertir. Se
-                    puede pasar a Permanent mas adelante, ya con confianza.
-                -->
                 <rule name="RedirigirAHTTPS" stopProcessing="true">
                     <match url="(.*)" />
                     <conditions>
@@ -87,42 +26,6 @@
                     </conditions>
                     <action type="Redirect" url="https://{HTTP_HOST}/{R:1}" redirectType="Found" />
                 </rule>
-                <!--
-                    Deja que IIS sirva /static/ y /media/ del disco, SIN pasar
-                    por Django.
-
-                    Antes los servia Django con django.views.static.serve (ver
-                    futbol/urls.py), que la propia documentacion desaconseja
-                    para produccion. El problema no es de seguridad sino de
-                    disponibilidad: Waitress tiene un numero fijo de hilos, y
-                    cada escudo, cada foto y cada CSS ocupaba uno mientras se
-                    transferia. Pidiendo en bucle la portada de una liga
-                    —1920 px— se le agotaban los hilos y el sitio dejaba de
-                    responder hasta para el login. No hace falta ninguna
-                    vulnerabilidad, alcanza con un for en un script.
-
-                    IIS sirve archivos estaticos con codigo nativo y cacheo, y
-                    de paso libera a Waitress para lo unico que deberia hacer.
-
-                    Las rutas fisicas NO van aca: son dos directorios virtuales
-                    del sitio (appcmd list vdir):
-                      /static -> ...\Futbol-Torneos\staticfiles
-                      /media  -> C:\Users\Administrador\Pictures\IMAGENES-FUTBOL
-                    `action type="None"` = no reescribas, resolvelo del disco.
-
-                    ORDEN, que es lo unico delicado de esta regla:
-                      - DESPUES de ExcluirDesafioACME, para no tocar la
-                        renovacion del certificado.
-                      - DESPUES de RedirigirAHTTPS, para que un estatico pedido
-                        por http:// siga yendo a https:// como el resto.
-                      - ANTES del proxy, que captura "(.*)" y se lo llevaria
-                        todo a Django, que es exactamente lo que pasaba antes.
-
-                    Las dos re_path de /static/ y /media/ en futbol/urls.py se
-                    dejan puestas a proposito: si esta regla se perdiera en un
-                    cambio futuro, el sitio se veria feo pero seguiria
-                    funcionando en vez de quedarse sin estilos ni imagenes.
-                -->
                 <rule name="ExcluirEstaticos" stopProcessing="true">
                     <match url="^(static|media)/" />
                     <action type="None" />
@@ -131,36 +34,7 @@
                     <match url="(.*)" />
                     <serverVariables>
                         <set name="HTTP_X_FORWARDED_PROTO" value="{MapProtocol:{HTTPS}}" />
-                        <!--
-                            La IP real del visitante. URL Rewrite NO manda esta
-                            cabecera por su cuenta: hay que ponerla a mano, igual
-                            que la del protocolo de arriba.
-
-                            Sin ella, Django ve REMOTE_ADDR = 127.0.0.1 en todas
-                            las peticiones (la conexion la abre IIS), y eso tuvo
-                            dos consecuencias reales el 11/08/2026:
-                              - django-axes bloqueaba "la IP" 127.0.0.1, o sea a
-                                TODOS los usuarios a la vez. Alguien fallo ocho
-                                veces con un usuario y dejo el sitio sin acceso.
-                              - Las bitacoras registraban 127.0.0.1 en cada
-                                linea, o sea que no servian para rastrear nada.
-
-                            `set` SOBREESCRIBE lo que haya mandado el cliente en
-                            esa cabecera, y eso es justo lo que la hace confiable:
-                            un atacante no puede inventarse una IP para esquivar
-                            el bloqueo, porque IIS pisa su valor con el de la
-                            conexion TCP real.
-                        -->
                         <set name="HTTP_X_FORWARDED_FOR" value="{REMOTE_ADDR}" />
-                        <!--
-                            Las que Django lee de verdad (Waitress no las toca,
-                            ver el comentario de allowedServerVariables).
-
-                            `set` SOBREESCRIBE lo que haya mandado el cliente, y
-                            eso es lo que las hace confiables: nadie puede
-                            inventarse una IP para esquivar el bloqueo de axes,
-                            porque IIS pisa su valor con el de la conexion real.
-                        -->
                         <set name="HTTP_X_IP_CLIENTE" value="{REMOTE_ADDR}" />
                         <set name="HTTP_X_ESQUEMA_ORIGINAL" value="{MapProtocol:{HTTPS}}" />
                     </serverVariables>
@@ -169,19 +43,6 @@
             </rules>
         </rewrite>
     </system.webServer>
-
-    <!--
-        Deja que IIS sirva los archivos SIN extension de la carpeta del desafio.
-
-        Los archivos que escribe Let's Encrypt se llaman con un token y no tienen
-        extension, y de fabrica IIS se niega a servir lo que no sabe que tipo es:
-        devolvia 404 aun con la regla de reescritura ya excluida. Se comprobo
-        poniendo dos archivos en la carpeta —uno .txt y uno sin extension—: el
-        primero se servia y el segundo no.
-
-        Va acotado con <location> a esa sola carpeta: no cambia como se sirve
-        ningun otro archivo del sitio.
-    -->
     <location path=".well-known">
         <system.webServer>
             <staticContent>

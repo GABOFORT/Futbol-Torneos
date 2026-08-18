@@ -21,8 +21,6 @@ def buscar(queryset, termino, campos):
         for campo in campos:
             condicion |= Q(**{f'{campo}__unaccent__icontains': palabra})
         queryset = queryset.filter(condicion)
-    # Buscar sobre un campo de otra tabla arma un JOIN, y con varias filas
-    # relacionadas el mismo registro aparece repetido.
     if any('__' in campo for campo in campos):
         queryset = queryset.distinct()
     return queryset

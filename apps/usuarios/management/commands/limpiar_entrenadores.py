@@ -24,9 +24,6 @@ class Command(BaseCommand):
                             help='Elimina de verdad. Sin esto solo muestra la lista.')
 
     def handle(self, *args, **opciones):
-        # `equipos__isnull=True` es la definicion exacta de "no dirige nada".
-        # No se filtra por fecha ni por quien las creo: si no tiene equipo, la
-        # cuenta no cumple ninguna funcion.
         sueltos = Usuario.objects.filter(
             role=Usuario.ROLE_ENTRENADOR, equipos__isnull=True,
         ).order_by('username')

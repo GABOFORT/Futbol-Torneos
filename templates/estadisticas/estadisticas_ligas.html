@@ -2,23 +2,6 @@
 
 {% block titulo %}{{ titulo_pagina }}{% endblock %}
 
-{% comment %}
-El listado de ligas.
-
-Antes cada fila decía solo "2 categoría(s)", que no ayuda a elegir: todas se
-veían iguales. Ahora la tarjeta muestra en qué momento está la liga, cuánto lleva
-jugado y sus cuatro cifras, para poder entrar sabiendo a qué.
-
-El avance va como anillo y no como barra: acompaña al logo en la misma columna y
-se lee de un vistazo aunque las tarjetas estén en dos columnas.
-
-Sirve a DOS pantallas y por eso los textos llegan por contexto en vez de estar
-escritos acá: `estadisticas_ligas` (la vitrina pública, todas las ligas activas)
-y `estadisticas_mis_ligas` (la entrada desde el tablero, solo las propias). El
-recorrido de acá en adelante es el mismo para las dos, así que la cuadrícula, la
-tarjeta y el enlace a categorías se comparten tal cual.
-{% endcomment %}
-
 {% block contenido %}
 <div class="max-w-[100rem] mx-auto p-6">
     <div class="mb-8">
@@ -49,10 +32,7 @@ tarjeta y el enlace a categorías se comparten tal cual.
                 </header>
 
                 <div class="tarjeta-liga-cuerpo">
-                    {% comment %}
-                    El anillo del calendario. Se dibuja con dos círculos y el
-                    recorte del trazo ya viene calculado desde la vista.
-                    {% endcomment %}
+
                     <div class="anillo" role="img" aria-label="{{ ficha.avance }}% del calendario jugado">
                         <svg viewBox="0 0 64 64" class="anillo-svg" aria-hidden="true">
                             <circle class="anillo-fondo" cx="32" cy="32" r="{{ ficha.anillo.radio }}"></circle>
@@ -83,16 +63,9 @@ tarjeta y el enlace a categorías se comparten tal cual.
                     </dl>
                 </div>
 
-                {% comment %}
-                En una liga terminada el avance ya no dice nada: lo que importa
-                es quién la ganó. En una que recién arranca, qué falta hacer.
-                {% endcomment %}
                 {% if ficha.campeones %}
                     <footer class="tarjeta-liga-pie tarjeta-liga-pie-campeones">
-                        {% comment %}
-                        Sin la palabra "campeón" el nombre no se explica solo: se
-                        leía como un equipo cualquiera al lado de una copa.
-                        {% endcomment %}
+
                         <p class="campeones-titulo">Campeones</p>
                         {% for premio in ficha.campeones %}
                             <span class="campeon-chip">

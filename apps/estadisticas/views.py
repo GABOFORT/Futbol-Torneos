@@ -66,8 +66,6 @@ def estadisticas_mis_ligas(request):
         'encabezado': 'Mis ligas',
         'descripcion': 'Elige una de tus ligas para ver sus categorías.',
         'vacio': 'Todavía no administras ninguna liga.',
-        # La vitrina completa sigue a un clic: el admin tambien es visitante del
-        # resto del sistema y no tiene por que salir del tablero a buscarla.
         'enlace_publico': True,
     })
 
@@ -89,13 +87,8 @@ def estadisticas_liga_categorias(request, liga_id):
 
 def tabla_posiciones(request, categoria_id):
     categoria = get_object_or_404(Categoria.objects.select_related('liga'), pk=categoria_id)
-    # El calculo vive en tabla.py: la ficha de partido lo usa para mostrar en
-    # que puesto va cada equipo, y no puede quedar dentro de esta vista.
     posiciones = tabla.calcular(categoria)
 
-    # Los trofeos se cuelgan de cada fila en la vista y no se buscan desde el
-    # template: las plantillas de Django no saben indexar un diccionario con una
-    # clave variable, y hacerlo con un filtro propio seria una consulta por fila.
     premios = palmares.trofeos_por_categoria([categoria.id])
     de_equipos = premios.get(categoria.id, {}).get('equipos', {})
     for fila in posiciones:
@@ -104,12 +97,7 @@ def tabla_posiciones(request, categoria_id):
     return render(request, 'estadisticas/tabla_posiciones.html', {
         'categoria': categoria,
         'posiciones': posiciones,
-        # Al lado de la tabla, para no tener que salir de la pantalla para saber
-        # quien mete los goles de esta categoria. Solo los cinco primeros: es un
-        # resumen que acompana a la tabla, no la tabla de goleo completa.
         'rankings': resumen.rankings(categoria, tope=5),
-        # Los iconos se resuelven aca porque su ruta vive en palmares.py, que es
-        # el unico lugar donde se declara el arte de cada premio.
         'icono_goleador': url_estatico(palmares.TROFEO_GOLEADOR[1]),
         'icono_asistidor': url_estatico(palmares.TROFEO_ASISTIDOR[1]),
         'icono_valla': url_estatico(dict(
@@ -144,12 +132,6 @@ def _ranking(request, campo, titulo, etiqueta):
         'jugador__equipo__categoria__nombre', 'jugador__equipo__liga__nombre',
     ])
 
-    # Los partidos jugados son los del equipo: hoy no se registra quien entro a
-    # la cancha, y en estas ligas juegan todos los inscritos.
-    #
-    # `fase=FASE_REGULAR` igual que en tabla.py y porteros.py: sin eso los
-    # partidos de liguilla inflaban el divisor y todos los promedios de gol
-    # salian mas bajos de lo real.
     jugados = {
         fila['categoria_id']: fila['total']
         for fila in Partido.objects.filter(
@@ -157,16 +139,11 @@ def _ranking(request, campo, titulo, etiqueta):
         .values('categoria_id').annotate(total=Count('id'))
     }
 
-    # Cuantos equipos tiene cada categoria, en UNA consulta para toda la tabla.
-    # Antes se contaban dentro del bucle, una consulta por renglon: con la tabla
-    # completa eran mas de mil ochocientas para dibujar una columna de promedio.
     equipos_por_categoria = {
         fila['categoria_id']: fila['total']
         for fila in Equipo.objects.values('categoria_id').annotate(total=Count('id'))
     }
 
-    # Un solo lote de premios para todas las categorias que aparezcan en la
-    # tabla, en vez de una consulta por renglon.
     premios = palmares.trofeos_por_categoria(
         set(actuaciones.values_list('jugador__equipo__categoria_id', flat=True))
     )
@@ -175,16 +152,11 @@ def _ranking(request, campo, titulo, etiqueta):
     for datos in (
         actuaciones.values(
             'jugador_id', 'jugador__nombre', 'jugador__apellido', 'jugador__numero',
-            # El id del equipo va porque su nombre abre el perfil en el modal.
-            # No cambia el agrupamiento: ya se agrupa por jugador, que es mas
-            # fino que el equipo.
             'jugador__equipo_id',
             'jugador__equipo__nombre', 'jugador__equipo__categoria__nombre',
             'jugador__equipo__categoria_id', 'jugador__equipo__liga__nombre',
         ).annotate(total=Sum(campo)).filter(total__gt=0).order_by('-total')
     ):
-        # Cada equipo juega la mitad de los partidos de su categoria: en cada
-        # uno participan dos equipos.
         categoria_id = datos['jugador__equipo__categoria_id']
         pj = _partidos_del_equipo(
             jugados.get(categoria_id, 0), equipos_por_categoria.get(categoria_id, 0))
@@ -249,6 +221,7 @@ def liguilla_categoria(request, categoria_id):
     return render(request, 'estadisticas/liguilla.html', {
         'categoria': categoria,
         'cuadro': liguilla.cuadro(categoria),
+        'mini': liguilla.mini(categoria),
     })
 
 
@@ -263,7 +236,6 @@ def tabla_porteros(request):
     termino = request.GET.get('q', '')
 
     equipos = Equipo.objects.filter(liga__in=ligas_visibles(user))
-    # El entrenador ve su propio equipo en el listado, igual que en los rankings.
     if user.is_authenticated and user.role == user.ROLE_ENTRENADOR and not user.is_superuser:
         equipos = equipos.filter(entrenador=user)
 
@@ -280,8 +252,6 @@ def tabla_porteros(request):
 
     bloques = porteros.calcular(equipos)
 
-    # El guante de oro va al lado del equipo que lo gano. Un solo lote para
-    # todas las categorias que se esten mostrando.
     premios = palmares.trofeos_por_categoria([b['categoria'].id for b in bloques])
     for bloque in bloques:
         de_equipos = premios.get(bloque['categoria'].id, {}).get('equipos', {})
@@ -301,8 +271,6 @@ def tabla_porteros(request):
         'bloques': bloques,
         'filtros': filtros,
         'filtros_activos': bool(termino or seleccion['liga'] or seleccion['categoria'] or seleccion['equipo']),
-        # Se cuentan categorias y no equipos: es lo que devuelve cada bloque, y
-        # es la unidad en la que se lee esta pantalla.
         'total_resultados': len(bloques),
     })
 
@@ -323,8 +291,6 @@ def vitrina(request):
 
     registros = list(Palmares.objects.select_related('categoria', 'categoria__liga'))
 
-    # Las imagenes del podio se resuelven aca y no en el template: la ruta de
-    # cada trofeo vive en palmares.py, que es el unico lugar donde se declara.
     podios = {clave: url_estatico(imagen) for clave, _, imagen in palmares.TROFEOS_EQUIPO}
 
     return render(request, 'estadisticas/vitrina.html', {
@@ -346,8 +312,6 @@ def pantalla_graficos(request):
     categorias = (Categoria.objects.filter(liga__in=ligas)
                   .select_related('liga').order_by('liga__nombre', 'nombre'))
 
-    # El id llega por la URL: se comprueba que exista y que sea visible, en vez
-    # de confiar en el parametro.
     elegida = request.GET.get('categoria', '')
     categoria = None
     if elegida.isdigit():

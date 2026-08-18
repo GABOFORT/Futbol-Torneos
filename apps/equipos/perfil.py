@@ -30,20 +30,8 @@ from apps.usuarios.barras import a_paso
 CUANTAS_FIGURAS = 3
 CUANTOS_DE_RACHA = 5
 
-# Partidos que tiene que haber jugado el equipo para que se dibuje el radar.
-# Con uno o dos, los promedios son ruido: un 4-0 de arranque lo deja con el
-# mejor ataque de la categoria, y el pentagono lo mostraria como una verdad.
-# Tres tampoco es mucho, pero ya alcanza para que un resultado suelto no defina
-# la forma entera.
 MINIMO_PARA_RADAR = 3
 
-# Los cinco ejes del radar. Cada uno declara como se calcula y hacia donde esta
-# lo bueno, para que la normalizacion no tenga que saberlo caso por caso.
-#
-# La etiqueta corta es la que va sobre el pentagono: "Juego colectivo" al lado
-# del vertice derecho se sale del lienzo. La larga se usa en la lista de abajo,
-# donde hay ancho de sobra.
-#   clave, etiqueta, corta, ayuda (lo que se lee al pasar el mouse), mejor
 EJES = [
     ('ataque', 'Ataque', 'Ataque', 'Goles a favor por partido', 'alto'),
     ('defensa', 'Defensa', 'Defensa', 'Goles recibidos por partido', 'bajo'),
@@ -62,7 +50,6 @@ def armar(equipo):
 
     return {
         'equipo': equipo,
-        # Los premios de la temporada, si la categoria ya termino.
         'trofeos': palmares.trofeos_de_equipo(equipo),
         'puesto': tabla.puesto_de(posiciones, equipo.id),
         'rendimiento': ficha.rendimiento(jugados),
@@ -72,19 +59,11 @@ def armar(equipo):
         'goleadores': ficha.lideres(equipo, 'goles', CUANTAS_FIGURAS),
         'asistidores': ficha.lideres(equipo, 'asistencias', CUANTAS_FIGURAS),
         'radar': radar(equipo, posiciones),
-        # Para que la pantalla pueda explicar por que todavia no hay radar en vez
-        # de dejar un hueco donde deberia estar.
         'minimo_radar': MINIMO_PARA_RADAR,
         'plantel_total': equipo.jugadores.count(),
-        # Un equipo recien inscrito no tiene con que llenar ninguna seccion. Se
-        # avisa una vez arriba en vez de repetir "sin datos" cinco veces.
         'sin_jugar': not jugados,
     }
 
-
-# --------------------------------------------------------------------------
-# Calendario del equipo
-# --------------------------------------------------------------------------
 
 def calendario(equipo):
     """Todos sus partidos, del mas viejo al mas nuevo: jugados y por jugarse.
@@ -114,8 +93,6 @@ def calendario(equipo):
             'ajenos': ajenos,
             'signo': ('G' if propios > ajenos else 'E' if propios == ajenos else 'P') if partido.jugado else '',
             'fecha': partido.fecha,
-            # En liguilla vale mas la fase que el numero de jornada: "Semifinal
-            # · Ida" dice algo, "Jornada 0" no.
             'etiqueta': partido.etiqueta,
             'competencia': partido.categoria.nombre,
         })
@@ -163,10 +140,6 @@ def _distribucion(posiciones, equipo_id):
     return {'tramos': [t for t in tramos if t['cantidad']], 'total': total}
 
 
-# --------------------------------------------------------------------------
-# Radar
-# --------------------------------------------------------------------------
-
 def radar(equipo, posiciones):
     """Los cinco ejes del equipo, normalizados contra su categoria.
 
@@ -175,8 +148,6 @@ def radar(equipo, posiciones):
     lleno en ese caso seria mentir.
     """
     crudos = _metricas_de_la_categoria(equipo.categoria, posiciones)
-    # Solo entran los que ya jugaron: el cero de quien no jugo no es un merito
-    # ni un demerito, y arruinaria la escala de todos los demas.
     con_datos = {eid: m for eid, m in crudos.items() if m['pj']}
     if equipo.id not in con_datos or len(con_datos) < 2:
         return None
@@ -195,9 +166,6 @@ def radar(equipo, posiciones):
             'ayuda': ayuda,
             'valor': propias[clave],
             'puntaje': puntaje,
-            # El puntaje exacto es el que se muestra como numero; este otro es el
-            # que dibuja la barra, redondeado al paso de las clases .ancho-N. La
-            # diferencia no llega a 3 puntos y no se percibe.
             'ancho': a_paso(puntaje),
         })
 
@@ -219,8 +187,6 @@ def _metricas_de_la_categoria(categoria, posiciones):
 
     equipos = Equipo.objects.filter(categoria=categoria)
 
-    # Porterias a cero por equipo. porteros.calcular agrupa por categoria y
-    # aca hay una sola, asi que se aplana el unico bloque que devuelve.
     a_cero = {}
     for bloque in porteros.calcular(equipos):
         for fila in bloque['filas']:
@@ -244,12 +210,8 @@ def _metricas_de_la_categoria(categoria, posiciones):
             'pj': pj,
             'ataque': fila['gf'] / pj if pj else 0,
             'defensa': fila['gc'] / pj if pj else 0,
-            # El maximo por partido son 3 puntos; el punto extra por penales
-            # convierte un empate en 2, nunca en mas de 3.
             'efectividad': fila['pts'] / (pj * 3) if pj else 0,
             'solidez': a_cero.get(eid, 0) / pj if pj else 0,
-            # No puede pasar de 1: el sistema no deja cargar mas asistencias que
-            # goles (lo valida actuaciones.errores).
             'sociedad': (asistencias.get(eid) or 0) / fila['gf'] if fila['gf'] else 0,
         }
     return metricas
@@ -278,16 +240,11 @@ def _normalizar(valor, valores, mejor):
     return round(min(100, valor * 100 / tope))
 
 
-# El lienzo del radar es apaisado y no cuadrado: el pentagono si es simetrico,
-# pero las etiquetas de los vertices de los costados se escriben hacia afuera y
-# necesitan lugar. Con un lienzo cuadrado, "Efectividad" se salia por la
-# derecha y quedaba cortada.
 ANCHO = 280
 ALTO = 200
 CENTRO_X = ANCHO / 2
 CENTRO_Y = ALTO / 2
 RADIO = 68
-# Cuanto se separa la etiqueta del vertice, para no pisar la linea del borde.
 AIRE_ETIQUETA = 14
 ANILLOS = (25, 50, 75, 100)
 
@@ -302,8 +259,6 @@ def _geometria(ejes):
     puntos, vertices, etiquetas = [], [], []
 
     for indice, eje in enumerate(ejes):
-        # Se arranca arriba (-90 grados) y se gira en el sentido del reloj, que
-        # es como se lee un pentagono.
         coseno, seno = _direccion(indice, total)
 
         puntos.append(_punto(coseno, seno, RADIO * eje['puntaje'] / 100))
@@ -314,8 +269,6 @@ def _geometria(ejes):
             'y': y,
             'texto': eje['corta'],
             'puntaje': eje['puntaje'],
-            # Un texto centrado sobre el vertice de un costado se monta encima
-            # del pentagono: los de cada lado se escriben hacia afuera.
             'anclaje': 'middle' if abs(coseno) < 0.2 else ('start' if coseno > 0 else 'end'),
         })
 

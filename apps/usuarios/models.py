@@ -54,6 +54,12 @@ class Usuario(AbstractUser):
         default=1,
         help_text='Cuántas ligas puede crear este Administrador de Liga.',
     )
+    limite_torneos = models.PositiveIntegerField(
+        'Límite de torneos',
+        default=1,
+        help_text='Cuántos torneos relámpago puede tener en curso a la vez. '
+                  'Los que ya terminaron no ocupan lugar.',
+    )
 
     creado_por = models.ForeignKey(
         'self',

@@ -41,12 +41,8 @@ from ._datos_demo import (
     posiciones_para,
 )
 
-# Semilla fija: dos corridas dan exactamente los mismos datos. Sirve para poder
-# hablar de "el 3-0 de Arsenal" sabiendo que sigue ahi despues de rehacer.
 SEMILLA = 20260806
 
-# Marca de las cuentas que crea este comando. Es lo unico que mira `--borrar`
-# para saber que usuario puede eliminar: nunca toca una cuenta que no creo el.
 PREFIJO_DT = 'dt-demo-'
 
 
@@ -95,7 +91,6 @@ class Command(BaseCommand):
 
         self._huerfanos()
 
-    # ------------------------------------------------------------------ resumen
 
     def _resumen(self, ligas):
         self.stdout.write('SE BORRARIA:')
@@ -124,7 +119,6 @@ class Command(BaseCommand):
             f'\n  {total_cat} categorias · {total_eq} equipos · '
             f'~{total_eq * medio} jugadores')
 
-    # ------------------------------------------------------------------- borrar
 
     def _borrar(self, ligas):
         """Borra en el orden que exigen las claves foraneas.
@@ -139,11 +133,7 @@ class Command(BaseCommand):
         Equipo.objects.filter(liga_id__in=ids).delete()
         Sede.objects.filter(liga_id__in=ids).delete()
         Categoria.objects.filter(liga_id__in=ids).delete()
-        # El palmares no tiene FK a la liga (guarda el nombre, justamente para
-        # sobrevivir a su borrado), asi que se busca por nombre.
         Palmares.objects.filter(liga_nombre__in=list(ligas)).delete()
-        # Solo las cuentas que creo este comando. Las 197 que ya existian no se
-        # tocan: no las creo el, y borrar cuentas ajenas no es su trabajo.
         Usuario.objects.filter(username__startswith=PREFIJO_DT).delete()
 
     def _huerfanos(self):
@@ -161,7 +151,6 @@ class Command(BaseCommand):
                 f'No se borraron: son cuentas que no creo este comando.\n'
                 f'Para revisarlas y eliminarlas: python manage.py limpiar_entrenadores'))
 
-    # ---------------------------------------------------------------- construir
 
     def _construir(self, ligas):
         for cfg in LIGAS:
@@ -169,8 +158,6 @@ class Command(BaseCommand):
             liga.fecha_inicio = datetime.date(*cfg['inicio'])
             liga.fecha_final = datetime.date(*cfg['final'])
             liga.activa = True
-            # Se reabre: la temporada que se va a cargar esta en curso. Si queda
-            # alguna categoria sin cerrar, la liga no esta terminada.
             liga.cerrada = False
             liga.fecha_cierre = None
             liga.save()
@@ -178,11 +165,6 @@ class Command(BaseCommand):
             sedes = self._crear_sedes(liga, cfg)
             self.stdout.write(f'\n{liga.nombre}')
 
-            # Primero se inscriben TODAS las categorias de la liga y recien
-            # despues se juega. No es un detalle de orden: al cargar la final de
-            # una categoria el sistema cierra la liga si no le queda ninguna
-            # otra en juego, y creandolas de a una la primera en terminar
-            # cerraba la liga entera antes de que existieran las demas.
             armadas = []
             for nombre_cat, limite, cupo, perfil in cfg['categorias']:
                 categoria = self._crear_categoria(liga, nombre_cat, limite, cupo, perfil)
@@ -197,8 +179,6 @@ class Command(BaseCommand):
                     f'{Partido.objects.filter(categoria=categoria).count():3} partidos · '
                     f'{Jugador.objects.filter(equipo__categoria=categoria).count():3} jugadores')
 
-            # La liga cierra sola si todas sus categorias terminaron. Se relee
-            # porque el cierre de la ultima final pudo haberla tocado.
             liga.refresh_from_db()
             palmares_mod.cerrar_liga_si_termino(liga)
 
@@ -220,8 +200,6 @@ class Command(BaseCommand):
             nombre=nombre,
             limite_edad=limite,
             cupo_equipos=cupo,
-            # Con calendario generado la inscripcion tiene que estar cerrada: es
-            # el requisito que el propio sistema exige para generar los partidos.
             inscripcion_abierta=(perfil == 'sin_calendario'),
             activa=True,
             descripcion=f'Categoria formativa {nombre} de {liga.nombre}.',
@@ -229,18 +207,12 @@ class Command(BaseCommand):
 
     def _crear_equipos(self, liga, categoria, cfg, sedes, cupo):
         equipos = []
-        # Se toman los primeros del listado: asi los clubes grandes estan en
-        # todas las categorias y los chicos solo en las de cupo amplio, que es
-        # como funciona el futbol formativo de verdad.
         for club, nombre_sede, _, _ in cfg['clubes'][:cupo]:
             dt = self._crear_entrenador(liga, categoria, club, cfg['pais'])
             equipo = Equipo.objects.create(
                 nombre=club, liga=liga, categoria=categoria, entrenador=dt,
                 formacion=self.rng.choice(FORMACIONES),
             )
-            # La cancha del club, para que siempre reciba en su estadio. Se
-            # guarda por id y no en el objeto: los partidos de liguilla los crea
-            # el sistema y llegan aca releidos de la base, sin el atributo.
             self.sede_de_equipo[equipo.id] = sedes[nombre_sede]
             equipo.sede_demo = sedes[nombre_sede]
             self._crear_plantel(equipo, categoria, cfg['pais'])
@@ -255,8 +227,6 @@ class Command(BaseCommand):
             first_name=nombre,
             last_name=apellido,
             role=Usuario.ROLE_ENTRENADOR,
-            # Contraseña inutilizable: son cuentas de demostracion y nadie tiene
-            # que poder entrar con ellas.
             password=make_password(None),
             organization=club,
         )
@@ -266,7 +236,6 @@ class Command(BaseCommand):
         nombre = self.rng.choice(datos[sexo])
         apellido = self.rng.choice(datos['apellidos'])
         if datos['compuesto']:
-            # En Mexico y España se llevan los dos apellidos.
             segundo = self.rng.choice(datos['apellidos'])
             if segundo != apellido:
                 apellido = f'{apellido} {segundo}'
@@ -289,15 +258,11 @@ class Command(BaseCommand):
 
         jugadores = []
         for indice, posicion in enumerate(posiciones):
-            # Alrededor de una de cada cinco es mujer: el sistema es mixto.
             femenino = self.rng.random() < 0.20
             sexo = Jugador.SEXO_FEMENINO if femenino else Jugador.SEXO_MASCULINO
             nombre, apellido = self._persona(pais, 'mujer' if femenino else 'varon')
 
             tope = categoria.edad_maxima_para(sexo)
-            # Un plantel formativo no es todo de la misma edad: hay chicos del
-            # año y algunos mas grandes. Las mujeres, ademas, pueden llegar al
-            # año extra, y unas cuantas lo usan.
             if femenino and self.rng.random() < 0.35:
                 edad = tope
             else:
@@ -327,17 +292,14 @@ class Command(BaseCommand):
             return Jugador.ESTADO_BAJA
         return Jugador.ESTADO_ACTIVO
 
-    # ----------------------------------------------------------------- simular
 
     def _simular(self, categoria, equipos, sedes, perfil, cfg):
         if perfil == 'sin_calendario':
-            return   # equipos inscritos y nada mas: la inscripcion sigue abierta
+            return
 
         partidos = self._generar_calendario(categoria, equipos, perfil)
 
         if perfil == 'arranque':
-            # Calendario recien armado: se juega solo la primera jornada, el
-            # resto queda por delante con su fecha puesta.
             self._jugar(partidos, hasta_jornada=1)
             return
 
@@ -346,7 +308,6 @@ class Command(BaseCommand):
             self._jugar(partidos, hasta_jornada=ultima // 2)
             return
 
-        # 'liguilla' y 'terminada' necesitan el torneo regular completo.
         self._jugar(partidos)
         self._simular_liguilla(categoria, sedes, hasta_el_final=(perfil == 'terminada'))
 
@@ -354,9 +315,6 @@ class Command(BaseCommand):
         """Arma el fixture con el mismo round-robin que usa el sistema."""
         jornadas = armar_jornadas(equipos)
 
-        # De donde arranca el calendario, para que hoy la categoria este justo
-        # en el punto que pide su perfil: lo jugado queda atras y lo que falta,
-        # por delante.
         if perfil == 'arranque':
             primera = self.hoy - datetime.timedelta(days=7)
         elif perfil == 'mitad':
@@ -374,8 +332,6 @@ class Command(BaseCommand):
                 creados.append(Partido(
                     categoria=categoria,
                     equipo_local=local, equipo_visitante=visitante,
-                    # `orden` es la llave del cuadro de liguilla: en el torneo
-                    # regular no significa nada y queda en cero.
                     jornada=numero, orden=0,
                     fecha=cuando, fecha_original=cuando,
                     sede=local.sede_demo, sede_original=local.sede_demo,
@@ -417,8 +373,6 @@ class Command(BaseCommand):
         los goles asignados tienen que dar el marcador, y no puede haber mas
         asistencias que goles de jugada.
         """
-        # Un equipo no se presenta cada tanto: el rival gana 3-0 y no hay nada
-        # que cargar. Es un caso raro pero existe, y el sistema lo contempla.
         if not partido.es_liguilla and self.rng.random() < 0.03:
             ausente = self.rng.choice([partido.equipo_local, partido.equipo_visitante])
             partido.no_se_presento = ausente
@@ -433,16 +387,10 @@ class Command(BaseCommand):
         goles_local = self._marcador()
         goles_visitante = self._marcador()
 
-        # Una de cada tres finales se va a los penales. Se fuerza el empate en
-        # vez de esperar a que salga solo: la tanda que corona campeon es de los
-        # caminos mas delicados del sistema y tiene que quedar cargado en los
-        # datos, no depender de la suerte del sorteo.
         if es_final and self.rng.random() < 0.35:
             goles_visitante = goles_local
 
         if es_final and goles_local == goles_visitante:
-            # La final empatada se define por penales, y el sistema exige la
-            # tanda cargada. Se dibuja como en television.
             tiros = self.rng.randint(3, 5)
             perdidos = self.rng.randint(1, 2)
             gana_local = self.rng.random() < 0.5
@@ -451,8 +399,6 @@ class Command(BaseCommand):
             partido.ganador_penales = (
                 partido.equipo_local if gana_local else partido.equipo_visitante)
         elif not partido.es_liguilla and goles_local == goles_visitante and self.rng.random() < 0.30:
-            # En el torneo regular el empate se puede desempatar por penales:
-            # el que gana la tanda se lleva un punto extra.
             tiros = self.rng.randint(3, 5)
             gana_local = self.rng.random() < 0.5
             partido.penales_local = tiros if gana_local else tiros - 1
@@ -502,7 +448,6 @@ class Command(BaseCommand):
             if not marcador:
                 continue
 
-            # Uno de cada veinticinco goles es en contra del rival.
             en_contra = 1 if (marcador and self.rng.random() < 0.04) else 0
             if en_contra:
                 sumar(self.rng.choice(planteles[rival]).id, 'goles_en_contra', 1)
@@ -512,14 +457,10 @@ class Command(BaseCommand):
             for _ in range(propios):
                 goleador = self._goleador(planteles[lado])
                 sumar(goleador.id, 'goles', 1)
-                # Uno de cada siete goles llega desde el punto penal. Va DENTRO
-                # de `goles`, no aparte: al marcador ya sumo.
                 if self.rng.random() < 0.14:
                     sumar(goleador.id, 'goles_de_penal', 1)
                     penales += 1
 
-            # Un penal no se asiste, y un gol en contra tampoco: el tope de
-            # asistencias son los goles de jugada del equipo.
             asistibles = propios - penales
             for _ in range(asistibles):
                 if self.rng.random() < 0.55:
@@ -542,7 +483,6 @@ class Command(BaseCommand):
         pesos = {'delantero': 10, 'medio': 5, 'defensa': 2, 'portero': 1}
         return self.rng.choices(plantel, weights=[pesos[j.posicion] for j in plantel])[0]
 
-    # ---------------------------------------------------------------- liguilla
 
     def _simular_liguilla(self, categoria, sedes, hasta_el_final):
         """Juega la liguilla usando el motor del sistema, ronda por ronda.
@@ -559,8 +499,6 @@ class Command(BaseCommand):
 
         liguilla_mod.iniciar(categoria)
 
-        # Hasta donde se juega. Si la categoria no tiene que terminar, se corta
-        # antes de la final para que quede una liguilla en curso de verdad.
         fases = [Partido.FASE_CUARTOS, Partido.FASE_SEMIFINAL,
                  Partido.FASE_TERCERO, Partido.FASE_FINAL]
         if not hasta_el_final:
@@ -585,7 +523,6 @@ class Command(BaseCommand):
                 partido.save(update_fields=['fecha', 'fecha_original', 'sede', 'sede_original'])
 
                 self._cargar_resultado(partido, es_final=(fase == Partido.FASE_FINAL))
-                # Cerrada la ronda, el sistema arma la siguiente solo.
                 liguilla_mod.avanzar(partido)
                 if fase == Partido.FASE_FINAL:
                     palmares_mod.cerrar_si_termino(partido)

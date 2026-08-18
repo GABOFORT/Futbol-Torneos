@@ -1,17 +1,6 @@
-{% comment %}
-Perfil de un equipo, pensado para abrirse dentro del modal desde cualquier
-pantalla donde aparezca un escudo.
 
-Es de solo lectura y no lleva <form>, asi que el JS del modal solo le engancha el
-boton de cerrar.
-
-Todo lo que se muestra sale de los marcadores y de las actuaciones cargadas. No
-hay posesion, tiros, tarjetas ni minutos jugados: esos datos no se capturan en
-ningun lado del sistema (ver el docstring de apps/equipos/perfil.py).
-{% endcomment %}
 <div class="perfil-modal">
 
-    {% comment %} Cabecera fija: el escudo y el nombre siguen a la vista al bajar. {% endcomment %}
     <header class="perfil-cabecera">
         <div class="perfil-cabecera-fila">
             <div class="perfil-identidad">
@@ -20,7 +9,7 @@ ningun lado del sistema (ver el docstring de apps/equipos/perfil.py).
                     <p class="perfil-liga">{{ equipo.liga.nombre }} · {{ equipo.categoria.nombre }}</p>
                     <h2 class="perfil-nombre">
                         {{ equipo.nombre }}
-                        {# Los premios de la temporada, si la categoría ya terminó. #}
+
                         {% include 'torneos/_trofeos.html' with trofeos=trofeos tam='lg' %}
                     </h2>
                     <p class="perfil-entrenador">
@@ -37,10 +26,7 @@ ningun lado del sistema (ver el docstring de apps/equipos/perfil.py).
         </div>
 
         {% if puesto and not sin_jugar %}
-            {% comment %}
-            La tira de numeros duros. Va en la cabecera porque es lo primero que
-            se busca al abrir un equipo: en que lugar va y cuanto lleva.
-            {% endcomment %}
+
             <div class="perfil-tira">
                 <div class="perfil-dato perfil-dato-fuerte">
                     <span class="perfil-dato-valor">{{ puesto.puesto }}º</span>
@@ -80,10 +66,7 @@ ningun lado del sistema (ver el docstring de apps/equipos/perfil.py).
     </header>
 
     {% if sin_jugar %}
-        {% comment %}
-        La mayoria de los equipos cargados todavia no jugaron. El vacio se
-        explica una sola vez y no se dibujan secciones huecas debajo.
-        {% endcomment %}
+
         <div class="perfil-vacio">
             <p class="perfil-vacio-titulo">Todavía no jugó partidos</p>
             <p class="perfil-vacio-texto">
@@ -98,29 +81,17 @@ ningun lado del sistema (ver el docstring de apps/equipos/perfil.py).
 
     <div class="perfil-cuerpo">
 
-        {% comment %} ---- Columna izquierda: el calendario ---- {% endcomment %}
         <section class="perfil-columna perfil-columna-calendario">
             <h3 class="perfil-titulo">Calendario</h3>
             {% if calendario %}
                 <ol class="perfil-calendario">
                     {% for fila in calendario %}
-                        {% comment %}
-                        Cada renglon abre la ficha de ese partido. El modal
-                        reemplaza su contenido, asi que se pasa del equipo al
-                        partido sin abrir una ventana encima de la otra.
-                        {% endcomment %}
+
                         <li class="perfil-juego open-modal {% if fila.jugado %}perfil-juego-{{ fila.signo }}{% endif %}"
                             data-url="{% url 'partido-detalle' fila.partido_id %}?modal=1"
                             role="button" tabindex="0"
                             aria-label="Ver la ficha del partido contra {{ fila.rival.nombre }}">
 
-                            {% comment %}
-                            El circulo de la izquierda es el resultado: G ganado,
-                            E empatado, P perdido. Es lo que se busca al recorrer
-                            un calendario de un vistazo, asi que va primero y con
-                            color. Los que todavia no se jugaron llevan un guion
-                            en gris, para que la columna no quede desalineada.
-                            {% endcomment %}
                             {% if fila.jugado %}
                                 <span class="perfil-juego-signo signo-{{ fila.signo }}"
                                       title="{% if fila.signo == 'G' %}Ganado{% elif fila.signo == 'E' %}Empatado{% else %}Perdido{% endif %}">{{ fila.signo }}</span>
@@ -132,10 +103,7 @@ ningun lado del sistema (ver el docstring de apps/equipos/perfil.py).
 
                             <span class="perfil-juego-datos">
                                 <span class="perfil-juego-rival">{{ fila.rival.nombre }}</span>
-                                {% comment %}
-                                La localia baja aca: es un dato de contexto, no
-                                lo que se busca al recorrer la lista.
-                                {% endcomment %}
+
                                 <span class="perfil-juego-pie">
                                     {% if fila.de_local %}Local{% else %}Visitante{% endif %}
                                     · {{ fila.etiqueta }}
@@ -160,20 +128,12 @@ ningun lado del sistema (ver el docstring de apps/equipos/perfil.py).
             {% endif %}
         </section>
 
-        {% comment %} ---- Columna derecha: como viene ---- {% endcomment %}
         <div class="perfil-columna perfil-columna-datos">
 
             {% if distribucion %}
                 <section class="perfil-bloque">
                     <h3 class="perfil-titulo">Balance de resultados</h3>
-                    {% comment %}
-                    Barra apilada: los tres anchos vienen sumando 100 desde
-                    perfil.py, porque redondear cada uno por separado en el
-                    template dejaria una ranura o desbordaria la barra.
 
-                    Se aplican con las clases .ancho-N de base.html y no con un
-                    style inline, igual que en la ficha de partido.
-                    {% endcomment %}
                     <div class="perfil-barra-apilada" role="img"
                          aria-label="{% for t in distribucion.tramos %}{{ t.cantidad }} {{ t.etiqueta|lower }}{% if not forloop.last %}, {% endif %}{% endfor %} de {{ distribucion.total }} partidos">
                         {% for tramo in distribucion.tramos %}
@@ -196,11 +156,6 @@ ningun lado del sistema (ver el docstring de apps/equipos/perfil.py).
                         {{ equipo.categoria.nombre }} que ya jugaron. 100 es el mejor de la categoría.
                     </p>
 
-                    {% comment %}
-                    Las coordenadas del pentagono se calculan en perfil.py: las
-                    plantillas de Django no hacen trigonometria. El SVG escala
-                    solo con el ancho de la columna.
-                    {% endcomment %}
                     <svg class="perfil-radar" viewBox="0 0 {{ radar.geometria.ancho }} {{ radar.geometria.alto }}" role="img"
                          aria-label="{% for eje in radar.ejes %}{{ eje.etiqueta }} {{ eje.puntaje }} de 100{% if not forloop.last %}. {% endif %}{% endfor %}">
                         {% for anillo in radar.geometria.anillos %}
@@ -220,7 +175,7 @@ ningun lado del sistema (ver el docstring de apps/equipos/perfil.py).
                         {% for eje in radar.ejes %}
                             <li class="perfil-eje" title="{{ eje.ayuda }}">
                                 <span class="perfil-eje-nombre">{{ eje.etiqueta }}</span>
-                                {# El numero es el puntaje exacto; la barra usa el paso de 5 de .ancho-N. #}
+
                                 <span class="perfil-eje-barra"><span class="ancho-{{ eje.ancho }}"></span></span>
                                 <span class="perfil-eje-puntaje">{{ eje.puntaje }}</span>
                             </li>

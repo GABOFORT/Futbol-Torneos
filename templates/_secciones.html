@@ -1,0 +1,17 @@
+{% for seccion in form.secciones %}
+    <fieldset class="form-seccion">
+        <legend class="form-seccion-titulo">{{ seccion.titulo }}</legend>
+        {% if seccion.descripcion %}
+            <p class="form-seccion-nota">{{ seccion.descripcion }}</p>
+        {% endif %}
+
+        <div class="form-seccion-campos">
+            {% for field in seccion.campos %}
+                {% if field.name == 'limite_edad' %}<div class="restricciones" data-restricciones>{% endif %}
+                {% if field.name == 'edad_minima' %}<div class="restricciones" data-minimos>{% endif %}
+                {% include '_campo.html' %}
+                {% if field.name == 'peso_minimo' %}</div></div>{% endif %}
+            {% endfor %}
+        </div>
+    </fieldset>
+{% endfor %}

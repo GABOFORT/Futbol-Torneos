@@ -9,21 +9,16 @@
     root.innerHTML = '';
   }
 
-  // Engancha todo el HTML recien inyectado en el modal. Se vuelve a llamar
-  // cuando el servidor rechaza el formulario y lo redibuja, porque ese HTML
-  // trae un <form> nuevo y el listener anterior murio con el viejo.
   function bindModal(url) {
     const root = document.getElementById('modal-root');
-    // Se consulta con guardas porque la respuesta no siempre es el modal: si la
-    // vista redirige (por ejemplo al topar el limite de ligas) llega la pagina
-    // entera, sin estos elementos.
+
     const cerrar = document.getElementById('modal-close');
     const cancelar = document.getElementById('modal-cancel');
     if (cerrar) cerrar.onclick = closeModal;
     if (cancelar) cancelar.onclick = closeModal;
-    // Ojo de contrasena, capitalizacion y obligatorios en rojo: static/js/forms.js
+
     window.initFormulario(root);
-    // El mapa para marcar la cancha, cuando la pantalla cargo Leaflet.
+
     if (window.initSede) window.initSede(root);
 
     const form = document.getElementById('modal-form');
@@ -47,9 +42,6 @@
     });
   }
 
-  // Mientras viaja la peticion la ventana se abre con un indicador. Sin esto
-  // el modal se quedaba mudo: en una conexion lenta parecia que el clic no
-  // habia hecho nada y la gente volvia a pulsar.
   function abrirCargando() {
     const root = document.getElementById('modal-root');
     root.innerHTML = '<div class="modal-cargando" role="status" aria-live="polite">' +
@@ -61,21 +53,18 @@
 
   function openModal(url) {
     abrirCargando();
-    // no-store: el HTML del modal se pide por fetch, y sin esto el navegador
-    // devuelve la version cacheada aunque el template ya haya cambiado.
+
     fetch(url, { cache: 'no-store' })
       .then(res => res.text())
       .then(html => {
-        // La vista no siempre devuelve el modal: si niega el acceso (por ejemplo
-        // al topar el limite de ligas) responde JSON pidiendo recargar, y el
-        // mensaje sale como toast en vez de abrirse una ventana vacia.
+
         if (recargarSiCorresponde(html)) { closeModal(); return; }
         const root = document.getElementById('modal-root');
         root.innerHTML = html;
         bindModal(url);
       })
       .catch(function () {
-        // Un error de red no puede dejar la ventana girando para siempre.
+
         const root = document.getElementById('modal-root');
         root.innerHTML = '<div class="modal-cargando" role="alert">' +
                          '<span class="modal-cargando-texto">No se pudo cargar. Revisa tu conexión e inténtalo de nuevo.</span></div>';
@@ -89,7 +78,7 @@
         return true;
       }
     } catch (error) {
-      // Es HTML, o sea el modal de verdad.
+
     }
     return false;
   }
@@ -102,10 +91,6 @@
     }
   });
 
-  // Hay disparadores que no son botones, como la tarjeta del calendario que
-  // abre la ficha del partido. Con el teclado esos no reciben el clic solos, asi
-  // que se les traduce Enter y espacio. A un <button> o un <a> no hay que
-  // traducirles nada: el navegador ya les dispara el clic y se abriria dos veces.
   document.addEventListener('keydown', function (event) {
     if (event.key !== 'Enter' && event.key !== ' ') return;
     const trigger = event.target.closest('.open-modal');
@@ -114,8 +99,6 @@
     openModal(trigger.dataset.url);
   });
 
-  // Cerrar con Escape y con un clic en el fondo: la ficha es larga y el boton de
-  // cerrar puede quedar lejos si el usuario ya scrolleo.
   document.addEventListener('keydown', function (event) {
     if (event.key === 'Escape') closeModal();
   });

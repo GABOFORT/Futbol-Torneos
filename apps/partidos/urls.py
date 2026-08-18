@@ -3,7 +3,6 @@ from . import views
 
 urlpatterns = [
     path('', views.partido_list, name='partido-list'),
-    # El mismo calendario acotado a lo propio, para entrar desde el tablero.
     path('mis-ligas/', views.partidos_de_mis_ligas, name='partidos-mis-ligas'),
     path('calendario/', views.calendario_mes, name='partido-calendario'),
     path('<int:pk>/', views.partido_detalle, name='partido-detalle'),

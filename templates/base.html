@@ -15,11 +15,7 @@
     <meta property="og:image" content="{% static_v 'img/buho-sport.jpeg' %}">
     <meta name="twitter:card" content="summary">
     <link rel="canonical" href="{{ request.path }}">
-    {% comment %}
-    tokens.css va primero: declara las variables que usan las otras dos hojas.
-    El orden entre portada.css y sistema.css sí importa y no debe cambiarse a la
-    ligera — comparten especificidad, así que gana el último en cargar.
-    {% endcomment %}
+
     <link rel="stylesheet" href="{% static_v 'css/tokens.css' %}">
     <link rel="stylesheet" href="{% static_v 'css/tailwind.css' %}">
     <link rel="stylesheet" href="{% static_v 'css/portada.css' %}">
@@ -34,10 +30,7 @@
     <script defer src="{% static_v 'js/cuenta-regresiva.js' %}"></script>
     <script defer src="{% static_v 'js/seguir.js' %}"></script>
     <script defer src="{% static_v 'js/toasts.js' %}"></script>
-    {% comment %}
-    El aviso de sesión solo se carga si hay sesión: a un visitante sin cuenta no
-    se le manda un temporizador a correr en el teléfono para nada.
-    {% endcomment %}
+
     {% if user.is_authenticated %}<script defer src="{% static_v 'js/sesion.js' %}"></script>{% endif %}
     {% block cabecera_extra %}{% endblock %}
 </head>
@@ -49,15 +42,7 @@
     {% include 'navbar.html' %}
 
     {% if messages %}
-        {% comment %}
-        role="status" y aria-live: un aviso que solo se ve no existe para quien
-        usa lector de pantalla, y estos son la única confirmación de que se
-        guardó un resultado.
 
-        El cierre y el temporizador viven en static/js/toasts.js. Estaban aquí
-        como <script> suelto y como onclick= en el botón; sacarlos es lo que
-        hace falta para poder pasar la CSP de reporte a bloqueo.
-        {% endcomment %}
         <div id="toast-root" role="status" aria-live="polite"
              class="fixed top-4 right-4 z-[60] flex w-full max-w-sm flex-col gap-2 px-4 sm:px-0">
             {% for message in messages %}

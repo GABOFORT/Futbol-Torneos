@@ -1,24 +1,7 @@
-/* ============================================================================
-   Tokens del sistema — la única fuente de los valores que se repiten.
 
-   Antes no existía este archivo: entre sistema.css y portada.css había 977
-   literales de color (140 distintos), 26 tamaños de fuente, 17 radios y 25
-   sombras. El verde de marca estaba escrito a mano 62 veces. Cambiar cualquier
-   cosa del aspecto obligaba a buscar y reemplazar por todo el CSS, y bastaba
-   con que se escapara una para que quedaran dos verdes casi iguales.
-
-   Va en su propio archivo y se carga PRIMERO, antes de tailwind.css: las
-   variables se resuelven al usarse, no al declararse, así que los dos archivos
-   de componentes pueden leerlas sin importar el orden entre ellos.
-
-   Regla para lo que venga: si un valor aparece más de dos veces, es un token.
-   ============================================================================ */
 
 :root {
-    /* ---- Color de marca ----
-       El verde de BUHO. `--verde-900` es el de la barra y los títulos; el 700
-       es el de los enlaces y acentos sobre blanco. Los dos pasan AA de sobra
-       (9.11:1 y 5.02:1). */
+
     --verde-950: #052e16;
     --verde-900: #14532d;
     --verde-800: #166534;
@@ -29,11 +12,6 @@
     --verde-100: #dcfce7;
     --verde-50:  #f0fdf4;
 
-    /* ---- Grises ----
-       OJO con `--gris-400`: 2.54:1 sobre blanco, NO pasa AA. Existe solo para
-       bordes, separadores e iconos decorativos. Para texto, el gris más claro
-       que se puede usar es `--texto-debil` (4.83:1). Esa distinción es el
-       motivo por el que los grises están partidos en dos bloques. */
     --gris-900: #111827;
     --gris-700: #374151;
     --gris-600: #4b5563;
@@ -45,17 +23,10 @@
     --gris-50:  #f9fafb;
     --blanco:   #fff;
 
-    /* ---- Color de texto, por jerarquía y no por tono ----
-       Se nombran por su papel para que elegir el color de un texto no sea
-       elegir un gris de una lista: hay uno fuerte, uno normal y uno débil, y
-       los tres pasan AA sobre blanco. */
-    --texto-fuerte: var(--gris-900);   /* 16.1:1 */
-    --texto-normal: var(--gris-600);   /*  7.6:1 */
-    --texto-debil:  var(--gris-500);   /*  4.8:1 — el mínimo que pasa AA */
+    --texto-fuerte: var(--gris-900);
+    --texto-normal: var(--gris-600);
+    --texto-debil:  var(--gris-500);
 
-    /* ---- Estados ----
-       Cada uno con su fondo, su borde y su color de texto ya emparejados, para
-       que nadie tenga que volver a comprobar el contraste de la combinación. */
     --exito-fondo: var(--verde-100);
     --exito-texto: var(--verde-800);
     --aviso-fondo: #fef3c7;
@@ -67,106 +38,56 @@
     --oro:         #f59e0b;
     --oro-claro:   #facc15;
 
-
-    /* ---- Acentos secundarios ----
-       Salieron de la segunda pasada: son los que quedaron repitiéndose cinco
-       veces o más después de migrar la paleta principal. */
     --oro-fondo:     #fffbeb;
     --oro-texto:     #b45309;
     --rojo-600:      #dc2626;
-    --verde-brillo:  #4ade80;   /* sobre fondo oscuro: la franja y el hero */
+    --verde-brillo:  #4ade80;
     --amarillo-300:  #fde047;
     --gris-800:      #1f2937;
 
-    /* ---- Escala tipográfica ----
-       Diez pasos. El piso son 12px y es deliberado: había 94 declaraciones a
-       11px o menos —hasta un `font-size: 9px`— y la mitad iban con un gris de
-       2.54:1. Un padre mirando en qué cancha juega su hijo no puede estar
-       leyendo a 10 píxeles.
+    --texto-xs:   0.75rem;
+    --texto-sm:   0.8125rem;
+    --texto-md:   0.9375rem;
+    --texto-base: 1rem;
+    --texto-lg:   1.125rem;
+    --texto-xl:   1.25rem;
+    --texto-2xl:  1.5rem;
+    --texto-3xl:  1.875rem;
+    --texto-4xl:  2.5rem;
+    --texto-5xl:  3rem;
 
-       No es una escala matemática: los pasos son los que el sistema ya usaba,
-       redondeados a valores que se distinguen entre sí. Una progresión
-       geométrica pura habría obligado a retocar las 400 reglas. */
-    --texto-xs:   0.75rem;      /* 12px — etiquetas, metadatos, pies de dato */
-    --texto-sm:   0.8125rem;    /* 13px — celdas de tabla, datos secundarios */
-    --texto-md:   0.9375rem;    /* 15px — texto de apoyo */
-    --texto-base: 1rem;         /* 16px — cuerpo */
-    --texto-lg:   1.125rem;     /* 18px — destacados, nombres de equipo */
-    --texto-xl:   1.25rem;      /* 20px — subtítulos */
-    --texto-2xl:  1.5rem;       /* 24px — títulos de sección */
-    --texto-3xl:  1.875rem;     /* 30px — cifras */
-    --texto-4xl:  2.5rem;       /* 40px — cifras grandes */
-    --texto-5xl:  3rem;         /* 48px — hero */
-
-    /* ---- Radios ----
-       De diecisiete valores a cinco. La píldora es el lenguaje dominante del
-       sistema (89 usos) y se queda; lo que sobraba era tener tarjetas a 1rem,
-       1.125rem, 1.25rem, 1.5rem y 1.75rem sin ningún criterio que las
-       distinguiera. */
     --radio-sm:   0.5rem;
     --radio-md:   0.75rem;
     --radio-lg:   1rem;
     --radio-xl:   1.5rem;
     --radio-full: 9999px;
 
-    /* ---- Sombras ----
-       Había veinticinco variantes. No se aplanan todas a una sola escala porque
-       no cumplen la misma función: hay sombras de elevación, sombras teñidas de
-       verde bajo las tarjetas de marca, sombras para fondo oscuro y anillos de
-       foco, que ni siquiera son sombras —son el indicador de "aquí está el
-       teclado" y se dibujan con box-shadow por conveniencia.
-
-       Quedan agrupadas por lo que comunican, y dentro de cada grupo por altura.
-       Una sombra dice a qué distancia está un elemento del papel; con
-       veinticinco valores distintos dejaba de decir nada. */
-
-    /* Elevación neutra, sobre fondo claro */
     --sombra-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
     --sombra-md: 0 2px 8px rgba(0, 0, 0, 0.06);
     --sombra-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
     --sombra-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
 
-    /* Sobre fondo oscuro: el negro translúcido de la elevación neutra no se ve */
     --sombra-oscura: 0 4px 14px rgba(0, 0, 0, 0.28);
 
-    /* Teñidas de verde: bajo las tarjetas de marca, para que la sombra no se lea
-       como suciedad gris sobre el verde claro */
     --sombra-marca-sm: 0 2px 8px rgba(22, 101, 52, 0.12);
     --sombra-marca-md: 0 4px 16px rgba(20, 83, 45, 0.08);
     --sombra-marca-lg: 0 10px 30px -12px rgba(20, 83, 45, 0.25);
     --sombra-marca-xl: 0 20px 40px -20px rgba(5, 46, 22, 0.5);
 
-    /* Ámbar, para los trofeos y los avisos de premio */
     --sombra-oro: 0 4px 14px rgba(180, 83, 9, 0.18);
 
-    /* ---- Anillos de foco ----
-       Estaban a 0.15 y 0.18 de opacidad, que sobre blanco casi no se distingue.
-       Suben a 0.35: el indicador de foco tiene que verse, es el único rastro
-       que tiene quien navega con teclado de dónde está parado. */
     --anillo-foco:  0 0 0 3px rgba(22, 163, 74, 0.35);
     --anillo-error: 0 0 0 3px rgba(220, 38, 38, 0.30);
     --anillo-oro:   0 0 0 3px rgba(250, 204, 21, 0.40);
 
-    /* Marcar "hoy" en el calendario NO es un indicador de foco, aunque se dibuje
-       igual. Tenía el mismo token que el foco y al subir ese de 0.15 a 0.35 —para
-       que el foco de teclado se viera— el día de hoy se volvió el elemento más
-       llamativo de la pantalla, aun estando vacío. Va más suave: tiene que
-       ubicarte, no gritarte. */
     --anillo-hoy:   0 0 0 2px rgba(22, 163, 74, 0.18);
 
-    /* ---- Área táctil mínima ----
-       44px es el mínimo cómodo para el pulgar (WCAG 2.5.8 Target Size). Va como
-       token porque hay que aplicarlo en más de un sitio y escribirlo a mano
-       invita a poner 40 y quedarse corto. */
     --toque: 2.75rem;
 
-    /* ---- Transiciones ---- */
     --paso-rapido: 0.12s ease;
     --paso-normal: 0.15s ease;
 }
 
-/* Quien pide menos movimiento no debería recibir ninguno. Las dos hojas de
-   componentes ya lo respetaban por separado; aquí queda como red global. */
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
         animation-duration: 0.01ms !important;
@@ -176,42 +97,16 @@
     }
 }
 
-/* ============================================================================
-   Estados base — foco y deshabilitado
-
-   Van aquí y no en cada componente porque son garantías del sistema, no
-   decisiones de diseño de una pieza: cualquier cosa enfocable tiene que verse
-   enfocada, y cualquier cosa deshabilitada tiene que parecerlo.
-   ============================================================================ */
-
-/* Había 22 reglas de foco y solo 5 usaban :focus-visible; el resto de los
-   controles dependía del contorno por defecto del navegador, que sobre una
-   píldora blanca con borde redondeado prácticamente no se distingue.
-
-   Se usa :focus-visible y no :focus a propósito: el navegador solo lo activa
-   cuando el foco llegó por teclado. Con :focus, pulsar un botón con el ratón
-   dejaba el anillo pegado y parecía un fallo de dibujo.
-
-   El offset separa el anillo del borde del control para que no se confundan. */
 :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
     outline: 2px solid var(--verde-600);
     outline-offset: 2px;
     border-radius: var(--radio-sm);
 }
 
-/* Sobre el verde oscuro de la barra, un anillo verde no se ve: ahí va el ámbar,
-   que es el color de acento del sistema sobre fondo oscuro. */
 :where(.cabecera, .franja, .hero, .menu-movil) :where(a, button, [tabindex]):focus-visible {
     outline-color: var(--oro-claro);
 }
 
-/* Deshabilitado. Antes existía UNA regla en todo el CSS
-   (.sesion-boton:disabled), así que un botón de guardar deshabilitado se veía
-   idéntico a uno activo: la única pista era que no pasaba nada al pulsarlo.
-
-   `filter: grayscale` además del alfa porque los botones de marca son verdes y
-   bajarles la opacidad sobre blanco los deja en verde pastel, que sigue
-   leyéndose como un botón disponible. */
 :where(button, input, select, textarea, a)[disabled],
 :where(button, input, select, textarea):disabled,
 [aria-disabled='true'] {
@@ -221,25 +116,18 @@
     pointer-events: none;
 }
 
-/* Mientras se envía un formulario. Lo pone forms.js al hacer submit: el cursor
-   de espera y el bloqueo evitan el doble envío, que en este sistema significa
-   dos veces el mismo resultado cargado. */
 .enviando {
     opacity: 0.7;
     cursor: progress;
     pointer-events: none;
 }
 
-/* ---- Avisos (toasts) ----
-   El estado de salida que aplica static/js/toasts.js. Antes el aviso se
-   borraba de golpe del DOM: aparecía un cartel y seis segundos después había un
-   hueco, sin nada que indicara que se había ido por sí solo. */
 .toast-message {
     transition: opacity var(--paso-normal), transform var(--paso-normal);
 }
 
 .toast-message.toast-saliendo {
     opacity: 0;
-    /* Se va hacia la derecha, que es de donde entró. */
+
     transform: translateX(1rem);
 }

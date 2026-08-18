@@ -65,8 +65,6 @@ def panorama(ligas):
         clave='liga', cuantas=Count('id'), cupo=Sum('cupo_equipos'),
         cerradas=Count('id', filter=Q(cerrada=True)),
     )
-    # Los campeones de las temporadas ya cerradas: es lo que corona la tarjeta de
-    # una liga concluida, donde el avance del calendario ya no dice nada.
     campeones = {}
     for fila in Palmares.objects.filter(categoria__liga_id__in=ids).values(
             'categoria__liga', 'categoria_nombre', 'campeon'):
@@ -93,9 +91,6 @@ def panorama(ligas):
             'goles': goles,
             'goles_por_partido': round(goles / jugados, 1) if jugados else None,
             'avance': avance,
-            # El anillo se dibuja con un SVG y su recorte se calcula aca: en el
-            # template no se puede multiplicar, y meter JS por un numero fijo
-            # seria pagar caro un dato que ya se conoce al renderizar.
             'anillo': _anillo(avance),
             'estado': _estado_de_liga(liga, c, totales, jugados),
             'campeones': campeones.get(liga.id, []),
@@ -172,8 +167,6 @@ def panel(liga):
     jugadores = Jugador.objects.filter(equipo__liga=liga).count()
     sin_plantilla = equipos.annotate(cuantos=Count('jugadores')).filter(cuantos=0).count()
 
-    # Lo que se pudo cargar recien ahora: penales del juego y partidos ganados
-    # en el escritorio. Son dos cifras que ninguna liga chica suele mostrar.
     de_penal = Actuacion.objects.filter(
         jugador__equipo__liga=liga
     ).aggregate(total=Sum('goles_de_penal'))['total'] or 0
@@ -189,9 +182,6 @@ def panel(liga):
         'sin_fecha': conteo['sin_fecha'],
         'avance': _porcentaje(jugados, conteo['totales']),
         'goles': goles,
-        # Se redondea a un decimal aca y no en el template: el filtro
-        # floatformat de Django no divide, y hacerlo en la plantilla obligaria a
-        # pasar el divisor por separado.
         'goles_por_partido': round(goles / jugados, 1) if jugados else None,
         'goles_de_penal': de_penal,
         'por_default': por_default,
@@ -219,8 +209,6 @@ def tarjetas(liga):
         jugados, totales = datos.get('jugados', 0), datos.get('totales', 0)
 
         posiciones = tabla.calcular(categoria) if jugados else []
-        # Solo es lider quien ya jugo: con la tabla en cero, el primero de la
-        # lista es el que quedo arriba por orden alfabetico y no significa nada.
         lider = next((fila for fila in posiciones if fila['pj']), None)
 
         salida.append({
@@ -254,9 +242,6 @@ def rankings(categoria, tope=10):
     goles = _top_jugadores(categoria, 'goles', tope)
     asistencias = _top_jugadores(categoria, 'asistencias', tope)
 
-    # Las porterias se piden a porteros.calcular para no reescribir su regla de
-    # orden, que no es el total sino el promedio (mientras queden partidos por
-    # jugarse, el total premiaria al que jugo menos).
     bloques = porteros.calcular(Equipo.objects.filter(categoria=categoria))
     vallas = bloques[0]['filas'][:tope] if bloques else []
 
@@ -335,8 +320,6 @@ def _conteos_por_categoria(categorias):
         .annotate(
             totales=Count('id'),
             jugados=Count('id', filter=Q(estado=Partido.ESTADO_FINALIZADO)),
-            # La jornada mas alta con partidos ya jugados es 'por donde va', y
-            # la mas alta del calendario es cuantas tiene en total.
             jornadas=Count('jornada', distinct=True, filter=Q(fase=Partido.FASE_REGULAR)),
             jugadas=Count(
                 'jornada', distinct=True,
@@ -378,8 +361,6 @@ def _goleador_por_categoria(categorias):
     mejores = {}
     for fila in filas:
         cid = fila['jugador__equipo__categoria_id']
-        # Vienen ordenadas de mayor a menor por categoria: la primera de cada
-        # una es su goleador y del resto no hace falta ocuparse.
         if cid in mejores:
             continue
         mejores[cid] = {

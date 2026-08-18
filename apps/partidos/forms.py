@@ -18,7 +18,6 @@ class SelectDeSedes(forms.Select):
 
     def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
         opcion = super().create_option(name, value, label, selected, index, subindex, attrs)
-        # La opcion vacia ('Sin definir todavía') no tiene instancia detras.
         sede = getattr(value, 'instance', None)
         if sede is not None:
             opcion['attrs'].update({
@@ -46,8 +45,6 @@ class PartidoFechaForm(StyledFormMixin, forms.ModelForm):
                 f'Originalmente estaba para el {self.instance.fecha_original:%d/%m/%Y a las %H:%M}.'
             )
 
-        # Solo las canchas de la liga de este partido: un admin no debe poder
-        # mandar el id de una cancha de otra liga pasandolo a mano en el POST.
         sede = self.fields['sede']
         sede.queryset = Sede.objects.filter(liga=self.instance.categoria.liga)
         sede.required = False
@@ -60,19 +57,13 @@ class PartidoFechaForm(StyledFormMixin, forms.ModelForm):
     def save(self, commit=True):
         partido = super().save(commit=False)
         if partido.fecha_original is None:
-            # Primera vez que se programa: queda como referencia y no se vuelve
-            # a tocar, para poder mostrar despues para cuando era.
             partido.fecha_original = partido.fecha
             partido.estado = Partido.ESTADO_PROGRAMADO
         elif partido.fecha != partido.fecha_original:
             partido.estado = Partido.ESTADO_REPROGRAMADO
         else:
-            # Volvio a la fecha original: deja de estar reprogramado.
             partido.estado = Partido.ESTADO_PROGRAMADO
 
-        # La cancha se sigue igual que la fecha: se recuerda la primera para
-        # poder avisar despues que el partido se mudo. Cambiar de cancha no
-        # marca el partido como reprogramado: reprogramar es mover el cuando.
         if partido.sede_id and partido.sede_original_id is None:
             partido.sede_original_id = partido.sede_id
 
@@ -105,8 +96,6 @@ class SedeForm(StyledFormMixin, forms.ModelForm):
         self.fields['direccion'].widget.attrs['placeholder'] = 'Se llena sola al marcar el punto'
 
     def clean_nombre(self):
-        # unique_together vive en el modelo, pero el form no lo valida solo
-        # porque la liga no es un campo suyo: se asigna recien en save().
         nombre = self.cleaned_data['nombre'].strip()
         if Sede.objects.filter(liga=self.liga, nombre__iexact=nombre).exists():
             raise forms.ValidationError('Ya tienes una cancha con ese nombre en esta liga.')
@@ -132,13 +121,9 @@ class ResultadoForm(StyledFormMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         partido = self.instance
-        # Con el nombre del equipo se sabe de quien son los goles sin tener que
-        # recordar cual de los dos era el local.
         self.fields['goles_local'].label = f'Goles de {partido.equipo_local.nombre}'
         self.fields['goles_visitante'].label = f'Goles de {partido.equipo_visitante.nombre}'
 
-        # Va primero en el formulario: es lo que decide si hay resultado que
-        # cargar o no, y preguntarlo despues del marcador seria al reves.
         ausente = self.fields['no_se_presento']
         ausente.queryset = Equipo.objects.filter(
             pk__in=[partido.equipo_local_id, partido.equipo_visitante_id]
@@ -150,7 +135,6 @@ class ResultadoForm(StyledFormMixin, forms.ModelForm):
             f'Si un equipo no llega, el rival gana {Partido.MARCADOR_DEFAULT}-0 por default '
             f'y no se cargan goleadores.'
         )
-        # El JS oculta el marcador y las secciones de goles cuando se elige uno.
         ausente.widget.attrs['data-ausente'] = '1'
 
         penales = self.fields['ganador_penales']
@@ -161,23 +145,28 @@ class ResultadoForm(StyledFormMixin, forms.ModelForm):
         penales.required = False
         penales.label = '¿Quién ganó los penales?'
         penales.help_text = 'Suma un punto extra al que los gane.'
-        # El marcador de la tanda acompana al ganador de los penales: si se
-        # patearon, se anota cuantos convirtio cada uno para poder dibujarla.
         for lado, campo in (('local', 'penales_local'), ('visitante', 'penales_visitante')):
             equipo = partido.equipo_local if lado == 'local' else partido.equipo_visitante
             self.fields[campo].required = False
             self.fields[campo].label = f'Penales de {equipo.nombre}'
             self.fields[campo].widget.attrs['data-solo-si-empate'] = '1'
 
-        # Los penales solo aparecen en la final, que va a partido unico: es el
-        # unico cruce que hay que definir si o si, porque no se puede coronar
-        # campeon con una tabla que ya termino.
-        define_el_titulo = partido.fase == Partido.FASE_FINAL and partido.cierra_la_llave
+        define_el_titulo = partido.cierra_la_llave and (
+            partido.fase == Partido.FASE_FINAL or partido.es_de_torneo)
 
-        if partido.es_liguilla and not define_el_titulo:
-            # En el resto no se patea: el empate lo resuelve la tabla, que es la
-            # ventaja ganada durante el torneo regular. Los campos de penales no
-            # se ofrecen para que nadie los cargue de mas.
+        regular_sin_penales = (
+            not partido.es_liguilla and not partido.categoria.empate_define_penales
+        )
+
+        if regular_sin_penales:
+            del self.fields['ganador_penales']
+            del self.fields['penales_local']
+            del self.fields['penales_visitante']
+            self.sin_penales = (
+                'En esta categoría el empate no se define en penales: si terminan '
+                'iguales, cada equipo suma 1 punto.'
+            )
+        elif partido.es_liguilla and not define_el_titulo:
             mejor = min(partido.siembra_local or 99, partido.siembra_visitante or 99)
             del self.fields['ganador_penales']
             del self.fields['penales_local']
@@ -201,11 +190,8 @@ class ResultadoForm(StyledFormMixin, forms.ModelForm):
             penales.help_text = (
                 'Es la final: si terminó empatada, el campeón sale desde el punto penal.'
             )
-        # El JS lo muestra solo cuando los goles quedan iguales.
         penales.widget.attrs['data-solo-si-empate'] = '1'
 
-    # Se rellena en __init__ cuando la ronda no admite penales, para que la
-    # plantilla lo explique en vez de mostrar un hueco donde estaba el campo.
     sin_penales = ''
 
     def _global_empatado(self, locales, visitantes):
@@ -224,8 +210,6 @@ class ResultadoForm(StyledFormMixin, forms.ModelForm):
         ).exclude(pk=partido.pk).first()
 
         if ida and ida.jugado:
-            # La localia se invierte entre la ida y la vuelta, asi que hay que
-            # mirar de que lado jugo cada equipo en cada partido.
             if ida.equipo_local_id == partido.equipo_local_id:
                 propios += ida.goles_local
                 ajenos += ida.goles_visitante
@@ -237,10 +221,6 @@ class ResultadoForm(StyledFormMixin, forms.ModelForm):
     def clean(self):
         datos = super().clean()
 
-        # Un partido que no se jugo no tiene marcador que discutir: el 3-0 lo
-        # pone el sistema y se descarta cualquier cosa que haya venido en los
-        # campos de goles o de penales. Se sale antes de todo lo demas porque
-        # ninguna de esas reglas aplica a un partido que no se jugo.
         ausente = datos.get('no_se_presento')
         if ausente:
             gana_el_local = ausente.pk == self.instance.equipo_visitante_id
@@ -249,7 +229,6 @@ class ResultadoForm(StyledFormMixin, forms.ModelForm):
             datos['ganador_penales'] = None
             datos['penales_local'] = None
             datos['penales_visitante'] = None
-            # Si el marcador venia con errores propios dejarian de tener sentido.
             for campo in ('goles_local', 'goles_visitante', 'ganador_penales',
                           'penales_local', 'penales_visitante'):
                 self.errors.pop(campo, None)
@@ -261,9 +240,9 @@ class ResultadoForm(StyledFormMixin, forms.ModelForm):
         hay_marcador = locales is not None and visitantes is not None
         empate = hay_marcador and self._global_empatado(locales, visitantes)
 
-        if self.instance.fase == Partido.FASE_FINAL and self.instance.cierra_la_llave and empate:
-            # Alguien tiene que levantar la copa: sin ganador de la tanda el
-            # torneo se quedaria sin campeon.
+        define_ronda = self.instance.cierra_la_llave and (
+            self.instance.fase == Partido.FASE_FINAL or self.instance.es_de_torneo)
+        if define_ronda and empate:
             if not ganador:
                 self.add_error(
                     'ganador_penales',
@@ -281,7 +260,6 @@ class ResultadoForm(StyledFormMixin, forms.ModelForm):
                     'Una tanda no puede terminar igualada: se patea hasta que alguien queda arriba.',
                 )
             elif ganador:
-                # El que gano la tanda tiene que ser el que mas convirtio.
                 arriba = self.instance.equipo_local if uno > otro else self.instance.equipo_visitante
                 if ganador.id != arriba.id:
                     self.add_error(
@@ -290,8 +268,6 @@ class ResultadoForm(StyledFormMixin, forms.ModelForm):
                     )
 
         if ganador and hay_marcador and not empate:
-            # Puede pasar si se eligio el ganador y despues se corrigio un gol:
-            # el campo quedaria con un valor imposible.
             self.add_error(
                 'ganador_penales',
                 'Los penales solo se patean cuando el global de la serie termina empatado.',

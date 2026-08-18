@@ -24,10 +24,6 @@ def calcular(categoria):
     """
     tabla = {equipo.id: fila_vacia(equipo) for equipo in Equipo.objects.filter(categoria=categoria)}
 
-    # fase vacia: solo el torneo regular. Los partidos de liguilla no suman
-    # puntos ni goles a esta tabla, que es la que ordena el todos contra todos y
-    # de la que sale la siembra del cuadro: si entraran, la tabla se seguiria
-    # moviendo despues de terminado el torneo.
     partidos = Partido.objects.filter(
         categoria=categoria,
         estado=Partido.ESTADO_FINALIZADO,
@@ -58,9 +54,7 @@ def calcular(categoria):
             visitante['pe'] += 1
             local['pts'] += 1
             visitante['pts'] += 1
-            # Empate resuelto por penales: el ganador se lleva un punto extra,
-            # asi que termina con 2 contra 1 del otro.
-            if partido.ganador_penales_id in tabla:
+            if categoria.empate_define_penales and partido.ganador_penales_id in tabla:
                 tabla[partido.ganador_penales_id]['pts'] += 1
                 tabla[partido.ganador_penales_id]['pen'] += 1
 

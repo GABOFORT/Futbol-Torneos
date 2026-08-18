@@ -70,8 +70,6 @@ class Command(BaseCommand):
                 final.ganador_penales = None
                 final.penales_local = final.penales_visitante = None
                 final.estado = Partido.ESTADO_PROGRAMADO
-                # La fecha y la cancha se conservan: el partido sigue programado
-                # para cuando estaba, solo se borra lo que paso en la cancha.
                 final.save()
             palmares.reabrir(categoria)
 

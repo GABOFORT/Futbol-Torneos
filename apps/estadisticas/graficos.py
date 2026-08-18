@@ -18,11 +18,8 @@ from apps.equipos.models import Equipo
 from apps.partidos.models import Partido
 from apps.usuarios.barras import a_paso, reparto
 
-# Cuantos equipos entran en las tablas de ataque y defensa.
 TOPE = 10
 
-# Minimo de partidos para entrar a los promedios. Con dos partidos jugados
-# cualquiera puede encabezar y la comparacion no dice nada.
 MINIMO = 4
 
 
@@ -88,7 +85,6 @@ def calcular(ligas, categoria=None):
         .select_related('categoria', 'liga')
     }
 
-    # Solo los que jugaron lo suficiente entran a los promedios.
     comparables = [
         {
             'equipo': nombres[eid],
@@ -120,9 +116,6 @@ def calcular(ligas, categoria=None):
         'partidos': len(filas),
         'goles': goles_totales,
         'promedio': round(goles_totales / len(filas), 2),
-        # `tope` es el maximo de la serie: lo usa la plantilla para calcular la
-        # altura de cada barra en porcentaje. Se resuelve aca porque el template
-        # de Django no sabe dividir.
         'por_jornada': _con_altura(por_jornada, 'goles'),
         'ofensivos': _con_altura(ofensivos, 'promedio_gf'),
         'defensivos': _con_altura(defensivos, 'promedio_gc', invertir=True),
@@ -148,8 +141,6 @@ def _con_altura(filas, campo, invertir=False):
     piso = min(valores)
     for fila in filas:
         if invertir:
-            # El que menos recibio llega al 100 %; el que mas, al 25 %, para que
-            # su barra siga siendo visible.
             rango = tope - piso or 1
             fila['altura'] = a_paso(100 - (fila[campo] - piso) * 75 / rango)
         else:

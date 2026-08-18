@@ -1,7 +1,4 @@
-{% comment %}
-Logo de la liga. Sin logo cargado se muestran sus iniciales, asi nunca queda
-un hueco ni una imagen rota.
-{% endcomment %}
+
 {% if liga.logo %}
     <img src="{{ liga.logo.url }}" alt="Logo de {{ liga.nombre }}" class="logo-liga {{ clase }}">
 {% else %}

@@ -23,8 +23,6 @@ class Equipo(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
         related_name='equipos',
-        # is_superuser=False acompana a Usuario.objects.entrenadores(): una
-        # cuenta de superadmin no debe ofrecerse como entrenador de un equipo.
         limit_choices_to={'role': 'entrenador', 'is_superuser': False},
     )
     liga = models.ForeignKey(
@@ -38,6 +36,12 @@ class Equipo(models.Model):
         related_name='equipos',
     )
     fecha_creacion = models.DateField('Fecha de registro', auto_now_add=True)
+    jornada_ingreso = models.PositiveSmallIntegerField(
+        'Entró en la jornada',
+        null=True,
+        blank=True,
+        help_text='Solo si se inscribió con el calendario ya generado. Vacío es desde el inicio.',
+    )
     formacion = models.CharField('Formación', max_length=20, choices=FORMACION_CHOICES, blank=True)
     observaciones = models.TextField('Observaciones', blank=True)
 

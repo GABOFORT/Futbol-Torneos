@@ -1,28 +1,8 @@
 {% extends 'base.html' %}
 {% load sesion %}
 
-{% comment %}
-Lo que ve quien dejo la maquina sola y se le cerro la sesion.
-
-Hermana de bloqueado.html y con las mismas clases de bloque (`bloqueo-*`): son
-la misma familia de pantallas —algo se interrumpio, esto es lo que pasa ahora—
-y conviene que se vean iguales, ademas de no duplicar CSS para lo mismo.
-
-El tono importa: quien llega aca casi siempre es un entrenador que fue por un
-cafe, no un atacante. Tiene que entender que no rompio nada y que no perdio lo
-que ya habia guardado.
-
-Usa `ancho-pagina` y NO `min-h-screen`: el body de base.html ya es
-`min-h-screen flex flex-col`, y pedir otra pantalla completa aca adentro
-empujaba la barra y el pie.
-{% endcomment %}
-
 {% block titulo %}Sesión cerrada{% endblock %}
 
-{% comment %}
-noindex: es una pantalla de estado, no contenido. Sin esto Google podria
-indexarla y alguien llegaria al sitio por "sesion cerrada buho sport".
-{% endcomment %}
 {% block cabecera_extra %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 
 {% block contenido %}

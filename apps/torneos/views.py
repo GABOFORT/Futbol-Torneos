@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.equipos.models import Equipo
 from apps.jugadores.models import Jugador
-from apps.partidos import liguilla
+from apps.partidos import altas, liguilla
 from apps.partidos.calendario import armar_jornadas
 from apps.partidos.models import Partido
 from apps.usuarios.eliminar import vista_eliminar
@@ -85,8 +85,6 @@ def sedes_vista(request):
              .order_by('liga__nombre', 'nombre'))
     return render(request, 'sedes.html', {
         'sedes': sedes,
-        # El mapa arranca centrado en el promedio de las canchas cargadas, para
-        # que no abra en medio del oceano ni haya que elegir una a dedo.
         'centro': _centro_de(sedes),
     })
 
@@ -107,7 +105,7 @@ def categoria_list(request):
     if puede_administrar:
         categorias = Categoria.objects.filter(liga__in=ligas_administradas(user))
     else:
-        categorias = Categoria.objects.filter(activa=True)
+        categorias = Categoria.objects.filter(activa=True, liga__torneo__isnull=True)
 
     termino = request.GET.get('q', '')
     liga_id = request.GET.get('liga', '')
@@ -122,9 +120,6 @@ def categoria_list(request):
     if inscripcion in ('1', '0'):
         categorias = categorias.filter(inscripcion_abierta=(inscripcion == '1'))
 
-    # Los tres conteos van como anotacion y no consultando categoria por
-    # categoria: son 13 categorias y serian 40 consultas para dibujar un boton.
-    # Todos cuelgan de la misma relacion, asi que es un solo JOIN.
     categorias = categorias.select_related('liga').annotate(
         n_regulares=Count('partidos', filter=Q(partidos__fase=Partido.FASE_REGULAR)),
         n_pendientes=Count('partidos', filter=Q(partidos__fase=Partido.FASE_REGULAR) & ~Q(
@@ -141,17 +136,27 @@ def categoria_list(request):
     )
     for categoria in categorias:
         categoria.liguilla_iniciada = categoria.n_liguilla > 0
-        # La comprobacion de verdad la vuelve a hacer la vista que la inicia:
-        # esto solo decide si vale la pena mostrar el boton.
         categoria.puede_iniciar_liguilla = (
             not categoria.liguilla_iniciada
             and categoria.n_regulares > 0
             and categoria.n_pendientes == 0
             and equipos_por_categoria.get(categoria.id, 0) >= 2
         )
+        categoria.tiene_calendario = categoria.n_regulares > 0
+        categoria.alta_abierta = (
+            categoria.tiene_calendario
+            and not categoria.liguilla_iniciada
+            and altas.puede_agregar(categoria)
+        )
+        categoria.jornada_de_alta = (
+            altas.jornada_de_ingreso(categoria) if categoria.alta_abierta else None
+        )
+        categoria.cupo_lleno = (
+            equipos_por_categoria.get(categoria.id, 0) >= categoria.cupo_equipos
+        )
 
-    # Solo las ligas que este usuario puede ver, para no ofrecer filtros vacios.
-    ligas = ligas_administradas(user) if puede_administrar else Liga.objects.filter(activa=True)
+    ligas = (ligas_administradas(user) if puede_administrar
+             else Liga.objects.filter(activa=True, torneo__isnull=True))
     filtros = [
         campo_texto('q', 'Buscar', termino, 'Nombre o descripción de la categoría'),
         campo_opciones('liga', 'Liga', liga_id, ligas.order_by('nombre').values_list('id', 'nombre'), vacio='Todas'),
@@ -232,8 +237,6 @@ def categoria_delete(request, pk):
         url_listado='categoria-list',
         mensaje_ok=f'Se eliminó la categoría "{categoria.nombre}" con todo su contenido.',
         arrastra=arrastra,
-        # Igual que en liga: Equipo.categoria sigue siendo PROTECT y la cascada
-        # se hace explicita solo desde esta vista.
         antes_de_borrar=equipos.delete,
     )
 
@@ -250,11 +253,31 @@ def categoria_cerrar_inscripcion(request, pk):
 
 @admin_liga_required
 def categoria_reabrir_inscripcion(request, pk):
+    """Vuelve a admitir equipos.
+
+    Con el calendario ya generado solo se puede dentro de la ventana de alta
+    (jornadas 2 a 4): reabrir despues dejaria entrar a un equipo que ya no tiene
+    contra quien jugar.
+    """
     categoria = get_object_or_404(Categoria, pk=pk, liga__in=ligas_administradas(request.user))
     if request.method == 'POST':
+        motivo = altas.motivo_para_no_agregar(categoria)
+        if motivo:
+            messages.error(request, motivo)
+            return redirect('categoria-list')
+
         categoria.inscripcion_abierta = True
         categoria.save(update_fields=['inscripcion_abierta'])
-        messages.success(request, f'Inscripción reabierta para "{categoria.nombre}".')
+        aviso = f'Inscripción reabierta para {categoria.nombre}.'
+        if altas.hay_calendario(categoria):
+            jornada = altas.jornada_de_ingreso(categoria)
+            aviso += (
+                f' Un equipo nuevo entraría en la jornada {jornada} y se le generarían '
+                f'sus partidos sin mover los que ya están.'
+            )
+            if categoria.equipos.count() >= categoria.cupo_equipos:
+                aviso += ' Ojo: el cupo está lleno, súbelo para que aparezca en el alta.'
+        messages.success(request, aviso)
     return redirect('categoria-list')
 
 
@@ -275,7 +298,7 @@ def categoria_iniciar_liguilla(request, pk):
             fase = creados[0].get_fase_display().lower()
             messages.success(
                 request,
-                f'Liguilla iniciada en "{categoria.nombre}": {len(creados)} partido(s) de {fase} '
+                f'Liguilla iniciada en {categoria.nombre}: {len(creados)} partido(s) de {fase} '
                 f'con los mejores de la tabla. Ahora asígnales fecha y cancha.',
             )
     return redirect('categoria-list')
@@ -294,7 +317,7 @@ def categoria_generar_partidos(request, pk):
             if len(equipos) < 2:
                 messages.error(request, 'Necesitas al menos 2 equipos inscritos para generar partidos.')
             else:
-                jornadas = armar_jornadas(equipos)
+                jornadas = armar_jornadas(equipos, vueltas=categoria.vueltas)
                 partidos = [
                     Partido(categoria=categoria, jornada=numero, equipo_local=local, equipo_visitante=visitante)
                     for numero, encuentros in enumerate(jornadas, start=1)
@@ -302,7 +325,10 @@ def categoria_generar_partidos(request, pk):
                 ]
                 Partido.objects.bulk_create(partidos)
                 aviso = f'Se generaron {len(partidos)} partidos en {len(jornadas)} jornadas.'
+                if categoria.vueltas == Categoria.VUELTA_IDA_Y_VUELTA:
+                    aviso += ' Se juega a ida y vuelta: cada par se enfrenta dos veces, una en cada cancha.'
                 if len(equipos) % 2:
                     aviso += ' Al ser una cantidad impar de equipos, uno descansa por jornada.'
+                aviso += ' Desde ahora ya no se puede cambiar el formato de la categoría.'
                 messages.success(request, aviso + ' Ahora asígnales fecha y hora.')
     return redirect('categoria-list')

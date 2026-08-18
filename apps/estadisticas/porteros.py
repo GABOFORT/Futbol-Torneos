@@ -34,9 +34,6 @@ def calcular(equipos):
 
     filas = {equipo.id: _fila_vacia(equipo) for equipo in equipos}
 
-    # Solo el torneo regular, igual que la tabla de posiciones: esta tabla mide
-    # el todos contra todos, y los partidos de liguilla la moverian despues de
-    # que el torneo ya termino.
     partidos = Partido.objects.filter(
         Q(equipo_local__in=equipos) | Q(equipo_visitante__in=equipos),
         estado=Partido.ESTADO_FINALIZADO,
@@ -44,8 +41,6 @@ def calcular(equipos):
     ).only('equipo_local_id', 'equipo_visitante_id', 'goles_local', 'goles_visitante')
 
     for partido in partidos:
-        # Un partido puede tocar a los dos equipos de la tabla o a uno solo,
-        # segun como haya filtrado el usuario.
         _sumar(filas.get(partido.equipo_local_id), partido.goles_visitante)
         _sumar(filas.get(partido.equipo_visitante_id), partido.goles_local)
 
@@ -67,11 +62,6 @@ def calcular(equipos):
         bloque['filas'].append(fila)
 
     for bloque in bloques.values():
-        # Por promedio y no por total: dentro de la categoria casi siempre da lo
-        # mismo, pero mientras queden partidos por jugarse no todos llevan la
-        # misma cantidad, y ahi el total premiaria al que jugo menos. Desempata
-        # la porteria a cero, y el que todavia no jugo va al final: su cero no es
-        # un merito.
         bloque['filas'].sort(
             key=lambda fila: (not fila['pj'], fila['promedio'], -fila['porterias_cero'], fila['recibidos'])
         )
@@ -88,7 +78,7 @@ def _fila_vacia(equipo):
         'porteros': [],
         'pj': 0,
         'recibidos': 0,
-        'porterias_cero': 0,   # partidos terminados sin recibir goles
+        'porterias_cero': 0,
         'promedio': 0,
     }
 

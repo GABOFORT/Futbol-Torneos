@@ -17,11 +17,8 @@ from apps.torneos.models import Categoria, Sede
 from apps.usuarios.filtros import buscar
 from apps.usuarios.permissions import ligas_visibles
 
-# Cuantos resultados por grupo. Corto a proposito: quien busca 'Garcia' no
-# quiere doscientos nombres, quiere encontrar al suyo o afinar la busqueda.
 TOPE = 8
 
-# Menos de dos letras devuelve media base y no ayuda a nadie.
 MINIMO = 2
 
 
@@ -40,9 +37,6 @@ def buscar_todo(user, termino):
 
     ligas = ligas_visibles(user)
 
-    # Los nombres de jugador ya son publicos en la tabla de goleo y en las
-    # plantillas, asi que buscarlos no expone nada nuevo. Se muestra el equipo y
-    # la categoria, nunca la fecha de nacimiento.
     jugadores = list(buscar(
         Jugador.objects.filter(equipo__liga__in=ligas)
         .select_related('equipo', 'equipo__categoria', 'equipo__liga'),
@@ -54,9 +48,6 @@ def buscar_todo(user, termino):
         termino, ['nombre'],
     ).order_by('nombre')[:TOPE])
 
-    # El "torneo" para quien busca es la categoria: es lo que tiene tabla,
-    # calendario y campeon. Se busca tambien por el nombre de la liga, porque
-    # mucha gente escribe 'La Liga' esperando llegar a sus categorias.
     torneos = list(buscar(
         Categoria.objects.filter(liga__in=ligas, activa=True).select_related('liga'),
         termino, ['nombre', 'liga__nombre'],

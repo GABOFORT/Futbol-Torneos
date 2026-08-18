@@ -1,14 +1,4 @@
-{% comment %}
-Barra de filtros compartida por los listados. Se dibuja a partir de la lista
-`filtros` que arma la vista (ver apps/usuarios/filtros.py).
 
-Va por GET a proposito: los filtros quedan en la URL, se pueden combinar,
-sobreviven al recargar y el enlace se puede compartir.
-
-static/js/filtros.js la vuelve instantanea: al escribir o cambiar un
-desplegable recarga solo el bloque de resultados. Sin JS sigue andando con
-Enter, por eso el boton de enviar existe aunque este oculto.
-{% endcomment %}
 <form method="get" class="barra-filtros" data-filtros>
     <div class="filtro-busqueda">
         <svg class="filtro-lupa" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
@@ -35,23 +25,14 @@ Enter, por eso el boton de enviar existe aunque este oculto.
         <input type="hidden" name="{{ campo.nombre }}" value="{{ campo.valor }}">
     {% endif %}{% endfor %}
 
-    {% comment %}
-    El boton Limpiar y el contador van juntos en un bloque que el JS reemplaza
-    completo: los dos dependen de los filtros aplicados, y si solo se
-    actualizara el contador el boton quedaria con el estado de la recarga vieja.
-    {% endcomment %}
     <div class="estado-filtros" data-filtro-estado>
         {% if filtros_activos %}
             <a href="{{ request.path }}" class="filtro-limpiar">Limpiar</a>
         {% endif %}
-        {% comment %}
-        El plural no siempre se forma agregando "s": "entrenador" pide "es".
-        Cada pantalla pasa su terminacion y por defecto se usa "s".
-        {% endcomment %}
+
         {% firstof sufijo_resultados "s" as sufijo %}
         <span class="filtro-contador" data-contador>{{ total_resultados }} {{ etiqueta_resultados|default:"resultado" }}{{ total_resultados|pluralize:sufijo }}</span>
     </div>
 
-    {# Respaldo para cuando no hay JavaScript: Enter envia el formulario. #}
     <button type="submit" class="filtro-enviar">Buscar</button>
 </form>

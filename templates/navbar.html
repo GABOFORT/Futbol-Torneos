@@ -1,22 +1,7 @@
 {% load static estaticos %}
-{% comment %}
-La cabecera de navegación, en dos niveles.
 
-Está pensada para el visitante sin cuenta, que es quien más entra: padres,
-jugadores y familias que vienen a ver el calendario y las tablas.
-
-**Por qué dos niveles.** En una sola fila entraban siete secciones, el buscador
-y el bloque de sesión, todo apretado y sin aire. Separarlos deja arriba la
-identidad y las acciones —buscar, entrar— y abajo la navegación, que es lo que
-se usa a diario. Es el patrón de los sitios deportivos grandes y, sobre todo,
-deja lugar para crecer sin volver a amontonar.
-
-**Categorías, Jugadores y Roles no están acá.** Son pantallas de gestión: el
-Administrador y el Entrenador llegan a ellas desde su tablero, que es donde
-tienen todo junto y con contexto.
-{% endcomment %}
 <header class="cabecera">
-    {% comment %} ---- Nivel 1: identidad, buscador y sesión ---- {% endcomment %}
+
     <div class="cabecera-alta">
         <div class="cabecera-interior">
             <a href="/" class="cabecera-marca" aria-label="BUHO Sports League, ir al inicio">
@@ -43,7 +28,7 @@ tienen todo junto y con contexto.
                             <span class="usuario-rol">{{ request.user.rol_visible }}</span>
                         </span>
                     </div>
-                    {# Un solo acceso a la gestión: adentro del tablero está todo. #}
+
                     <a href="{% url 'dashboard' %}" class="cabecera-boton">Mi tablero</a>
                     <form action="{% url 'logout' %}" method="post" class="cabecera-salir">
                         {% csrf_token %}
@@ -63,10 +48,9 @@ tienen todo junto y con contexto.
         </div>
     </div>
 
-    {% comment %} ---- Nivel 2: la navegación ---- {% endcomment %}
     <nav class="cabecera-baja" aria-label="Secciones del sitio">
         <div class="cabecera-interior">
-            {# `nav-activo` marca en qué sección está parado el visitante. #}
+
             <a href="/" class="nav-enlace {% if request.path == '/' %}nav-activo{% endif %}">Inicio</a>
             <a href="{% url 'partido-calendario' %}" class="nav-enlace {% if '/partidos/' in request.path %}nav-activo{% endif %}">Partidos</a>
 
@@ -119,7 +103,6 @@ tienen todo junto y con contexto.
         </div>
     </nav>
 
-    {% comment %} Menú del celular: las mismas secciones, sin desplegables anidados. {% endcomment %}
     <div id="menu-movil" class="menu-movil" hidden>
         <a href="/" class="nav-movil">Inicio</a>
         <a href="{% url 'partido-calendario' %}" class="nav-movil">Partidos · calendario</a>

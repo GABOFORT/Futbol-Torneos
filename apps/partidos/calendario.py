@@ -1,18 +1,39 @@
 """Armado del calendario por jornadas (round-robin, metodo del circulo).
 
-Cada equipo juega una vez por jornada y todos se enfrentan una sola vez en
-todo el torneo. Con una cantidad impar de equipos se agrega un lugar vacio:
-el que le toca enfrentarlo descansa esa jornada.
+Cada equipo juega una vez por jornada. Con una cantidad impar de equipos se
+agrega un lugar vacio: el que le toca enfrentarlo descansa esa jornada.
 
     18 equipos (par)   -> 17 jornadas de 9 partidos, nadie descansa
     17 equipos (impar) -> 17 jornadas de 8 partidos, 1 descansa por jornada
+
+Con dos vueltas la rueda completa se repite con la localia invertida:
+
+    8 equipos a 1 vuelta   ->  7 jornadas,  28 partidos
+    8 equipos a 2 vueltas  -> 14 jornadas,  56 partidos
+    15 equipos a 2 vueltas -> 30 jornadas, 210 partidos
 """
 
 LUGAR_VACIO = None
 
+VUELTAS_MINIMAS = 1
+VUELTAS_MAXIMAS = 2
 
-def armar_jornadas(equipos):
+
+def armar_jornadas(equipos, vueltas=VUELTAS_MINIMAS):
     """Devuelve una lista de jornadas; cada jornada es [(local, visitante), ...]."""
+    ida = _una_vuelta(equipos)
+    if not ida or vueltas <= VUELTAS_MINIMAS:
+        return ida
+
+    repeticiones = min(vueltas, VUELTAS_MAXIMAS)
+    jornadas = list(ida)
+    for _ in range(repeticiones - 1):
+        jornadas += [_invertir(jornada) for jornada in ida]
+    return jornadas
+
+
+def _una_vuelta(equipos):
+    """La rueda completa: todos contra todos una sola vez."""
     rueda = list(equipos)
     if len(rueda) < 2:
         return []
@@ -26,14 +47,16 @@ def armar_jornadas(equipos):
         for i in range(total // 2):
             uno, otro = rueda[i], rueda[total - 1 - i]
             if uno is LUGAR_VACIO or otro is LUGAR_VACIO:
-                continue  # el que queda solo descansa esta jornada
-            # Se alterna la localia jornada a jornada para que ningun equipo
-            # juegue siempre de local.
+                continue
             partidos.append((otro, uno) if numero % 2 else (uno, otro))
         jornadas.append(partidos)
-        # Rotacion del circulo: el primero queda fijo y el resto gira.
         rueda = [rueda[0], rueda[-1]] + rueda[1:-1]
     return jornadas
+
+
+def _invertir(jornada):
+    """La misma jornada con la localia cambiada: el que fue local ahora visita."""
+    return [(visitante, local) for local, visitante in jornada]
 
 
 def equipo_que_descansa(equipos, partidos_de_la_jornada):

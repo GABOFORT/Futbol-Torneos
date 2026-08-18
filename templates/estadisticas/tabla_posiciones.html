@@ -4,7 +4,7 @@
 
 {% block contenido %}
 <div class="max-w-[100rem] mx-auto p-6">
-    {# Con el logo, igual que en el listado de ligas y en la vitrina. #}
+
     <div class="mb-8 flex items-center gap-4">
         {% include 'usuarios/_logo_liga.html' with liga=categoria.liga clase='logo-liga-lg' %}
         <div>
@@ -13,12 +13,6 @@
         </div>
     </div>
 
-    {% comment %}
-    La tabla y los rankings van juntos. Antes había que salir a otra pantalla
-    para ver quién metía los goles y volver; y como al llegar acá la liga y la
-    categoría ya están elegidas, las tablitas muestran solo jugador y número:
-    repetirlas en cada renglón sería ruido.
-    {% endcomment %}
     <div class="tablero-categoria">
     <div class="overflow-x-auto rounded-3xl bg-white border border-green-100 shadow-sm">
         <table class="min-w-full divide-y divide-gray-200">
@@ -42,7 +36,7 @@
                     <tr>
                         <td class="px-4 py-3 text-sm text-gray-500">{{ forloop.counter }}</td>
                         <td class="px-4 py-3 text-sm font-semibold text-gray-900">
-                            {# El nombre abre el perfil del equipo en el modal. #}
+
                             <div class="celda-equipo">
                                 <button type="button" class="open-modal equipo-enlace"
                                         data-url="{% url 'equipo-perfil' fila.equipo.pk %}"
@@ -70,11 +64,7 @@
     </div>
 
         <aside class="rankings">
-            {% comment %}
-            Tres tablitas de dos columnas. El icono del premio hace de título:
-            se reconocen sin leer, y son los mismos que se entregan al cerrar la
-            temporada, así que la pantalla habla el mismo idioma todo el año.
-            {% endcomment %}
+
             <section class="ranking">
                 <header class="ranking-cabecera">
                     <img src="{{ icono_goleador }}" alt="" class="ranking-icono" loading="lazy" decoding="async">
@@ -112,10 +102,7 @@
                     <img src="{{ icono_valla }}" alt="" class="ranking-icono" loading="lazy" decoding="async">
                     <h2>Menos goles recibidos</h2>
                 </header>
-                {% comment %}
-                Va por equipo y no por portero: el sistema no registra quién ataja
-                cada partido, y repartir los goles recibidos sería inventarlo.
-                {% endcomment %}
+
                 {% for fila in rankings.vallas %}
                     <div class="ranking-fila">
                         <span class="ranking-puesto">{{ forloop.counter }}</span>
@@ -134,6 +121,5 @@
     </div>
 </div>
 
-{# Hace falta para que el nombre de cada equipo pueda abrir su perfil. #}
 {% include '_modal.html' %}
 {% endblock %}

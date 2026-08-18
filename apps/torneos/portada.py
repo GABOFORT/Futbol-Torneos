@@ -22,18 +22,11 @@ from apps.partidos.models import Actuacion, Partido
 from apps.torneos.models import Categoria, Liga, Palmares
 from apps.usuarios.barras import a_paso
 
-# Los rankings de la portada muestran cinco y no diez: es un resumen que invita
-# a entrar a la tabla completa, no la tabla. Con diez, las tres columnas empujan
-# el resto de la pagina fuera de la pantalla.
-#
-# Cuantos dias hacia atras se mira para el jugador del momento y los ultimos
-# resultados. Una semana es el ciclo natural de estas ligas: se juega el fin de
-# semana y se comenta hasta el siguiente.
 DIAS_DE_LA_SEMANA = 7
 
 
 def _ligas_publicas():
-    return Liga.objects.filter(activa=True)
+    return Liga.objects.filter(activa=True, torneo__isnull=True)
 
 
 def cifras():
@@ -176,9 +169,6 @@ def asistidores(tope=5):
     return _lideres('asistencias', tope)
 
 
-# Partidos minimos para entrar al top de vallas. Sin esto lo encabeza siempre
-# el equipo que menos jugo: dos partidos con tres goles en contra le ganan a
-# veinte con quince, y no es lo mismo.
 MINIMO_PARA_VALLAS = 4
 
 
@@ -195,11 +185,6 @@ def vallas(tope=5):
     mismo; aca se mezclan doce categorias en distinto punto del torneo, y el
     total premiaria al que menos jugo.
     """
-    # Se cuenta recorriendo los partidos una sola vez, como en `porteros.py`, y
-    # NO con dos `Sum` anotados sobre `partidos_local` y `partidos_visitante`.
-    # Ese camino parece mas corto y da numeros inflados: Django une las dos
-    # relaciones en la misma consulta y cada fila de una se multiplica por las
-    # de la otra. `distinct=True` salva al Count pero no al Sum.
     marcadores = (
         Partido.objects
         .filter(
@@ -217,8 +202,6 @@ def vallas(tope=5):
             fila = acumulado.setdefault(equipo_id, {'pj': 0, 'gc': 0, 'cero': 0})
             fila['pj'] += 1
             fila['gc'] += recibidos
-            # La porteria en cero es el dato que la gente reconoce; el promedio
-            # es el que ordena.
             if recibidos == 0:
                 fila['cero'] += 1
 
@@ -235,7 +218,6 @@ def vallas(tope=5):
         'porterias_cero': acumulado[eid]['cero'],
         'promedio': round(acumulado[eid]['gc'] / acumulado[eid]['pj'], 2),
     } for eid in llegan if eid in equipos]
-    # A igual promedio pasa adelante el que mas jugo: sostenerlo mas fechas vale.
     filas.sort(key=lambda f: (f['promedio'], -f['jugados']))
     return filas[:tope]
 
@@ -265,9 +247,6 @@ def jugador_del_momento():
             'jugador__equipo_id', 'jugador__equipo__nombre',
             'jugador__equipo__categoria__nombre', 'jugador__equipo__liga__nombre',
         )
-        # Los alias en el mismo `annotate`: encadenarlos haria que el segundo
-        # intente sumar el alias del primero, que ya es un agregado. Y no se
-        # pueden llamar como los campos, o el alias los tapa.
         .annotate(
             total_goles=Sum('goles'),
             total_asistencias=Sum('asistencias'),
@@ -281,8 +260,6 @@ def jugador_del_momento():
     if not fila:
         return None
 
-    # El mejor de sus partidos de la semana, para poder contarlo con nombre y
-    # apellido en vez de dejar un total abstracto.
     mejor = (
         de_la_semana
         .filter(jugador_id=fila['jugador_id'])
@@ -317,12 +294,36 @@ def jugador_del_momento():
         'partidos': fila['partidos'],
         'aporte': fila['aporte'],
         'destacado': destacado,
-        # El equipo entero y no solo su nombre: `values()` devuelve diccionarios
-        # y la plantilla necesita `escudo_url`, que es una propiedad del modelo.
-        # Se pide el objeto —una consulta— en vez de rearmar el monograma aca:
-        # si el club tiene escudo subido, el monograma seria el escudo equivocado.
         'club': Equipo.objects.filter(pk=fila['jugador__equipo_id']).first(),
     }
+
+
+def relampagos():
+    """Los torneos relámpago, del más reciente al más viejo.
+
+    Van aparte de las categorias en juego porque son otra cosa: un solo dia por
+    eliminacion directa, sin tabla ni jornadas. La portada los anuncia como lo
+    que son en vez de mezclarlos con las temporadas.
+    """
+    from .models import Torneo
+
+    salida = []
+    for torneo in (Torneo.objects
+                   .filter(liga__activa=True)
+                   .select_related('liga')
+                   .order_by('-fecha')[:6]):
+        campeon = torneo.campeon
+        salida.append({
+            'torneo': torneo,
+            'liga': torneo.liga,
+            'equipos': torneo.equipos,
+            'inscritos': torneo.inscritos,
+            'fecha': torneo.fecha,
+            'sorteado': torneo.sorteado,
+            'campeon': campeon,
+            'terminado': campeon is not None,
+        })
+    return salida
 
 
 def torneos():
@@ -355,11 +356,7 @@ def torneos():
             'equipos': categoria.n_equipos,
             'jugados': jugados,
             'total': total,
-            # Al paso de 5 de las clases `.ancho-N`: las barras de este
-            # proyecto no llevan la medida en un `style` inline.
             'avance': a_paso(jugados * 100 / total) if total else 0,
-            # Sin partidos generados el torneo todavia no arranco: se dice eso y
-            # no un 0 % que se lee como si fuera a empezar hoy.
             'estado': 'Por comenzar' if not total else (
                 'Terminando' if jugados >= total else 'En juego'),
         })
@@ -372,8 +369,6 @@ def campeones(tope=4):
                 .order_by('-fecha_cierre')[:tope])
 
 
-# Cuantos equipos puede seguir alguien. Es un tope de cordura contra una lista
-# armada a mano en la direccion, no una regla de negocio.
 MAXIMO_SEGUIDOS = 20
 
 
@@ -404,8 +399,6 @@ def de_mis_equipos(ids, tope_por_equipo=3):
     if not equipos:
         return []
 
-    # Todos los partidos de todos los equipos en una sola consulta, y se
-    # reparten en Python: una consulta por equipo seria una por cada estrella.
     partidos = list(_con_todo(Partido.objects.filter(
         Q(equipo_local_id__in=equipos) | Q(equipo_visitante_id__in=equipos),
         estado__in=Partido.ESTADOS_POR_JUGARSE,
@@ -416,7 +409,7 @@ def de_mis_equipos(ids, tope_por_equipo=3):
     for equipo_id in limpios:
         equipo = equipos.get(equipo_id)
         if equipo is None:
-            continue   # lo siguio y despues se elimino, o no es publico
+            continue
         suyos = [p for p in partidos
                  if equipo_id in (p.equipo_local_id, p.equipo_visitante_id)]
         salida.append({'equipo': equipo, 'partidos': suyos[:tope_por_equipo]})
@@ -446,10 +439,6 @@ def todo():
 
     titulo_franja, partidos_franja = franja()
     return {
-        # La copa de verdad, la misma que usa la vitrina, en vez del emoji: un
-        # 🏆 se dibuja distinto en cada sistema y al lado del resto de la
-        # pantalla se ve como un carácter suelto, no como un trofeo.
-        # La ruta vive en palmares.py, que es donde se declara el arte.
         'imagen_copa': url_estatico(
             dict((clave, imagen) for clave, _, imagen in palmares.TROFEOS_EQUIPO)['campeon']),
         'franja_titulo': titulo_franja,
@@ -464,6 +453,7 @@ def todo():
         'vallas': vallas(),
         'figura': jugador_del_momento(),
         'torneos': torneos(),
+        'relampagos': relampagos(),
         'campeones': campeones(),
         'dias_semana': DIAS_DE_LA_SEMANA,
     }

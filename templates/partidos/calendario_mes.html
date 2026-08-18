@@ -6,18 +6,6 @@
 {% block og_titulo %}Calendario de partidos · BUHO Sports League{% endblock %}
 {% block og_descripcion %}Todos los partidos del mes: hora, cancha y categoría. Sin registro.{% endblock %}
 
-{% comment %}
-El calendario en vista mensual.
-
-Responde a una pregunta distinta de la del listado por jornadas: aquél sirve
-para seguir una categoría, éste para saber **qué se juega este sábado**, que es
-lo que pregunta quien no administra nada.
-
-En el celular la grilla de siete columnas no entra, así que los días sin
-partidos se ocultan y queda una lista de los días que sí tienen. Es la misma
-información, ordenada de otra manera.
-{% endcomment %}
-
 {% block contenido %}
 <div class="ancho-pagina ancho-pagina-arriba">
     <div class="mes-cabecera">
@@ -55,21 +43,7 @@ información, ordenada de otra manera.
                             <span class="mes-cuenta">{{ celda.partidos|length }}</span>
                         {% endif %}
                     </p>
-                    {% comment %}
-                    Sólo los primeros tres a la vista, y el resto detrás de
-                    "+N más".
 
-                    El motivo es la retícula: la grilla estira todas las celdas
-                    de una fila a la altura de la más alta, así que un sábado con
-                    20 partidos hacía la fila de unos 1 200 px y dejaba a sus seis
-                    días vecinos como cajas vacías enormes. Con el tope, el mes
-                    entero se lee de un vistazo, que es justo para lo que sirve
-                    una vista mensual.
-
-                    Va con <details> y no con JavaScript: se despliega en el
-                    sitio, funciona con el teclado, se puede imprimir abierto y
-                    no hace falta ninguna ruta nueva para "el día 13".
-                    {% endcomment %}
                     {% for partido in celda.partidos|slice:':3' %}
                         <a href="{% url 'partido-detalle' partido.pk %}" class="mes-partido">
                             <span class="mes-hora">{{ partido.fecha|date:'H:i' }}</span>

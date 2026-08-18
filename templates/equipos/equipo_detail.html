@@ -6,23 +6,18 @@
 <div class="max-w-5xl mx-auto p-6">
     <div class="rounded-[2rem] bg-white border border-green-100 p-8 shadow-lg">
         <div class="flex items-start justify-between gap-4">
-            {% comment %}
-            Escudo, nombre y trofeos son tres hermanos de la misma fila, todos
-            centrados entre sí. Los trofeos estaban dentro del <h1> y lo hacían
-            más alto que el escudo, así que la fila entera quedaba descuadrada.
-            Con flex-wrap, en pantallas angostas los trofeos bajan a su renglón.
-            {% endcomment %}
+
             <div class="flex flex-wrap items-center gap-x-4 gap-y-3">
                 <img src="{{ equipo.escudo_url }}" alt="Escudo de {{ equipo.nombre }}" class="escudo-grande" loading="lazy" decoding="async">
                 <div>
                     <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">Equipo</p>
                     <h1 class="mt-1 text-3xl font-bold text-green-900">{{ equipo.nombre }}</h1>
                 </div>
-                {# Los premios del club, al tamaño del escudo: acá el equipo es el protagonista. #}
+
                 {% include 'torneos/_trofeos.html' with trofeos=trofeos_equipo tam='xl' %}
             </div>
             <div class="flex shrink-0 flex-wrap items-center gap-2">
-                {# Guarda el equipo en el navegador para verlo en la portada. #}
+
                 <button type="button" class="estrella estrella-grande" data-seguir="{{ equipo.pk }}"
                         data-nombre="{{ equipo.nombre }}" aria-pressed="false"
                         aria-label="Seguir a {{ equipo.nombre }}">★ <span>Seguir</span></button>
@@ -80,7 +75,7 @@
                                 <div class="flex items-center gap-3">
                                     {% include 'jugadores/_avatar.html' %}
                                     <span>{{ jugador.nombre }} {{ jugador.apellido }}</span>
-                                    {# Bota de oro o trofeo de asistencias, si lo ganó. #}
+
                                     {% include 'torneos/_trofeos.html' with trofeos=jugador.trofeos tam='md' %}
                                 </div>
                             </td>
@@ -97,10 +92,6 @@
             </table>
         </div>
 
-        {% comment %}
-        Los partidos del equipo. Estaban solo dentro del perfil en modal, que hay
-        que saber que existe para abrirlo; acá los encuentra cualquiera.
-        {% endcomment %}
         <div class="equipo-fechas">
             <section>
                 <h2 class="seccion-titulo">Próximos partidos</h2>

@@ -1,8 +1,16 @@
 from django.urls import path
-from . import views
+from . import torneos, views
 
 urlpatterns = [
     path('', views.inicio, name='inicio'),
+    path('torneos/', torneos.torneo_list, name='torneo-list'),
+    path('torneos/mis-torneos/', torneos.mis_torneos, name='mis-torneos'),
+    path('torneos/crear/', torneos.torneo_create, name='torneo-create'),
+    path('torneos/<int:pk>/', torneos.torneo_detalle, name='torneo-detalle'),
+    path('torneos/<int:pk>/editar/', torneos.torneo_edit, name='torneo-edit'),
+    path('torneos/<int:pk>/eliminar/', torneos.torneo_delete, name='torneo-delete'),
+    path('torneos/<int:pk>/equipos/crear/', torneos.torneo_equipo_create, name='torneo-equipo-create'),
+    path('torneos/<int:pk>/sortear/', torneos.torneo_sortear, name='torneo-sortear'),
     path('roles/', views.roles, name='roles'),
     path('buscar/', views.buscar_vista, name='buscar'),
     path('sedes/', views.sedes_vista, name='sedes'),

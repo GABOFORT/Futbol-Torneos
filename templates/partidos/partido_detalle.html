@@ -2,29 +2,9 @@
 
 {% block titulo %}{{ partido.equipo_local.nombre }} vs {{ partido.equipo_visitante.nombre }}{% endblock %}
 
-{% comment %}
-Lo que se ve al compartir el enlace del partido por WhatsApp o redes: el cruce,
-el torneo y el marcador si ya se jugó. Antes salía la dirección pelada.
-{% endcomment %}
 {% block og_titulo %}{{ partido.equipo_local.nombre }} vs {{ partido.equipo_visitante.nombre }}{% endblock %}
 {% block descripcion %}{{ partido.categoria.liga.nombre }} · {{ partido.categoria.nombre }} · {{ partido.etiqueta }}{% if partido.jugado %} · Final {{ partido.goles_local }}-{{ partido.goles_visitante }}{% elif partido.fecha %} · {{ partido.fecha|date:'d/m/Y H:i' }}{% endif %}{% endblock %}
 {% block og_descripcion %}{{ partido.categoria.liga.nombre }} · {{ partido.categoria.nombre }} · {{ partido.etiqueta }}{% if partido.jugado %} · Final {{ partido.goles_local }}-{{ partido.goles_visitante }}{% elif partido.fecha %} · {{ partido.fecha|date:'d/m/Y H:i' }}{% endif %}{% endblock %}
-
-{% comment %}
-La ficha del partido como **página completa**.
-
-La misma ficha se abre de dos maneras: dentro del modal del calendario, y como
-página propia cuando se llega por un enlace —desde la portada, el calendario
-mensual o un enlace compartido—. El contenido es el mismo fragmento
-(`_ficha_partido.html`); lo único que cambia es el marco.
-
-Antes esto no existía: la ficha era solo el fragmento, así que entrar por un
-enlace normal devolvía el HTML crudo, sin barra, sin estilos y sin pie.
-
-Se incluye `_modal.html` porque la ficha tiene botones que abren el perfil de un
-equipo o la ficha de otro partido: en la página completa esos también abren en
-modal, igual que en el calendario.
-{% endcomment %}
 
 {% block contenido %}
 <div class="ficha-pagina">
@@ -43,10 +23,6 @@ modal, igual que en el calendario.
         {% include 'partidos/_ficha_partido.html' %}
     </div>
 
-    {% comment %}
-    Los atajos de abajo son propios de la página: dentro del modal no hacen
-    falta porque quien lo abrió ya venía de una de estas pantallas.
-    {% endcomment %}
     <div class="ancho-pagina ficha-atajos">
         <a href="{% url 'estadisticas-categoria' partido.categoria.pk %}" class="ficha-atajo">
             <span>

@@ -32,11 +32,7 @@
             </div>
 
             <div class="overflow-x-auto rounded-3xl bg-white border border-green-100 shadow-sm">
-                {% comment %}
-                tabla-datos centra verticalmente todas las celdas. Sin eso, las filas
-                cuyo bloque de porteros ocupa dos renglones dejan los numeros pegados
-                arriba y la tabla se ve torcida.
-                {% endcomment %}
+
                 <table class="tabla-datos min-w-full divide-y divide-gray-200">
                     <thead class="bg-green-50">
                         <tr>
@@ -54,7 +50,7 @@
                             <tr {% if forloop.counter <= 3 and fila.pj %}class="bg-green-50/40"{% endif %}>
                                 <td class="col-numero px-4 py-4 text-sm {% if forloop.counter <= 3 and fila.pj %}font-bold text-green-800{% else %}text-gray-400{% endif %}">{{ forloop.counter }}</td>
                                 <td class="px-4 py-4">
-                                    {# El escudo y el nombre abren el perfil del equipo. #}
+
                                     <div class="celda-equipo">
                                         <button type="button" class="open-modal equipo-enlace flex items-center gap-3"
                                                 data-url="{% url 'equipo-perfil' fila.equipo.pk %}"
@@ -66,11 +62,7 @@
                                     </div>
                                 </td>
                                 <td class="px-4 py-4">
-                                    {% comment %}
-                                    Los porteros van seguidos en una linea: la columna es ancha
-                                    y entran los dos o tres de un plantel. Cada uno se mantiene
-                                    entero, sin partirse entre el dorsal y el apellido.
-                                    {% endcomment %}
+
                                     <ul class="lista-porteros">
                                         {% for portero in fila.porteros %}
                                             <li>
@@ -103,6 +95,5 @@
     </div>
 </div>
 
-{# Hace falta para que cada equipo pueda abrir su perfil. #}
 {% include '_modal.html' %}
 {% endblock %}

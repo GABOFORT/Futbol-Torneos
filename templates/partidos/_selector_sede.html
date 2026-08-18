@@ -1,18 +1,4 @@
-{% comment %}
-Selector de cancha del formulario de programar un partido.
 
-El mapa esta siempre a la vista y tiene dos modos, que maneja static/js/sedes.js:
-
-  ver     - el partido ya tiene cancha: el mapa la muestra con el pin fijo y
-            debajo salen su nombre y direccion. No hay que pulsar nada.
-  marcar  - todavia no hay cancha, o se pidio cambiarla: el pin se arrastra,
-            aparece el buscador y los campos para nombrarla y guardarla.
-
-Arranca en 'marcar' cuando el partido no tiene cancha, porque en ese caso hay
-que elegir una si o si.
-
-Las coordenadas nunca se escriben a mano: salen del pin.
-{% endcomment %}
 <div class="selector-sede"
      data-selector-sede
      data-url-guardar="{% url 'partido-sede-crear' partido.pk %}"
@@ -30,7 +16,6 @@ Las coordenadas nunca se escriben a mano: salen del pin.
 
     <div class="sede-mapa" data-sede-mapa></div>
 
-    {# Modo ver: lo que hay cargado en la cancha elegida. #}
     <div class="sede-resumen" data-sede-resumen hidden>
         <div class="sede-resumen-datos">
             <p class="sede-resumen-nombre" data-sede-resumen-nombre></p>
@@ -39,7 +24,6 @@ Las coordenadas nunca se escriben a mano: salen del pin.
         <button type="button" class="btn-accion" data-sede-abrir>Cambiar de cancha</button>
     </div>
 
-    {# Modo marcar: todo lo necesario para dar de alta una cancha nueva. #}
     <div class="sede-marcar" data-sede-marcar hidden>
         <p class="sede-ayuda">
             Busca por calle, colonia o una referencia conocida para acercarte, y después
@@ -73,7 +57,7 @@ Las coordenadas nunca se escriben a mano: salen del pin.
         <p class="sede-error" data-sede-error hidden></p>
 
         <div class="sede-acciones">
-            {# Cancelar solo tiene sentido si hay una cancha a la que volver. #}
+
             <button type="button" class="btn-accion" data-sede-cancelar hidden>Cancelar</button>
             <button type="button" class="btn-accion btn-accion-principal" data-sede-guardar>Guardar cancha</button>
         </div>

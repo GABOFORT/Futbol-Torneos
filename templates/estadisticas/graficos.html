@@ -6,15 +6,6 @@
 {% block og_titulo %}Estadísticas del torneo · BUHO Sports League{% endblock %}
 {% block og_descripcion %}Goles por jornada, equipos más ofensivos y menos goleados.{% endblock %}
 
-{% comment %}
-Los números del torneo en gráficos.
-
-Las barras son CSS, no una librería: el proyecto no tiene ninguna y meter una
-por cuatro gráficos de barras sería pagar cientos de KB por algo que es un ancho
-en porcentaje. Las alturas vienen calculadas de `graficos.py`, porque el
-template de Django no sabe dividir.
-{% endcomment %}
-
 {% block contenido %}
 <div class="ancho-pagina ancho-pagina-arriba">
     <div class="graf-cabecera">
@@ -49,7 +40,7 @@ template de Django no sabe dividir.
             </p>
         </div>
     {% else %}
-        {% comment %} ---- Los tres numeros de arriba ---- {% endcomment %}
+
         <div class="portada-cifras portada-cifras-sueltas">
             <div class="portada-cifra">
                 <span class="portada-cifra-icono"></span>
@@ -73,7 +64,6 @@ template de Django no sabe dividir.
             </div>
         </div>
 
-        {% comment %} ---- Goles por jornada ---- {% endcomment %}
         <section class="graf-caja">
             <div class="graf-titulo-fila">
                 <h2 class="seccion-titulo">Goles por jornada</h2>
@@ -91,7 +81,6 @@ template de Django no sabe dividir.
             <p class="graf-pie">Número de jornada</p>
         </section>
 
-        {% comment %} ---- Ataque y defensa ---- {% endcomment %}
         <div class="dos-columnas">
             <section class="graf-caja">
                 <div class="graf-titulo-fila">
@@ -130,7 +119,6 @@ template de Django no sabe dividir.
             </section>
         </div>
 
-        {% comment %} ---- Como terminan los partidos ---- {% endcomment %}
         <section class="graf-caja">
             <div class="graf-titulo-fila">
                 <h2 class="seccion-titulo">Cómo terminan los partidos</h2>

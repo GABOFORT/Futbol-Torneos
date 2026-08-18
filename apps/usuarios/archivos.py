@@ -41,8 +41,6 @@ def _borrar(archivo):
     if not archivo:
         return
     try:
-        # save=False: no hay que volver a guardar el registro, solo sacar el
-        # archivo del disco.
         archivo.delete(save=False)
     except OSError as error:
         logger.warning('No se pudo borrar %s: %s', archivo.name, error)
@@ -64,15 +62,13 @@ def conectar(modelo):
     @receiver(pre_save, sender=modelo, weak=False)
     def al_reemplazar(sender, instance, **kwargs):
         if not instance.pk:
-            return  # es nuevo, no hay nada anterior que borrar
+            return
         anterior = sender._default_manager.filter(pk=instance.pk).first()
         if not anterior:
             return
         for campo in campos:
             viejo = getattr(anterior, campo.name, None)
             nuevo = getattr(instance, campo.name, None)
-            # Solo si de verdad cambio: guardar el registro sin tocar la imagen
-            # no tiene que borrar nada.
             if viejo and viejo.name != (nuevo.name if nuevo else None):
                 if not _lo_usa_alguien_mas(instance, campo, viejo.name):
                     _borrar(viejo)

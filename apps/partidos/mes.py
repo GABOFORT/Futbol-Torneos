@@ -11,8 +11,6 @@ que no hay que configurarlo, pero conviene dejarlo dicho.
 import calendar
 import datetime
 
-# Cuantos meses se puede ir hacia atras y hacia adelante desde el actual. Es
-# para no ofrecer flechas que llevan a meses vacios para siempre.
 MESES_ALREDEDOR = 24
 
 MESES = [
@@ -42,8 +40,6 @@ def leer_mes(texto, hoy):
     except (AttributeError, ValueError):
         return hoy.year, hoy.month
 
-    # Un rango razonable alrededor de hoy: mas lejos no hay datos y solo sirve
-    # para que alguien se pierda navegando meses vacios.
     if abs((fecha.year - hoy.year) * 12 + fecha.month - hoy.month) > MESES_ALREDEDOR:
         return hoy.year, hoy.month
     return fecha.year, fecha.month

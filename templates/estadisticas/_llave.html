@@ -1,15 +1,4 @@
-{% comment %}
-Una llave del cuadro: los dos equipos con el global de la serie.
 
-Recibe `cruce`, que es una serie armada por liguilla.series(): trae los dos
-equipos, el global, si está completa y quién pasó. Opcionalmente `destacada`
-para la final.
-
-La liguilla se juega a ida y vuelta, así que el número grande es el GLOBAL de
-los dos partidos, no el marcador de uno. Abajo se detallan los dos resultados,
-que es lo que la gente busca después de ver quién pasó. El tercer lugar es a
-partido único y ahí no hay detalle que mostrar.
-{% endcomment %}
 <article class="llave {% if destacada %}llave-final{% endif %} {% if cruce.completa %}llave-jugada{% endif %}">
 
     <div class="llave-lado {% if cruce.ganador.id == cruce.uno.id %}llave-gana{% endif %}">
@@ -29,14 +18,10 @@ partido único y ahí no hay detalle que mostrar.
     </div>
 
     {% if cruce.motivo %}
-        {# Con el global igualado hay que decir por qué pasó uno y no el otro. #}
+
         <p class="llave-motivo">{{ cruce.motivo }}</p>
     {% endif %}
 
-    {% comment %}
-    El detalle de los dos partidos. Cada uno abre su ficha, igual que las
-    tarjetas del calendario.
-    {% endcomment %}
     <div class="llave-juegos">
         {% for juego in cruce.partidos %}
             <button type="button" class="open-modal llave-juego"

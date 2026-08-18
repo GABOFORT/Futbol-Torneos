@@ -1,15 +1,4 @@
-/* ============================================================================
-   La portada pública y el marco del sitio (cabecera y pie).
 
-   En archivo propio y no dentro de base.html a propósito. El bloque <style> de
-   base.html pasa las 2 000 líneas, y ya costó un bug: dos componentes distintos
-   terminaron declarando las mismas clases a mil líneas de distancia y se
-   pisaban. Además, así este CSS se cachea aparte en vez de viajar en cada
-   página del sistema.
-
-   Todas las clases empiezan por el nombre de su bloque (hero-, cifra-, hoy-,
-   lider-, torneo-, campeon-) para que no puedan chocar con las de otra pantalla.
-   ============================================================================ */
 
 .ancho-pagina {
     max-width: 72rem;
@@ -17,16 +6,6 @@
     padding: 0 1.25rem;
 }
 
-/* ============================================================================
-   Barra de navegación, en dos niveles.
-
-   Nivel alto : identidad, buscador y sesión, sobre el verde más oscuro.
-   Nivel bajo : las secciones, sobre el verde de marca.
-
-   Es fija arriba porque en pantallas largas —el calendario de un mes, una tabla
-   de veinte equipos— volver arriba para cambiar de sección obligaba a un scroll
-   entero.
-   ============================================================================ */
 .cabecera {
     position: sticky;
     top: 0;
@@ -45,7 +24,7 @@
 
 .cabecera-alta {
     background-color: var(--verde-950);
-    /* La textura de césped, apenas insinuada: da profundidad sin ruido. */
+
     background-image: repeating-linear-gradient(
         90deg, rgba(255, 255, 255, 0.03) 0 4rem, transparent 4rem 8rem);
 }
@@ -67,8 +46,6 @@
     box-shadow: var(--sombra-oscura);
 }
 
-/* El nombre en dos pesos: la marca fuerte y el resto tenue. En pantalla chica
-   se esconde el segundo tramo antes que apretar todo. */
 .cabecera-nombre {
     font-size: var(--texto-lg);
     font-weight: 800;
@@ -85,9 +62,6 @@
     min-width: 0;
 }
 
-/* ---- Buscador ----
-   De ancho fijo. Antes se ensanchaba al enfocarlo y toda la cabecera se movía
-   justo cuando alguien iba a escribir: el peor momento para mover algo. */
 .cabecera-buscar {
     display: none;
     align-items: center;
@@ -117,14 +91,14 @@
     color: var(--blanco);
 }
 .cabecera-buscar input::placeholder { color: rgba(187, 247, 208, 0.6); }
-/* La cruz nativa del campo de búsqueda se ve negra sobre el verde. */
+
 .cabecera-buscar input::-webkit-search-cancel-button { filter: invert(1) opacity(0.5); }
 
 .cabecera-boton {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    /* 2.5rem de alto: el mínimo cómodo para tocar con el pulgar. */
+
     min-height: var(--toque);
     padding: 0 1.125rem;
     border-radius: var(--radio-full);
@@ -155,7 +129,6 @@
 .cabecera-hamburguesa:hover { background-color: rgba(255, 255, 255, 0.12); }
 .cabecera-hamburguesa svg { width: 1.5rem; height: 1.5rem; }
 
-/* ---- Nivel bajo: la navegación ---- */
 .cabecera-baja {
     display: none;
     background-color: var(--verde-900);
@@ -173,8 +146,7 @@
     font-weight: 600;
     color: rgba(255, 255, 255, 0.86);
     white-space: nowrap;
-    /* El borde inferior transparente reserva el lugar del subrayado activo: sin
-       él, el texto salta 3 px al pasar el mouse. */
+
     border-bottom: 3px solid transparent;
     transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
     cursor: pointer;
@@ -182,7 +154,6 @@
 .nav-enlace:hover { color: var(--blanco); background-color: rgba(255, 255, 255, 0.08); }
 .nav-enlace:focus-visible { outline: 2px solid var(--oro-claro); outline-offset: -2px; }
 
-/* La sección donde está parado el visitante. */
 .nav-activo {
     color: var(--blanco);
     border-bottom-color: var(--oro-claro);
@@ -191,17 +162,6 @@
 
 .nav-desplegable svg { width: 0.875rem; height: 0.875rem; transition: transform 0.18s ease; }
 
-/* ---- El desplegable ----
-
-   Abrir y cerrar se resuelve acá, al lado del display:none que lo controla, y
-   no con las utilidades group-hover de Tailwind. El motivo es concreto:
-   Tailwind v4 las genera envueltas en un :where(), que pesa cero, así que el
-   selector completo vale lo mismo que una clase suelta — exactamente lo mismo
-   que .nav-menu. Empatados en especificidad gana el que va después, y este
-   archivo se carga después de tailwind.css: el display:none ganaba siempre y el
-   menú no abría nunca.
-
-   Con :focus-within además abre con el teclado. */
 .nav-item { position: relative; }
 
 .nav-menu {
@@ -244,7 +204,6 @@
 .nav-opcion small { display: block; margin-top: 0.0625rem; font-size: var(--texto-xs); color: var(--texto-debil); }
 .nav-opcion-tenue strong { color: var(--texto-debil); font-weight: 500; }
 
-/* ---- Menú del celular ---- */
 .menu-movil {
     max-height: calc(100vh - 4rem);
     overflow-y: auto;
@@ -273,13 +232,6 @@
 
 .menu-movil-boton { display: flex; width: 100%; margin-top: 0.75rem; }
 
-/* ============================================================================
-   Accesibilidad y estados
-   ============================================================================ */
-
-/* Enlace de salto: invisible hasta que se lo enfoca con el teclado. Quien
-   navega con Tab o con lector de pantalla se saltea los veinte enlaces de la
-   cabecera en vez de recorrerlos en cada página. */
 .saltar {
     position: absolute;
     left: 0.75rem;
@@ -295,12 +247,8 @@
 }
 .saltar:focus { top: 0; }
 
-/* El contenido recibe el foco al saltar, pero no debe dibujar un contorno
-   alrededor de media pantalla. */
 main:focus { outline: none; }
 
-/* El modal mientras viaja la petición. Sin esto se quedaba mudo y, en una
-   conexión lenta, parecía que el clic no había hecho nada. */
 .modal-cargando {
     display: flex;
     flex-direction: column;
@@ -325,9 +273,6 @@ main:focus { outline: none; }
 
 @keyframes girar { to { transform: rotate(360deg); } }
 
-/* Quien pidió menos movimiento en su sistema no debería recibir animaciones.
-   Se dejan casi instantáneas en vez de quitarlas: los estados igual tienen que
-   notarse. */
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -339,18 +284,11 @@ main:focus { outline: none; }
     }
 }
 
-/* ============================================================================
-   Seguir equipos.
-
-   La estrella guarda el equipo en el navegador del visitante (ver seguir.js).
-   Apagada es un contorno tenue; encendida, dorada. El cambio tiene un rebote
-   corto para que se note que quedó guardado sin necesidad de un mensaje.
-   ============================================================================ */
 .estrella {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    /* 2.75rem es el mínimo cómodo para tocar con el pulgar (WCAG 2.5.8). */
+
     min-width: 2.75rem;
     min-height: 2.75rem;
     border-radius: var(--radio-full);
@@ -370,7 +308,6 @@ main:focus { outline: none; }
     100% { transform: scale(1); }
 }
 
-/* En la tarjeta del listado va arriba a la derecha, superpuesta. */
 .tarjeta-equipo { position: relative; }
 .tarjeta-equipo .estrella { position: absolute; top: 0.25rem; right: 0.25rem; }
 
@@ -383,7 +320,6 @@ main:focus { outline: none; }
 .estrella-grande span { font-size: var(--texto-sm); font-weight: 600; color: var(--gris-700); }
 .estrella-grande.seguido { border-color: var(--aviso-borde); background-color: var(--oro-fondo); }
 
-/* ---- "Tus equipos" en la portada ---- */
 .mis-equipos { margin-top: 2rem; }
 
 .mis-lista {
@@ -426,7 +362,6 @@ main:focus { outline: none; }
 .mio-cancha { display: block; font-size: var(--texto-xs); color: var(--texto-debil); }
 .mio-sin { margin-top: 0.75rem; font-size: var(--texto-xs); color: var(--texto-debil); }
 
-/* ---- Fechas del equipo, en su página ---- */
 .equipo-fechas {
     display: grid;
     gap: 1.5rem;
@@ -452,11 +387,6 @@ main:focus { outline: none; }
 .fecha-donde { font-size: var(--texto-xs); color: var(--texto-debil); text-align: right; white-space: nowrap; }
 .fecha-sin { padding: 1rem; font-size: var(--texto-sm); color: var(--texto-debil); }
 
-/* ============================================================================
-   Franja de marcadores.
-   El elemento que hace que un sitio se lea como sitio deportivo: lo que se
-   juega hoy, arriba de todo y de un vistazo.
-   ============================================================================ */
 .franja {
     background-color: var(--verde-950);
     border-bottom: 1px solid rgba(134, 239, 172, 0.2);
@@ -482,8 +412,6 @@ main:focus { outline: none; }
     color: var(--amarillo-300);
 }
 
-/* Se desplaza en horizontal en vez de bajar de renglón: así entran veinte
-   partidos sin empujar la página. */
 .franja-lista {
     display: flex;
     gap: 0;
@@ -549,9 +477,6 @@ main:focus { outline: none; }
     white-space: nowrap;
 }
 
-/* ============================================================================
-   Pie de página
-   ============================================================================ */
 .pie {
     margin-top: 3rem;
     background-color: var(--verde-950);
@@ -616,7 +541,6 @@ main:focus { outline: none; }
 .pie-abajo p:last-child { padding-bottom: 1.25rem; }
 .pie-nota { color: var(--verde-600) !important; font-size: var(--texto-xs) !important; }
 
-/* ---- Encabezados de sección ---- */
 .seccion-cabecera {
     display: flex;
     flex-wrap: wrap;
@@ -639,9 +563,6 @@ main:focus { outline: none; }
 }
 .seccion-enlace:hover { color: var(--verde-900); }
 
-/* ---- Hero ----
-   El verde profundo con la textura de cancha detrás: es lo primero que se ve y
-   tiene que decir "esto es fútbol" antes de leer una palabra. */
 .hero {
     position: relative;
     overflow: hidden;
@@ -654,7 +575,6 @@ main:focus { outline: none; }
         linear-gradient(160deg, var(--verde-900), var(--verde-950));
 }
 
-/* Las rayas del césped. Muy suaves: es textura, no un dibujo. */
 .hero::before {
     content: '';
     position: absolute;
@@ -723,15 +643,13 @@ main:focus { outline: none; }
 }
 .hero-boton-borde:hover { background-color: rgba(255, 255, 255, 0.12); }
 
-/* ---- Tarjeta del partido destacado ---- */
 .hero-partido {
     display: block;
     padding: 1.25rem;
     border-radius: var(--radio-xl);
     border: 1px solid rgba(134, 239, 172, 0.3);
     background-color: rgba(255, 255, 255, 0.07);
-    /* El desenfoque de atrás hace que la tarjeta flote sobre el césped en vez
-       de taparlo. */
+
     backdrop-filter: blur(6px);
     transition: background-color 0.15s ease;
 }
@@ -802,12 +720,11 @@ main:focus { outline: none; }
     text-align: center;
 }
 
-/* ---- Las cuatro cifras ---- */
 .portada-cifras {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 0.75rem;
-    /* Suben sobre el hero para coserlo con el resto de la página. */
+
     margin-top: -4rem;
     position: relative;
 }
@@ -840,20 +757,12 @@ main:focus { outline: none; }
     color: var(--gris-500);
 }
 
-/* ---- Partidos de hoy ---- */
 .lista-hoy {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
     gap: 0.75rem;
 }
 
-/* La tarjeta es una columna flex y la fila de chips va anclada al fondo
-   (`margin-top: auto`). Sin eso, un nombre largo que ocupa dos renglones
-   —"Wolverhampton Wanderers"— empujaba los chips hacia abajo solo en esa
-   tarjeta, y la fila gris quedaba a distinta altura en cada una.
-
-   Las tarjetas de una misma fila ya miden lo mismo porque el grid las estira;
-   lo que faltaba era repartir ese alto adentro. */
 .hoy {
     display: flex;
     flex-direction: column;
@@ -894,8 +803,6 @@ main:focus { outline: none; }
 
 .hoy-final { background-color: var(--verde-100); color: var(--verde-700); }
 
-/* Ocupa el alto que sobre y centra el cruce: así una tarjeta con nombres de un
-   renglón y otra de dos se ven igual de equilibradas. */
 .hoy-cruce {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
@@ -939,8 +846,6 @@ main:focus { outline: none; }
     white-space: nowrap;
 }
 
-/* `margin-top: auto` es lo que empareja la fila gris entre todas las tarjetas:
-   la empuja al fondo de la suya, sin importar cuánto ocupe el cruce de arriba. */
 .hoy-datos {
     display: flex;
     flex-wrap: wrap;
@@ -961,14 +866,8 @@ main:focus { outline: none; }
 
 .hoy-cancha { background-color: #eff6ff; color: #1d4ed8; }
 
-/* ---- Figura de la semana y últimos resultados ---- */
 .dos-columnas { display: grid; gap: 1.5rem; }
 
-/* La tarjeta de la figura de la semana.
-
-   Responde tres preguntas en este orden: quién es, qué hizo, y en qué partido.
-   Antes mostraba un número grande con la palabra "participaciones", que no
-   contaba nada: un 4 no dice si fueron cuatro goles o cuatro pases. */
 .figura {
     padding: 1.25rem;
     border-radius: var(--radio-xl);
@@ -1018,8 +917,6 @@ main:focus { outline: none; }
 .figura-club { font-size: var(--texto-md); font-weight: 600; color: var(--gris-700); overflow-wrap: anywhere; }
 .figura-torneo { font-size: var(--texto-xs); color: var(--texto-debil); overflow-wrap: anywhere; }
 
-/* Las tres cifras, cada una con su etiqueta: se lee qué es cada número sin
-   tener que deducirlo. Va como <dl> porque eso es: pares de término y dato. */
 .figura-cifras {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -1051,8 +948,6 @@ main:focus { outline: none; }
     color: var(--verde-900);
 }
 
-/* El dato que hace que la sección cuente algo: qué hizo, contra quién, y el
-   enlace a ese partido. */
 .figura-logro {
     display: flex;
     flex-wrap: wrap;
@@ -1081,7 +976,6 @@ main:focus { outline: none; }
 
 .seccion-nota { font-size: var(--texto-xs); color: var(--texto-debil); }
 
-/* Si el icono queda vacío no debe dejar un hueco fantasma. */
 .portada-cifra-icono:empty { display: none; }
 
 .resultados {
@@ -1114,7 +1008,6 @@ main:focus { outline: none; }
     white-space: nowrap;
 }
 
-/* ---- Líderes ---- */
 .tres-columnas { display: grid; gap: 1rem; }
 
 .lideres {
@@ -1143,8 +1036,6 @@ main:focus { outline: none; }
 }
 .lideres-cabecera a:hover { color: var(--blanco); }
 
-/* Un color por ranking, para distinguirlos de un vistazo cuando están los tres
-   uno al lado del otro. */
 .lideres-goles { background-image: linear-gradient(135deg, var(--verde-700), var(--verde-800)); }
 .lideres-asistencias { background-image: linear-gradient(135deg, var(--oro-texto), var(--aviso-texto)); }
 .lideres-vallas { background-image: linear-gradient(135deg, #0369a1, #075985); }
@@ -1171,7 +1062,6 @@ main:focus { outline: none; }
     color: var(--gris-500);
 }
 
-/* Podio: los tres primeros con su metal. */
 .lider-puesto-1 { background-image: linear-gradient(160deg, var(--aviso-borde), var(--oro)); color: #78350f; }
 .lider-puesto-2 { background-image: linear-gradient(160deg, var(--gris-100), var(--gris-400)); color: var(--gris-700); }
 .lider-puesto-3 { background-image: linear-gradient(160deg, #fed7aa, var(--oro-texto)); color: var(--blanco); }
@@ -1200,7 +1090,6 @@ main:focus { outline: none; }
     color: var(--texto-debil);
 }
 
-/* ---- Torneos en juego ---- */
 .torneos {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
@@ -1223,8 +1112,6 @@ main:focus { outline: none; }
     gap: 0.625rem;
 }
 
-/* El tamaño chico del logo de liga. Existían -md y -lg, pero no este, y lo
-   estaban usando tres pantallas: el logo salía del tamaño por defecto. */
 .logo-liga-sm { height: 2rem; width: 2rem; font-size: var(--texto-xs); }
 
 .torneo-identidad { flex: 1; min-width: 0; }
@@ -1279,7 +1166,6 @@ main:focus { outline: none; }
 
 .torneo-nota { margin-top: 0.5rem; font-size: var(--texto-xs); color: var(--texto-debil); }
 
-/* ---- Últimos campeones ---- */
 .campeones {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
@@ -1297,9 +1183,6 @@ main:focus { outline: none; }
 }
 .campeon:hover { transform: translateY(-2px); box-shadow: var(--sombra-oro); }
 
-/* La copa de verdad, la misma imagen que la vitrina, en vez del emoji 🏆: cada
-   sistema lo dibuja distinto y al lado del resto se veía como un carácter
-   suelto, no como un trofeo. */
 .campeon-copa {
     height: 3.5rem;
     width: auto;
@@ -1315,9 +1198,6 @@ main:focus { outline: none; }
 }
 .campeon-torneo { margin-top: 0.125rem; font-size: var(--texto-xs); color: var(--aviso-texto); }
 
-/* ============================================================================
-   Buscador
-   ============================================================================ */
 .buscador-cabecera {
     margin-bottom: 2rem;
     padding: 2.5rem 0;
@@ -1437,7 +1317,6 @@ main:focus { outline: none; }
     color: var(--verde-700);
 }
 
-/* Estado vacío compartido por buscador y sedes. */
 .vacio {
     padding: 3rem 1.5rem;
     border: 1px dashed var(--gris-300);
@@ -1449,15 +1328,6 @@ main:focus { outline: none; }
 .vacio-texto { margin-top: 0.5rem; font-size: var(--texto-md); color: var(--gris-500); }
 .vacio-texto a { color: var(--verde-700); font-weight: 600; text-decoration: underline; }
 
-/* ----------------------------------------------------------------------------
-   Acceso pausado: la pantalla que ve quien agoto los intentos de login.
-
-   Hermana del estado vacio —una tarjeta con un mensaje y nada mas—, pero con
-   su propio bloque porque lleva acciones y un tono mas serio.
-
-   Sin alto fijo ni `min-height`: el ancho lo pone `ancho-pagina` y el alto lo
-   da el contenido, asi que a 320 px se ve igual de bien que en un monitor.
-   -------------------------------------------------------------------------- */
 .bloqueo {
     max-width: 34rem;
     margin: 0 auto;
@@ -1492,8 +1362,6 @@ main:focus { outline: none; }
 }
 .bloqueo-texto strong { color: var(--verde-900); }
 
-/* Envuelven solos en pantalla angosta: en un telefono los dos botones no
-   entran uno al lado del otro sin quedar apretados. */
 .bloqueo-acciones {
     display: flex;
     flex-wrap: wrap;
@@ -1520,27 +1388,12 @@ main:focus { outline: none; }
 }
 .bloqueo-boton-tenue:hover { background-color: var(--verde-100); }
 
-/* En pantallas chicas cada boton ocupa todo el ancho: son el destino de la
-   pagina y a 320 px un boton a medio ancho es dificil de acertar con el dedo. */
-/* Excepción deliberada: teléfonos pequeños (por debajo de 416 px). Tailwind no
-   define nada ahí abajo y estas dos pantallas —bloqueo por pago y aviso de
-   sesión— son las únicas que se desbordaban a ese ancho. */
 @media (max-width: 26rem) {
     .bloqueo { padding: 2rem 1.25rem; }
     .bloqueo-titulo { font-size: var(--texto-2xl); }
     .bloqueo-boton { width: 100%; }
 }
 
-/* ----------------------------------------------------------------------------
-   Aviso de sesión por vencer.
-
-   Se dibuja sobre todo lo demás, incluido un modal abierto: es lo único de la
-   pantalla que importa en ese momento. De ahí el z-index 80 — el modal de las
-   fichas usa 50 y los avisos flotantes 60.
-
-   Comparte la paleta con `.bloqueo` (la pantalla de acceso pausado) porque son
-   la misma familia: algo se interrumpió y esto es lo que pasa ahora.
-   -------------------------------------------------------------------------- */
 .sesion-fondo {
     position: fixed;
     inset: 0;
@@ -1550,16 +1403,12 @@ main:focus { outline: none; }
     justify-content: center;
     padding: 1rem;
     background-color: rgba(2, 20, 10, 0.55);
-    /* El desenfoque del fondo no es decoración: separa el aviso del contenido y
-       deja claro que la página de atrás está en pausa. */
+
     backdrop-filter: blur(3px);
 }
 
-/* Sin esto el aviso se vería siempre: el atributo `hidden` del HTML pone
-   display:none, pero la regla de arriba lo pisa con display:flex. */
 .sesion-fondo[hidden] { display: none; }
 
-/* El fondo no debe poder scrollearse mientras el aviso está abierto. */
 body.sesion-quieta { overflow: hidden; }
 
 .sesion-tarjeta {
@@ -1579,7 +1428,6 @@ body.sesion-quieta { overflow: hidden; }
     to   { opacity: 1; transform: none; }
 }
 
-/* El reloj: el anillo que se vacía y el número en el centro. */
 .sesion-reloj {
     position: relative;
     width: 7.5rem;
@@ -1590,8 +1438,7 @@ body.sesion-quieta { overflow: hidden; }
 .sesion-anillo {
     width: 100%;
     height: 100%;
-    /* Girado un cuarto de vuelta para que el anillo empiece a vaciarse desde
-       arriba y no desde la derecha, que es donde arranca un SVG por defecto. */
+
     transform: rotate(-90deg);
 }
 
@@ -1606,8 +1453,7 @@ body.sesion-quieta { overflow: hidden; }
     stroke: var(--verde-800);
     stroke-width: 8;
     stroke-linecap: round;
-    /* Igual que el pulso del reloj en sesion.js: sin la transición el anillo
-       avanza a saltos de un segundo y se ve como si se trabara. */
+
     transition: stroke-dashoffset 1s linear;
 }
 
@@ -1620,8 +1466,7 @@ body.sesion-quieta { overflow: hidden; }
     font-size: var(--texto-3xl);
     font-weight: 800;
     color: var(--verde-900);
-    /* Cifras de ancho fijo: sin esto el número entero se mueve a cada segundo,
-       porque el "1" es más angosto que el resto. */
+
     font-variant-numeric: tabular-nums;
 }
 
@@ -1656,8 +1501,6 @@ body.sesion-quieta { overflow: hidden; }
     margin-top: 1.5rem;
 }
 
-/* El <form> de cerrar sesión no debe imponer su propio ancho: se comporta como
-   un botón más de la fila. */
 .sesion-forma-salir { display: contents; }
 
 .sesion-boton {
@@ -1688,8 +1531,6 @@ body.sesion-quieta { overflow: hidden; }
     color: var(--gris-500);
 }
 
-/* En un teléfono cada botón ocupa todo el ancho: son el destino de la pantalla
-   y a 320 px uno a medio ancho es difícil de acertar con el dedo. */
 @media (max-width: 26rem) {
     .sesion-tarjeta { padding: 1.5rem 1.25rem 1.25rem; }
     .sesion-reloj { width: 6rem; height: 6rem; }
@@ -1699,23 +1540,17 @@ body.sesion-quieta { overflow: hidden; }
     .sesion-boton { width: 100%; }
 }
 
-/* Quien pidió menos movimiento en su sistema no debería recibir una tarjeta que
-   salta ni un anillo animado. El dato sigue estando: es el número del centro. */
 @media (prefers-reduced-motion: reduce) {
     .sesion-tarjeta { animation: none; }
     .sesion-anillo-avance { transition: none; }
 }
 
-/* ============================================================================
-   Mapa de canchas
-   ============================================================================ */
 .mapa-sedes {
     height: 24rem;
     margin-bottom: 1.5rem;
     border-radius: var(--radio-xl);
     border: 1px solid var(--verde-100);
-    /* Leaflet dibuja los mosaicos en cuadrados: sin esto sobresalen del borde
-       redondeado en las cuatro esquinas. */
+
     overflow: hidden;
     z-index: 0;
 }
@@ -1760,9 +1595,6 @@ body.sesion-quieta { overflow: hidden; }
 }
 .sede-ir:hover { color: var(--verde-900); }
 
-/* ============================================================================
-   Calendario mensual
-   ============================================================================ */
 .mes-cabecera {
     display: flex;
     flex-wrap: wrap;
@@ -1802,8 +1634,6 @@ body.sesion-quieta { overflow: hidden; }
 
 .mes-grilla { display: grid; gap: 0.375rem; }
 
-/* Los nombres de los días sólo tienen sentido con la grilla de siete columnas:
-   en la lista del celular cada día ya lleva su fecha. */
 .mes-encabezado { display: none; }
 
 .mes-dia {
@@ -1814,9 +1644,6 @@ body.sesion-quieta { overflow: hidden; }
     background-color: var(--blanco);
 }
 
-/* "+N más": abre el resto del día sin salir de la pantalla. Se dibuja como una
-   pastilla y no como un enlace suelto para que se lea como algo pulsable, y
-   alcanza el alto cómodo para el pulgar igual que el resto de los controles. */
 .mes-mas > summary {
     display: flex;
     align-items: center;
@@ -1829,8 +1656,7 @@ body.sesion-quieta { overflow: hidden; }
     font-size: var(--texto-xs);
     font-weight: 600;
     cursor: pointer;
-    /* Quita el triangulito nativo: la pastilla ya dice que se abre, y en Safari
-       aparece pegado al borde izquierdo rompiendo el centrado. */
+
     list-style: none;
 }
 
@@ -1842,8 +1668,6 @@ body.sesion-quieta { overflow: hidden; }
 .mes-dia-fuera .mes-numero { color: var(--gris-500); }
 .mes-dia-hoy { border-color: var(--verde-600); box-shadow: var(--anillo-hoy); }
 
-/* En el celular la grilla no entra: se muestran sólo los días con partidos y
-   quedan como una lista. */
 .mes-dia-vacio { display: none; }
 
 .mes-numero {
@@ -1881,23 +1705,9 @@ body.sesion-quieta { overflow: hidden; }
 .mes-cruce strong { color: var(--verde-900); }
 .mes-torneo { display: block; font-size: var(--texto-xs); color: var(--texto-debil); }
 
-/* ============================================================================
-   La ficha del partido y el formulario de resultado como página completa.
-
-   El mismo fragmento se usa adentro del modal y como página. Lo que cambia es
-   el marco: acá se le quitan las medidas propias del modal (alto máximo, scroll
-   interno, sombra fuerte) y se le pone el aire de una pantalla.
-
-   Los selectores llevan el contenedor delante (`.ficha-pagina .ficha-modal`)
-   para ganar por especificidad: la regla original vive en el bloque de estilos
-   de base.html, que se carga después de este archivo.
-   ============================================================================ */
 .ficha-pagina {
     padding-top: 1.25rem;
-    /* Llevaba un degradado verde claro arriba (#ecfdf5 -> transparente en 12rem)
-       para despegar la ficha de la barra verde cuando el fondo era el gris del
-       sistema. Se quito el 07/08/2026: con la portada de liga detras, ese
-       degradado se veia como una mancha blanca sobre la imagen. */
+
 }
 
 .ficha-pagina .ficha-modal,
@@ -1909,7 +1719,6 @@ body.sesion-quieta { overflow: hidden; }
     border: 1px solid var(--verde-100);
 }
 
-/* Migas de pan: de dónde vengo y dónde estoy. */
 .ficha-migas {
     display: flex;
     flex-wrap: wrap;
@@ -1945,8 +1754,6 @@ body.sesion-quieta { overflow: hidden; }
 .ficha-ruta a:hover { color: var(--verde-900); text-decoration: underline; }
 .ficha-ruta-sep { color: var(--gris-500); }
 
-/* Atajos del pie de la ficha: a dónde se va desde acá. Solo en la página; en el
-   modal no hacen falta porque quien lo abrió ya venía de una de esas pantallas. */
 .ficha-atajos {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
@@ -2001,12 +1808,6 @@ body.sesion-quieta { overflow: hidden; }
 .formulario-pagina { padding-bottom: 2rem; }
 .formulario-pagina > div { max-width: 48rem; }
 
-/* ============================================================================
-   Gráficos.
-   Barras de CSS, sin librería: el proyecto no tiene ninguna y meter uno de
-   200 KB por cuatro gráficos de barras no se paga. Las alturas y los anchos
-   vienen calculados de graficos.py, porque el template no sabe dividir.
-   ============================================================================ */
 .graf-cabecera {
     display: flex;
     flex-wrap: wrap;
@@ -2047,14 +1848,12 @@ body.sesion-quieta { overflow: hidden; }
 
 .graf-nota { font-size: var(--texto-xs); color: var(--texto-debil); }
 
-/* ---- Columnas verticales: goles por jornada ---- */
 .graf-columnas {
     display: flex;
     align-items: flex-end;
     gap: 0.25rem;
     height: 12rem;
-    /* Con veinte jornadas no entran: se desplaza en horizontal en vez de
-       aplastarlas hasta que no se distinga una de otra. */
+
     overflow-x: auto;
     padding-bottom: 0.25rem;
 }
@@ -2081,7 +1880,6 @@ body.sesion-quieta { overflow: hidden; }
 .graf-eje { margin-top: 0.25rem; font-size: var(--texto-xs); color: var(--texto-debil); }
 .graf-pie { margin-top: 0.5rem; font-size: var(--texto-xs); color: var(--texto-debil); text-align: center; }
 
-/* ---- Barras horizontales: ataque y defensa ---- */
 .graf-fila {
     display: grid;
     grid-template-columns: 7rem 1fr 2.5rem;
@@ -2120,7 +1918,6 @@ body.sesion-quieta { overflow: hidden; }
     text-align: right;
 }
 
-/* ---- Una sola cabecera partida en tres: cómo terminan los partidos ---- */
 .graf-reparto {
     display: flex;
     height: 2.25rem;
@@ -2135,8 +1932,7 @@ body.sesion-quieta { overflow: hidden; }
     font-size: var(--texto-xs);
     font-weight: 800;
     color: var(--blanco);
-    /* Un tramo del 2 % no puede mostrar su número: se lo esconde en vez de
-       dejar un texto cortado a la mitad. */
+
     overflow: hidden;
     white-space: nowrap;
 }
@@ -2169,41 +1965,30 @@ body.sesion-quieta { overflow: hidden; }
     color: var(--texto-debil);
 }
 
-/* ============================================================================
-   Adaptativo. Se sube de una columna a varias recién cuando hay lugar de
-   verdad, no por el número mágico del celular.
-   ============================================================================ */
 @media (min-width: 40rem) {
     .portada-cifras { grid-template-columns: repeat(4, 1fr); }
     .hero-titulo { font-size: var(--texto-4xl); }
     .hero-escudo { height: 4rem; width: 4rem; }
     .pie-interior { grid-template-columns: repeat(2, 1fr); }
-    /* Recién acá entra el nombre completo al lado del logo. */
+
     .cabecera-nombre span { display: inline; }
 }
 
 @media (min-width: 48rem) {
-    /* El buscador aparece cuando hay ancho para sus 17rem sin apretar el resto.
-       Debajo de esto se llega por el menú del celular, que tiene su enlace. */
+
     .cabecera-buscar { display: flex; }
 }
 
 @media (min-width: 64rem) {
-    /* Los dos niveles: la navegación se muda del menú del celular a su propia
-       fila, y la hamburguesa desaparece. */
+
     .cabecera-baja { display: block; }
     .cabecera-hamburguesa { display: none; }
     .cabecera-salir { display: block; }
     .menu-movil { display: none !important; }
 }
 
-/* Excepción deliberada a los cortes de Tailwind (40/48/64/80rem): una grilla
-   de SIETE columnas necesita más ancho que cualquier corte genérico. A 48rem
-   cada día mediría 105 px y a 64rem se retrasaría de más. El corte lo manda el
-   contenido, no la tabla de breakpoints. */
 @media (min-width: 56rem) {
-    /* Recién acá entra la grilla de siete columnas sin que cada día quede del
-       ancho de un dedo. Debajo de esto es una lista de los días con partidos. */
+
     .mes-grilla { grid-template-columns: repeat(7, 1fr); }
     .mes-dia-vacio { display: block; }
     .mes-dia { min-height: 7rem; }
@@ -2221,28 +2006,16 @@ body.sesion-quieta { overflow: hidden; }
 
 @media (min-width: 64rem) {
     .hero { padding: 4rem 1.25rem 5rem; }
-    /* El texto a la izquierda y el partido destacado a la derecha: recién acá
-       entran los dos sin que ninguno quede apretado. */
+
     .hero-interior { grid-template-columns: 1.35fr 1fr; align-items: center; gap: 3rem; }
     .hero-titulo { font-size: var(--texto-5xl); }
     .dos-columnas { grid-template-columns: 1fr 1fr; align-items: start; }
     .tres-columnas { grid-template-columns: repeat(3, 1fr); }
     .equipo-fechas { grid-template-columns: 1fr 1fr; }
-    /* La marca ocupa el doble que cada columna de enlaces: es el bloque que
-       lleva el logo y el texto largo. */
+
     .pie-interior { grid-template-columns: 2fr 1fr 1fr 1fr; gap: 3rem; }
 }
 
-/* ============================================================================
-   Alturas y separaciones con clase, no con `style` inline.
-
-   La regla del proyecto —escrita en .vscode/settings.json— es que una plantilla
-   no lleva etiquetas de Django dentro de un atributo `style`: hace tropezar al
-   validador de CSS del editor, y la respuesta fue arreglar las plantillas en vez
-   de apagar la validación. Los anchos ya tenían sus `.ancho-N` en base.html;
-   estas son las alturas equivalentes, para las barras verticales de los
-   gráficos. El redondeo al paso de 5 lo hace `apps/usuarios/barras.py`.
-   ============================================================================ */
 .alto-0   { height: 0%; }
 .alto-5   { height: 5%; }
 .alto-10  { height: 10%; }
@@ -2268,3 +2041,33 @@ body.sesion-quieta { overflow: hidden; }
 .ancho-pagina-arriba { padding-top: 2rem; }
 .portada-cifras-sueltas { margin-top: 0; }
 .vacio-separado { margin-top: 1.5rem; }
+
+.torneo-relampago {
+    background-color: var(--oro-fondo);
+    color: var(--oro-texto);
+    border: 1px solid var(--aviso-borde);
+}
+
+.torneo-campeon {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    font-size: var(--texto-md);
+    font-weight: 600;
+    color: var(--oro-texto);
+}
+
+.torneo-copa {
+    width: 1.4rem;
+    height: 1.4rem;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.seccion-nota {
+    margin-top: -0.5rem;
+    margin-bottom: 1rem;
+    font-size: var(--texto-md);
+    color: var(--texto-normal);
+}

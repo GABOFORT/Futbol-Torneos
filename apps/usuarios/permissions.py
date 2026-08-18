@@ -67,27 +67,89 @@ def ligas_visibles(user):
     """
     from apps.torneos.models import Liga
 
-    publicas = Liga.objects.filter(activa=True)
+    publicas = Liga.objects.filter(activa=True, torneo__isnull=True)
 
-    # es_super_admin() y no is_superuser, igual que en ligas_administradas: sin
-    # esto un administrador general sin el flag veia solo las ligas activas, como
-    # un visitante cualquiera.
     if user.is_authenticated and (user.es_super_admin() or user.role == user.ROLE_ADMIN_LIGA):
-        # distinct() porque una liga propia y activa entra por los dos lados de
-        # la union, y sin el saldria dos veces en los desplegables de filtros.
         return (publicas | ligas_administradas(user)).distinct()
     return publicas
 
 
 def ligas_administradas(user):
-    """Queryset of Liga this user may manage: all for superuser, own for admin liga, none otherwise."""
+    """Las ligas que este usuario administra. Los torneos relámpago quedan fuera.
+
+    Un torneo se apoya en una Liga, pero vive en su propio apartado: si entrara
+    por aca aparecería en el listado de ligas, contaría contra la cuota de
+    `limite_ligas` y ofrecería sus categorias en los filtros de todo el sistema.
+    Se piden con `torneos_administrados()`.
+    """
     from apps.torneos.models import Liga
 
     if user.es_super_admin():
-        return Liga.objects.all()
+        return Liga.objects.filter(torneo__isnull=True)
     if user.role == user.ROLE_ADMIN_LIGA:
-        return user.ligas_administradas.all()
+        return user.ligas_administradas.filter(torneo__isnull=True)
     return Liga.objects.none()
+
+
+def torneos_administrados(user):
+    """Los torneos relámpago que este usuario puede administrar.
+
+    Se pregunta primero por `is_authenticated`: el listado y la ficha de un
+    torneo son publicos, y un `AnonymousUser` no tiene `es_super_admin()`. Sin
+    esta guarda, un visitante sin cuenta reventaba las dos pantallas.
+    """
+    from apps.torneos.models import Torneo
+
+    if not user.is_authenticated:
+        return Torneo.objects.none()
+    if user.es_super_admin():
+        return Torneo.objects.all()
+    if user.role == user.ROLE_ADMIN_LIGA:
+        return Torneo.objects.filter(liga__administradores=user)
+    return Torneo.objects.none()
+
+
+def torneos_visibles(user):
+    """Los torneos que se pueden mirar: los de las ligas activas, mas los propios."""
+    from apps.torneos.models import Torneo
+
+    publicos = Torneo.objects.filter(liga__activa=True)
+    if user.is_authenticated and (user.es_super_admin() or user.role == user.ROLE_ADMIN_LIGA):
+        return (publicos | torneos_administrados(user)).distinct()
+    return publicos
+
+
+def ligas_y_torneos_visibles(user):
+    """Todo lo que este usuario puede MIRAR, ligas y torneos juntos.
+
+    Las funciones de arriba parten el mundo en dos porque cada apartado lista lo
+    suyo. Pero las pantallas que trabajan sobre UN objeto concreto —la ficha de
+    un partido, el perfil de un equipo— no listan nada: solo tienen que decidir
+    si quien pide puede verlo. Ahi el corte por apartado no sirve, y sin esto un
+    partido de torneo daba 404.
+    """
+    from apps.torneos.models import Liga
+
+    de_torneos = Liga.objects.filter(torneo__in=torneos_visibles(user))
+    return Liga.objects.filter(
+        pk__in=set(ligas_visibles(user).values_list('pk', flat=True))
+        | set(de_torneos.values_list('pk', flat=True)))
+
+
+def ligas_y_torneos_administrados(user):
+    """Todo lo que este usuario puede ADMINISTRAR, ligas y torneos juntos.
+
+    Lo piden las pantallas que cambian un partido concreto: programar la fecha,
+    cargar el resultado, dar de alta una cancha.
+    """
+    from apps.torneos.models import Liga
+
+    if not user.is_authenticated:
+        return Liga.objects.none()
+    de_torneos = Liga.objects.filter(torneo__in=torneos_administrados(user))
+    return Liga.objects.filter(
+        pk__in=set(ligas_administradas(user).values_list('pk', flat=True))
+        | set(de_torneos.values_list('pk', flat=True)))
 
 
 def cascada_equipos(user, parametros):

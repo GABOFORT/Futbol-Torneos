@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block titulo %}{{ torneo.nombre }} - Torneo{% endblock %}
+
+{% load estaticos %}
+{% block cabecera_extra %}
+    {% if puede_administrar %}
+        <link rel="stylesheet" href="{% static_v 'vendor/leaflet/leaflet.css' %}">
+        <script src="{% static_v 'vendor/leaflet/leaflet.js' %}"></script>
+        <script defer src="{% static_v 'js/sedes.js' %}"></script>
+    {% endif %}
+{% endblock %}
+
+{% block contenido %}
+<div class="max-w-[100rem] mx-auto p-4 sm:p-6">
+    <div class="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div class="flex items-center gap-3">
+            {% include 'usuarios/_logo_liga.html' with liga=torneo.liga clase='logo-liga-lg' %}
+            <div>
+                <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">Torneo relámpago</p>
+                <h1 class="text-2xl sm:text-3xl font-bold text-green-900">{{ torneo.nombre }}</h1>
+                <p class="mt-1 text-sm text-gray-600">
+                    {{ torneo.fecha|date:'l d \d\e F \d\e Y' }} · {{ torneo.equipos }} equipos · eliminación directa
+                </p>
+            </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+            {% if puede_administrar %}
+                <a href="{% url 'mis-torneos' %}" class="text-sm font-semibold text-green-700 hover:text-green-900">← Mis torneos</a>
+            {% else %}
+                <a href="{% url 'torneo-list' %}" class="text-sm font-semibold text-green-700 hover:text-green-900">← Todos los torneos</a>
+            {% endif %}
+            {% if puede_administrar %}
+                <button data-url="{% url 'torneo-edit' torneo.pk %}?modal=1" class="open-modal text-sm font-semibold text-green-700 hover:text-green-900">Editar</button>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if torneo.liga.descripcion %}
+        <p class="mb-6 text-gray-700">{{ torneo.liga.descripcion }}</p>
+    {% endif %}
+
+    {% if not torneo.sorteado %}
+        <section class="rounded-[2rem] border border-green-100 bg-white p-5 sm:p-8 shadow-sm">
+            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h2 class="text-xl font-bold text-green-900">Equipos inscritos</h2>
+                    <p class="mt-1 text-sm text-gray-600">
+                        {{ torneo.inscritos }} de {{ torneo.equipos }}.
+                        {% if torneo.faltan %}Faltan {{ torneo.faltan }} para poder sortear el cuadro.{% endif %}
+                    </p>
+                </div>
+                {% if puede_administrar %}
+                    <div class="flex flex-wrap gap-3">
+                        {% if not torneo.completo %}
+                            <button class="open-modal inline-flex items-center justify-center rounded-full bg-green-800 px-5 py-3 text-sm font-semibold text-white hover:bg-green-700" data-url="{% url 'torneo-equipo-create' torneo.pk %}?modal=1">Inscribir equipo</button>
+                        {% endif %}
+                        <form action="{% url 'torneo-sortear' torneo.pk %}" method="post">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-liguilla" {% if motivo_sorteo %}disabled{% endif %}>Sortear el cuadro</button>
+                        </form>
+                    </div>
+                {% endif %}
+            </div>
+
+            {% if motivo_sorteo and puede_administrar %}
+                <p class="mt-4 text-sm text-yellow-800">{{ motivo_sorteo }}</p>
+            {% endif %}
+
+            <div class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {% for equipo in equipos %}
+                    <a href="{% url 'jugador-list' equipo.pk %}" class="flex items-center gap-3 rounded-2xl border border-gray-200 p-3 hover:border-green-400">
+                        <img src="{{ equipo.escudo_url }}" alt="Escudo de {{ equipo.nombre }}" class="h-10 w-10 rounded-full object-cover" loading="lazy" decoding="async">
+                        <div class="min-w-0">
+                            <p class="font-semibold text-gray-900 truncate">{{ equipo.nombre }}</p>
+                            <p class="text-xs text-gray-500 truncate">{{ equipo.entrenador.nombre_visible }} · {{ equipo.jugadores.count }} jugador(es)</p>
+                        </div>
+                    </a>
+                {% empty %}
+                    <p class="text-gray-500 sm:col-span-2 lg:col-span-4">Todavía no hay equipos inscritos.</p>
+                {% endfor %}
+            </div>
+        </section>
+    {% else %}
+        {% include 'estadisticas/_bracket.html' %}
+
+        <section class="mt-10 rounded-[2rem] border border-green-100 bg-white p-5 sm:p-8 shadow-sm">
+            <h2 class="text-xl font-bold text-green-900">Partidos</h2>
+            <p class="mt-1 text-sm text-gray-600">
+                Aquí les pones la fecha y la cancha, y cargas el resultado.
+                El empate se define en penales.
+            </p>
+            <div class="mt-5 grid gap-3">
+                {% for partido in partidos %}
+                    <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gray-200 p-4">
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold uppercase tracking-[0.15em] text-green-700">{{ partido.get_fase_display }}</p>
+                            <p class="mt-1 font-semibold text-gray-900">
+                                {{ partido.equipo_local.nombre }}
+                                {% if partido.jugado %}
+                                    <span class="mx-2 rounded-lg bg-green-100 px-2 py-0.5 text-green-900">{{ partido.goles_local }} - {{ partido.goles_visitante }}</span>
+                                    {% if partido.hubo_tanda %}<span class="text-xs text-gray-500">({{ partido.penales_local }}-{{ partido.penales_visitante }} pen)</span>{% endif %}
+                                {% else %}
+                                    <span class="mx-2 text-gray-400">vs</span>
+                                {% endif %}
+                                {{ partido.equipo_visitante.nombre }}
+                            </p>
+                            <p class="mt-1 text-sm text-gray-500">
+                                {% if partido.fecha %}{{ partido.fecha|date:'d/m H:i' }}{% else %}Sin fecha{% endif %}
+                                {% if partido.sede %} · {{ partido.sede.nombre }}{% endif %}
+                                {% if partido.jugado and partido.ganador %} · pasa {{ partido.ganador.nombre }}{% endif %}
+                            </p>
+                        </div>
+                        <div class="acciones-partido">
+                            <button data-url="{% url 'partido-detalle' partido.pk %}?modal=1" class="open-modal btn-accion">Ficha</button>
+                            {% if puede_administrar %}
+                                {% if partido.jugado %}
+                                    {% if es_superadmin %}
+                                        <button data-url="{% url 'partido-resultado' partido.pk %}?modal=1" class="open-modal btn-accion">Corregir resultado</button>
+                                    {% endif %}
+                                {% elif partido.ya_empezo %}
+                                    <button data-url="{% url 'partido-resultado' partido.pk %}?modal=1" class="open-modal btn-accion btn-accion-principal">Resultado</button>
+                                    <button data-url="{% url 'partido-edit' partido.pk %}?modal=1" class="open-modal btn-accion">Reprogramar</button>
+                                {% else %}
+                                    <button data-url="{% url 'partido-edit' partido.pk %}?modal=1" class="open-modal btn-accion">Fecha y cancha</button>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="mt-10 rounded-[2rem] border border-green-100 bg-white p-5 sm:p-8 shadow-sm">
+            <h2 class="text-xl font-bold text-green-900">Equipos</h2>
+            <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {% for equipo in equipos %}
+                    <a href="{% url 'jugador-list' equipo.pk %}" class="flex items-center gap-3 rounded-2xl border border-gray-200 p-3 hover:border-green-400">
+                        <img src="{{ equipo.escudo_url }}" alt="Escudo de {{ equipo.nombre }}" class="h-10 w-10 rounded-full object-cover" loading="lazy" decoding="async">
+                        <div class="min-w-0">
+                            <p class="font-semibold text-gray-900 truncate">{{ equipo.nombre }}</p>
+                            <p class="text-xs text-gray-500 truncate">{{ equipo.entrenador.nombre_visible }} · {{ equipo.jugadores.count }} jugador(es)</p>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+</div>
+
+{% include '_modal.html' %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/bracket.js' %}" defer></script>
+{% endblock %}

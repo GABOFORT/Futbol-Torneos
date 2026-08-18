@@ -11,16 +11,10 @@ def a_titulo(texto):
 
 
 class StyledFormMixin:
-    # Campos que el formulario fuerza como obligatorios aunque el modelo los
-    # permita vacios. Se declaran aca y no en el __init__ del form para que ya
-    # esten marcados cuando se arman los labels y reciban el asterisco.
     CAMPOS_OBLIGATORIOS = ()
 
-    # Campos que se capitalizan solos. Cada formulario puede pisar la lista.
     CAMPOS_CAPITALIZAR = ('first_name', 'last_name', 'organization')
 
-    # Campos que solo aceptan digitos. El largo permitido no se repite aca:
-    # sale del maxlength que el widget hereda del max_length del modelo.
     CAMPOS_SOLO_NUMEROS = ('phone',)
 
     def __init__(self, *args, **kwargs):
@@ -34,12 +28,9 @@ class StyledFormMixin:
             elif isinstance(field.widget, forms.RadioSelect):
                 classes = 'h-4 w-4 rounded-full border-gray-300 text-green-700 focus:ring-green-500'
             elif getattr(field.widget, 'input_type', None) == 'file':
-                # El input de archivo se estiliza en base.html junto con su
-                # miniatura; los estilos de caja de texto le quedan pesimo.
                 classes = ''
             field.widget.attrs.update({'class': classes})
             if field_name in self.CAMPOS_CAPITALIZAR:
-                # El JS de static/js/forms.js usa esta marca para capitalizar mientras se escribe.
                 field.widget.attrs['data-capitalizar'] = '1'
             if field_name in self.CAMPOS_SOLO_NUMEROS:
                 field.widget.attrs['data-solo-numeros'] = '1'
@@ -49,8 +40,6 @@ class StyledFormMixin:
                 field.label = f'{label} *'
 
     def clean(self):
-        # Se repite en servidor lo que hace el JS: si pegan texto, si el JS esta
-        # apagado o si mandan el POST directo, igual se guarda capitalizado.
         cleaned_data = super().clean()
         for field_name, field in self.fields.items():
             valor = cleaned_data.get(field_name)
@@ -89,8 +78,6 @@ class PasswordValidadoMixin:
         """
         super()._post_clean()
         password = self.cleaned_data.get('password')
-        # En los formularios de edicion el campo es opcional: vacio significa
-        # "no cambiar la actual", asi que no hay nada que validar.
         if not password:
             return
         try:
@@ -100,31 +87,41 @@ class PasswordValidadoMixin:
 
 
 class CuotaSegunRolMixin:
-    """El límite de ligas solo existe para el Administrador de Liga.
+    """Las cuotas solo existen para el Administrador de Liga.
 
     Un Administrador General no tiene cuota (crea las que quiera) y un Entrenador
-    no crea ligas, así que el campo se esconde para esos dos roles y su valor se
-    descarta al guardar. El JS lo muestra y lo oculta al vuelo; el `clean` repite
+    no crea nada, así que los campos se esconden para esos dos roles y su valor se
+    descarta al guardar. El JS los muestra y los oculta al vuelo; el `clean` repite
     la regla en el servidor, porque esconder un campo no impide mandarlo en el POST.
     """
 
+    CAMPOS_DE_CUOTA = {
+        'limite_ligas': (
+            'Cuántas ligas en curso puede tener a la vez.',
+            'Indica cuántas ligas puede crear este administrador.',
+        ),
+        'limite_torneos': (
+            'Cuántos torneos relámpago en curso puede tener a la vez.',
+            'Indica cuántos torneos puede crear este administrador.',
+        ),
+    }
+
     def _preparar_cuota(self):
-        cuota = self.fields['limite_ligas']
-        cuota.required = False
-        cuota.help_text = 'Cuántas ligas en curso puede tener a la vez.'
-        # static/js/roles.js usa estas marcas para mostrar u ocultar el campo.
-        cuota.widget.attrs['data-solo-rol'] = Usuario.ROLE_ADMIN_LIGA
+        for nombre, (ayuda, _) in self.CAMPOS_DE_CUOTA.items():
+            cuota = self.fields[nombre]
+            cuota.required = False
+            cuota.help_text = ayuda
+            cuota.widget.attrs['data-solo-rol'] = Usuario.ROLE_ADMIN_LIGA
         self.fields['role'].widget.attrs['data-rol'] = '1'
 
     def clean(self):
         datos = super().clean()
-        if datos.get('role') != Usuario.ROLE_ADMIN_LIGA:
-            # Se guarda en cero en vez de dejar el default 1: así no queda una
-            # cuota fantasma en cuentas a las que no les aplica.
-            datos['limite_ligas'] = 0
-            self.errors.pop('limite_ligas', None)
-        elif not datos.get('limite_ligas'):
-            self.add_error('limite_ligas', 'Indica cuántas ligas puede crear este administrador.')
+        for nombre, (_, falta) in self.CAMPOS_DE_CUOTA.items():
+            if datos.get('role') != Usuario.ROLE_ADMIN_LIGA:
+                datos[nombre] = 0
+                self.errors.pop(nombre, None)
+            elif not datos.get(nombre):
+                self.add_error(nombre, falta)
         return datos
 
 
@@ -134,7 +131,7 @@ class UsuarioCreateForm(PasswordValidadoMixin, CuotaSegunRolMixin, StyledFormMix
 
     class Meta:
         model = Usuario
-        fields = ['username', 'email', 'password', 'role', 'first_name', 'last_name', 'phone', 'organization', 'limite_ligas']
+        fields = ['username', 'email', 'password', 'role', 'first_name', 'last_name', 'phone', 'organization', 'limite_ligas', 'limite_torneos']
         labels = {
             'role': 'Rol',
             'first_name': 'Nombre completo',
@@ -151,8 +148,8 @@ class UsuarioCreateForm(PasswordValidadoMixin, CuotaSegunRolMixin, StyledFormMix
     def save(self, commit=True):
         usuario = super().save(commit=False)
         usuario.limite_ligas = self.cleaned_data.get('limite_ligas') or 0
+        usuario.limite_torneos = self.cleaned_data.get('limite_torneos') or 0
         usuario.set_password(self.cleaned_data['password'])
-        # is_superuser / is_staff los resuelve Usuario.save() segun el rol.
         if commit:
             usuario.save()
         return usuario
@@ -220,7 +217,7 @@ class UsuarioUpdateForm(PasswordValidadoMixin, CuotaSegunRolMixin, StyledFormMix
 
     class Meta:
         model = Usuario
-        fields = ['username', 'email', 'role', 'first_name', 'last_name', 'phone', 'organization', 'limite_ligas']
+        fields = ['username', 'email', 'role', 'first_name', 'last_name', 'phone', 'organization', 'limite_ligas', 'limite_torneos']
         labels = {
             'role': 'Rol',
             'first_name': 'Nombre completo',
@@ -237,10 +234,9 @@ class UsuarioUpdateForm(PasswordValidadoMixin, CuotaSegunRolMixin, StyledFormMix
     def save(self, commit=True):
         usuario = super().save(commit=False)
         usuario.limite_ligas = self.cleaned_data.get('limite_ligas') or 0
+        usuario.limite_torneos = self.cleaned_data.get('limite_torneos') or 0
         if self.cleaned_data.get('password'):
             usuario.set_password(self.cleaned_data['password'])
-        # Cambiar el rol a Administrador General tambien enciende is_superuser:
-        # lo resuelve Usuario.save(), asi vale igual al crear que al editar.
         if commit:
             usuario.save()
         return usuario
@@ -248,14 +244,10 @@ class UsuarioUpdateForm(PasswordValidadoMixin, CuotaSegunRolMixin, StyledFormMix
 
 class LigaForm(StyledFormMixin, forms.ModelForm):
     CAMPOS_OBLIGATORIOS = ('nombre', 'fecha_inicio', 'fecha_final')
-    # Sin capitalizacion automatica: el nombre de una liga es una marca y hay que
-    # respetarlo tal cual lo escriben. La regla convertia "Liga MX" en "Liga Mx".
     CAMPOS_CAPITALIZAR = ()
 
     class Meta:
         model = Liga
-        # `portada` va pegada a `logo`: son las dos imagenes de identidad de la
-        # liga y conviene que se carguen juntas, no en extremos del formulario.
         fields = ['nombre', 'logo', 'portada', 'descripcion', 'fecha_inicio', 'fecha_final', 'activa']
         widgets = {
             'descripcion': forms.Textarea(attrs={'rows': 3}),

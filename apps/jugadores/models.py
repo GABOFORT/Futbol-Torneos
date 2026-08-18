@@ -40,14 +40,6 @@ class Jugador(models.Model):
     nombre = models.CharField('Nombre', max_length=100)
     apellido = models.CharField('Apellido', max_length=100)
     documento = models.CharField('Documento', max_length=50, blank=True)
-    # No es un dato descriptivo: define en que categoria puede jugar. Las mujeres
-    # entran con un año mas que el limite (en U17 juega una de 18), asi que sin
-    # este campo no se puede validar la edad. La regla vive en
-    # Categoria.ANIOS_EXTRA_FEMENINO, no aca.
-    #
-    # El default es masculino porque es el limite estricto: si alguien se guarda
-    # sin elegir, no se regala un año de gracia. El formulario igual lo pide
-    # siempre de forma explicita.
     sexo = models.CharField(
         'Sexo',
         max_length=10,
@@ -65,8 +57,6 @@ class Jugador(models.Model):
         verbose_name = 'Jugador'
         verbose_name_plural = 'Jugadores'
         constraints = [
-            # El dorsal no se puede repetir dentro del mismo equipo. La condicion
-            # deja fuera a los que no tienen numero: de esos puede haber varios.
             models.UniqueConstraint(
                 fields=['equipo', 'numero'],
                 condition=models.Q(numero__isnull=False),
