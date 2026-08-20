@@ -1,0 +1,30 @@
+<header class="portada-torneo">
+    <div class="portada-torneo-fila">
+        <div class="portada-torneo-marca">
+            {% include 'usuarios/_logo_liga.html' with liga=torneo.liga clase='logo-liga-lg' %}
+            <div class="min-w-0">
+                <p class="kicker kicker-claro">Torneo</p>
+                <h1>{{ torneo.nombre }}</h1>
+                <p class="portada-torneo-datos">
+                    <span><svg class="ico ico-sm"><use href="#ico-calendario"></use></svg>{{ torneo.fechas_texto }}</span>
+                    <span><svg class="ico ico-sm"><use href="#ico-llaves"></use></svg>{{ torneo.formato_texto }}</span>
+                </p>
+            </div>
+        </div>
+
+        <div class="portada-torneo-acciones">
+            {% if puede_administrar %}
+                <a href="{% url 'mis-torneos' %}" class="boton-claro boton-chico">
+                    <svg class="ico ico-sm"><use href="#ico-flecha"></use></svg> Mis torneos
+                </a>
+                <button data-url="{% url 'torneo-edit' torneo.pk %}?modal=1" class="open-modal boton-claro boton-chico">
+                    <svg class="ico ico-sm"><use href="#ico-lapiz"></use></svg> Editar
+                </button>
+            {% else %}
+                <a href="{% url 'torneo-list' %}" class="boton-claro boton-chico">
+                    <svg class="ico ico-sm"><use href="#ico-flecha"></use></svg> Todos los torneos
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</header>

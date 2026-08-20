@@ -1,28 +1,29 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block titulo %}{{ title }} - Torneos{% endblock %}
 
 {% block contenido %}
-<div class="max-w-3xl mx-auto p-4 sm:p-6">
-    <div class="rounded-[2rem] bg-white border border-green-100 p-5 sm:p-8 shadow-lg">
-        <div class="mb-6">
-            <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">Torneos</p>
-            <h1 class="mt-3 text-2xl sm:text-3xl font-bold text-green-900">{{ title }}</h1>
-            <p class="mt-3 text-sm text-gray-600">
-                Un torneo relámpago se juega <strong>entero en un día</strong>, por
-                <strong>eliminación directa</strong>. Cada llave es un solo partido y el
-                empate se define en penales.
-            </p>
-        </div>
+<div class="torneo-ui hoja-formulario">
+    {% include 'torneos/_iconos.html' %}
 
-        <form method="post" enctype="multipart/form-data" novalidate class="space-y-5">
+    <div class="tarjeta-formulario">
+        <header class="tarjeta-formulario-cabecera">
+            <p class="kicker kicker-claro">Torneos</p>
+            <h1>{{ title }}</h1>
+            <p class="tarjeta-formulario-nota">
+                Un torneo puede ser por <strong>eliminación directa</strong>, donde cada llave es un
+                solo partido, o <strong>por categorías y grupos</strong>, donde cada categoría juega
+                su todos contra todos y de ahí pasa a la liguilla.
+            </p>
+        </header>
+
+        <form method="post" enctype="multipart/form-data" novalidate class="cuerpo-formulario">
             {% csrf_token %}
 
             {% if form.non_field_errors %}
-                <div class="rounded-2xl border border-red-200 bg-red-50 p-4">
-                    {% for error in form.non_field_errors %}
-                        <p class="text-sm text-red-700">{{ error }}</p>
-                    {% endfor %}
+                <div class="siembra-error" role="alert">
+                    {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
                 </div>
             {% endif %}
 
@@ -30,11 +31,15 @@
                 {% include '_campo.html' %}
             {% endfor %}
 
-            <div class="flex flex-wrap items-center gap-3 pt-2">
-                <button type="submit" class="inline-flex items-center justify-center rounded-full bg-green-800 px-6 py-3 text-sm font-semibold text-white hover:bg-green-700">Guardar</button>
-                <a href="{% url 'torneo-list' %}" class="text-sm font-semibold text-green-700 hover:text-green-900">Cancelar</a>
+            <div class="pie-formulario">
+                <a href="{% url 'torneo-list' %}" class="boton-fantasma">Cancelar</a>
+                <button type="submit" class="boton-primario">Guardar</button>
             </div>
         </form>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/torneo_form.js' %}" defer></script>
 {% endblock %}

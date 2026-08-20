@@ -77,14 +77,15 @@ def cerrar_torneo_si_termino(partido):
     if torneo is None:
         return None
 
-    cuadro = relampago.cuadro(torneo)
+    categoria = partido.categoria
+    cuadro = relampago.cuadro(categoria)
     if cuadro is None or cuadro['campeon'] is None:
         return None
 
-    categoria = torneo.categoria
     datos = {
         'liga_nombre': torneo.nombre,
-        'categoria_nombre': f'Relámpago · {torneo.equipos} equipos',
+        'categoria_nombre': (categoria.nombre if torneo.es_por_grupos
+                             else f'Relámpago · {torneo.equipos} equipos'),
         'es_torneo': True,
         'campeon': cuadro['campeon'].nombre,
         'subcampeon': cuadro['subcampeon'].nombre if cuadro['subcampeon'] else '',

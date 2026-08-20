@@ -21,6 +21,7 @@ register = template.Library()
 
 CAMINOS = (
     ('liga', ()),
+    ('torneo', ('liga',)),
     ('categoria', ('liga',)),
     ('equipo', ('liga',)),
     ('partido', ('categoria', 'liga')),

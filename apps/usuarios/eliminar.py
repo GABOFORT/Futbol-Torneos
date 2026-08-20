@@ -3,6 +3,7 @@ from django.db import transaction
 from django.db.models import ProtectedError
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
+from django.urls import reverse
 
 from .auditoria import ip_de, registro as auditoria
 
@@ -37,16 +38,18 @@ def entrenadores_sin_equipo_tras_borrar(equipos):
 
 
 def vista_eliminar(request, instancia, etiqueta, url_listado, mensaje_ok, arrastra=(), bloqueo='',
-                   antes_de_borrar=None):
+                   antes_de_borrar=None, url_listado_args=()):
     """Flujo comun de borrado para liga, categoria, equipo y usuario.
 
     GET muestra la confirmacion con lo que se va a llevar por delante; POST
     elimina. Vive en un solo lugar para que las cuatro apps se comporten igual.
 
-    arrastra:        lineas de texto con lo que se borra en cascada.
-    bloqueo:         motivo por el que NO se puede borrar. Si viene, no hay boton.
-    antes_de_borrar: callable que limpia lo que esta protegido por PROTECT.
-                     Corre en la misma transaccion que el borrado.
+    arrastra:         lineas de texto con lo que se borra en cascada.
+    bloqueo:          motivo por el que NO se puede borrar. Si viene, no hay boton.
+    antes_de_borrar:  callable que limpia lo que esta protegido por PROTECT.
+                      Corre en la misma transaccion que el borrado.
+    url_listado_args: argumentos de la ruta de vuelta, para los listados que
+                      cuelgan de un padre —una categoria vuelve a su torneo—.
     """
     modal = request.GET.get('modal') == '1'
 
@@ -73,14 +76,14 @@ def vista_eliminar(request, instancia, etiqueta, url_listado, mensaje_ok, arrast
                 messages.error(request, f'No se pudo eliminar {etiqueta}: tiene registros asociados.')
         if modal:
             return JsonResponse({'success': True})
-        return redirect(url_listado)
+        return redirect(url_listado, *url_listado_args)
 
     contexto = {
         'objeto': etiqueta,
         'arrastra': arrastra,
         'bloqueo': bloqueo,
         'en_modal': modal,
-        'cancel_url': url_listado,
+        'cancel_href': reverse(url_listado, args=url_listado_args),
     }
     plantilla = '_modal_confirmar.html' if modal else '_confirmar_pagina.html'
     return render(request, plantilla, contexto)

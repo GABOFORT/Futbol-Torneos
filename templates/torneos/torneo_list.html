@@ -4,84 +4,115 @@
 {% block titulo %}{{ titulo_pagina }}{% endblock %}
 
 {% block contenido %}
-<div class="max-w-6xl mx-auto p-4 sm:p-6">
-    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
-        <div>
-            <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">{{ seccion }}</p>
-            <h1 class="text-2xl sm:text-3xl font-bold text-green-900">{{ encabezado }}</h1>
-            <p class="text-gray-600 mt-2">{{ descripcion }}</p>
-            {% if enlace_publico %}
-                <a href="{% url 'torneo-list' %}" class="mt-2 inline-block text-sm font-semibold text-green-700 hover:text-green-900">Ver todos los torneos del sistema →</a>
-            {% endif %}
-            {% if cuota %}
-                <p class="mt-2 text-sm text-gray-500">
-                    {{ cuota.en_curso }} de {{ cuota.limite }} torneo(s) en curso.
-                    Los que ya terminaron no ocupan lugar.
-                </p>
+<div class="torneo-ui hoja-torneos">
+    {% include 'torneos/_iconos.html' %}
+
+    <header class="portada-torneos">
+        <div class="portada-torneos-texto">
+            <p class="kicker">{{ seccion }}</p>
+            <h1>{{ encabezado }}</h1>
+            <p class="portada-torneos-nota">{{ descripcion }}</p>
+
+            <div class="portada-torneos-pie">
+                {% if enlace_publico %}
+                    <a href="{% url 'torneo-list' %}" class="enlace-suave">Ver todos los torneos del sistema →</a>
+                {% endif %}
+                {% if cuota %}
+                    <span class="cuota">
+                        <strong>{{ cuota.en_curso }}</strong> de <strong>{{ cuota.limite }}</strong> en curso
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="portada-torneos-accion">
+            {% if puede_crear %}
+                <button class="open-modal boton-primario boton-grande" data-url="{% url 'torneo-create' %}?modal=1">
+                    <svg class="ico"><use href="#ico-mas"></use></svg>
+                    Crear torneo
+                </button>
+            {% elif motivo_no_crear %}
+                <p class="aviso-suave">{{ motivo_no_crear }}</p>
             {% endif %}
         </div>
-        {% if puede_crear %}
-            <button class="open-modal inline-flex items-center justify-center rounded-full bg-green-800 px-5 py-3 text-sm font-semibold text-white hover:bg-green-700" data-url="{% url 'torneo-create' %}?modal=1">Crear torneo</button>
-        {% elif motivo_no_crear %}
-            <p class="max-w-sm rounded-2xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">{{ motivo_no_crear }}</p>
-        {% endif %}
-    </div>
+    </header>
 
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div class="rejilla-torneos">
         {% for torneo in torneos %}
-            <div class="flex flex-col rounded-2xl bg-white border border-green-100 p-5 shadow-sm">
-                <div class="flex items-center gap-3">
-                    {% include 'usuarios/_logo_liga.html' with liga=torneo.liga %}
-                    <div class="min-w-0">
-                        <p class="text-lg font-bold text-gray-900 truncate">{{ torneo.nombre }}</p>
-                        <p class="text-sm text-gray-500">{{ torneo.fecha|date:'d/m/Y' }}</p>
-                    </div>
-                </div>
+            <article class="tarjeta-torneo">
+                <a href="{% url 'torneo-detalle' torneo.pk %}" class="tarjeta-torneo-tapa">
+                    <span class="tarjeta-torneo-escudo">
+                        {% include 'usuarios/_logo_liga.html' with liga=torneo.liga %}
+                    </span>
+                    <span class="min-w-0">
+                        <span class="tarjeta-torneo-nombre">{{ torneo.nombre }}</span>
+                        <span class="tarjeta-torneo-fecha">
+                            <svg class="ico ico-sm"><use href="#ico-calendario"></use></svg>
+                            {{ torneo.fechas_texto }}
+                        </span>
+                    </span>
+                </a>
 
                 {% if torneo.liga.descripcion %}
-                    <p class="mt-3 text-sm text-gray-600">{{ torneo.liga.descripcion|truncatewords:18 }}</p>
+                    <p class="tarjeta-torneo-nota">{{ torneo.liga.descripcion|truncatewords:16 }}</p>
                 {% endif %}
 
-                <p class="mt-3 flex flex-wrap gap-2">
-                    <span class="inline-flex items-center rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-800">
-                        {{ torneo.equipos }} equipos
-                    </span>
+                <div class="chapas">
+                    {% if torneo.es_por_grupos %}
+                        <span class="chapa">
+                            <svg class="ico ico-sm"><use href="#ico-grupos"></use></svg>
+                            {{ torneo.categorias.count }} categoría(s)
+                        </span>
+                        <span class="chapa">
+                            <svg class="ico ico-sm"><use href="#ico-llaves"></use></svg>
+                            Grupos y liguilla
+                        </span>
+                    {% else %}
+                        <span class="chapa">
+                            <svg class="ico ico-sm"><use href="#ico-escudo"></use></svg>
+                            {{ torneo.equipos }} equipos
+                        </span>
+                    {% endif %}
+
                     {% if torneo.terminado %}
-                        <span class="inline-flex items-center rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-800">
-                            {{ torneo.campeon.nombre }}
+                        <span class="chapa chapa-oro">
+                            <svg class="ico ico-sm"><use href="#ico-copa"></use></svg>
+                            {% if torneo.es_por_grupos %}Terminado{% else %}{{ torneo.campeon.nombre }}{% endif %}
                         </span>
                     {% elif torneo.sorteado %}
-                        <span class="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-800">En juego</span>
-                    {% else %}
-                        <span class="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
-                            {{ torneo.inscritos }} de {{ torneo.equipos }} inscritos
+                        <span class="chapa chapa-viva">
+                            <span class="latido" aria-hidden="true"></span>
+                            En juego
                         </span>
+                    {% elif torneo.es_por_grupos %}
+                        <span class="chapa chapa-gris">{{ torneo.inscritos }} equipo(s) inscritos</span>
+                    {% else %}
+                        <span class="chapa chapa-gris">{{ torneo.inscritos }} de {{ torneo.equipos }} inscritos</span>
                     {% endif %}
-                </p>
 
-                {% if torneo.terminado and torneo.puede_administrar %}
-                    <p class="mt-2">
-                        <span class="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
+                    {% if torneo.terminado and torneo.puede_administrar %}
+                        <span class="chapa chapa-gris">
                             {% if torneo.lista_para_eliminar %}Ya se puede eliminar{% else %}En exhibición {{ torneo.dias_en_vitrina }} día(s) más{% endif %}
                         </span>
-                    </p>
-                {% endif %}
-
-                <div class="mt-auto pt-4 flex flex-wrap items-center gap-3">
-                    <a href="{% url 'torneo-detalle' torneo.pk %}" class="text-sm font-semibold text-green-700 hover:text-green-900">Ver torneo →</a>
-                    {% if torneo.puede_administrar %}
-                        <button data-url="{% url 'torneo-edit' torneo.pk %}?modal=1" class="open-modal text-sm font-semibold text-green-700 hover:text-green-900">Editar</button>
-                    {% endif %}
-                    {% if es_superadmin %}
-                        <button data-url="{% url 'torneo-delete' torneo.pk %}?modal=1" class="open-modal texto-peligro text-sm font-semibold text-red-700">Eliminar</button>
                     {% endif %}
                 </div>
-            </div>
+
+                <footer class="tarjeta-torneo-pie">
+                    <a href="{% url 'torneo-detalle' torneo.pk %}" class="boton-primario boton-chico">Ver torneo</a>
+                    {% if torneo.puede_administrar %}
+                        <button data-url="{% url 'torneo-edit' torneo.pk %}?modal=1" class="open-modal boton-fantasma boton-chico">Editar</button>
+                    {% endif %}
+                    {% if es_superadmin %}
+                        <button data-url="{% url 'torneo-delete' torneo.pk %}?modal=1" class="open-modal boton-peligro boton-chico">Eliminar</button>
+                    {% endif %}
+                </footer>
+            </article>
         {% empty %}
-            <div class="sm:col-span-2 lg:col-span-3 rounded-3xl border border-green-100 bg-white p-10 text-center">
-                <p class="text-gray-500">{{ vacio }}</p>
+            <div class="sin-torneos">
+                <svg class="ico ico-xl"><use href="#ico-copa"></use></svg>
+                <p>{{ vacio }}</p>
                 {% if enlace_publico %}
-                    <a href="{% url 'torneo-list' %}" class="mt-3 inline-block text-sm font-semibold text-green-700 hover:text-green-900">Ver todos los torneos del sistema →</a>
+                    <a href="{% url 'torneo-list' %}" class="enlace-suave">Ver todos los torneos del sistema →</a>
                 {% endif %}
             </div>
         {% endfor %}
@@ -89,4 +120,8 @@
 </div>
 
 {% include '_modal.html' %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/torneo_form.js' %}" defer></script>
 {% endblock %}

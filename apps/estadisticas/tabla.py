@@ -16,13 +16,19 @@ def fila_vacia(equipo):
     }
 
 
-def calcular(categoria):
+def calcular(categoria, grupo=None):
     """Las filas de la tabla, ordenadas del primero al ultimo.
 
     Entran todos los equipos de la categoria, tambien los que no jugaron
     todavia: en la tabla figuran desde el arranque con la fila en cero.
+
+    Con `grupo` se acota a los equipos de ese grupo y a los partidos que
+    jugaron entre ellos, que es lo que necesita un torneo por grupos.
     """
-    tabla = {equipo.id: fila_vacia(equipo) for equipo in Equipo.objects.filter(categoria=categoria)}
+    equipos = Equipo.objects.filter(categoria=categoria)
+    if grupo:
+        equipos = equipos.filter(grupo=grupo)
+    tabla = {equipo.id: fila_vacia(equipo) for equipo in equipos}
 
     partidos = Partido.objects.filter(
         categoria=categoria,
@@ -31,6 +37,10 @@ def calcular(categoria):
     ).select_related('equipo_local', 'equipo_visitante')
 
     for partido in partidos:
+        if grupo and not (partido.equipo_local_id in tabla
+                          and partido.equipo_visitante_id in tabla):
+            continue
+
         local = tabla.setdefault(partido.equipo_local_id, fila_vacia(partido.equipo_local))
         visitante = tabla.setdefault(partido.equipo_visitante_id, fila_vacia(partido.equipo_visitante))
 

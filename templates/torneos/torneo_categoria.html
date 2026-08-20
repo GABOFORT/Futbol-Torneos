@@ -1,0 +1,277 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load estaticos %}
+
+{% block titulo %}{{ categoria.nombre }} - {{ torneo.nombre }}{% endblock %}
+
+{% block cabecera_extra %}
+    {% if puede_administrar %}
+        <link rel="stylesheet" href="{% static_v 'vendor/leaflet/leaflet.css' %}">
+        <script src="{% static_v 'vendor/leaflet/leaflet.js' %}"></script>
+        <script defer src="{% static_v 'js/sedes.js' %}"></script>
+    {% endif %}
+{% endblock %}
+
+{% block contenido %}
+<div class="torneo-ui hoja-torneo">
+    {% include 'torneos/_iconos.html' %}
+
+    <header class="portada-torneo">
+        <a href="{% url 'torneo-detalle' torneo.pk %}" class="migaja">
+            <svg class="ico ico-sm"><use href="#ico-flecha"></use></svg> {{ torneo.nombre }}
+        </a>
+
+        <div class="portada-torneo-fila">
+            <div class="min-w-0">
+                <h1>{{ categoria.nombre }}</h1>
+                <p class="portada-torneo-datos">
+                    <span><svg class="ico ico-sm"><use href="#ico-grupos"></use></svg>{{ categoria.grupos }} grupo{{ categoria.grupos|pluralize }}</span>
+                    <span><svg class="ico ico-sm"><use href="#ico-escudo"></use></svg>{{ equipos|length }} equipo{{ equipos|length|pluralize }}</span>
+                    {% if jornadas %}<span><svg class="ico ico-sm"><use href="#ico-balon"></use></svg>{{ jornadas|length }} jornada{{ jornadas|length|pluralize }}</span>{% endif %}
+                </p>
+
+                <div class="tira-grupos">
+                    {% for bloque in plantillas %}
+                        <span class="letra-grupo" title="{{ bloque.etiqueta }}: {{ bloque.equipos|length }} equipo(s)">{{ bloque.letra }}</span>
+                    {% endfor %}
+                    {% if campeon %}
+                        <span class="chapa chapa-oro"><svg class="ico ico-sm"><use href="#ico-copa"></use></svg> {{ campeon.nombre }}</span>
+                    {% elif ronda_armada %}
+                        <span class="chapa chapa-viva"><span class="latido" aria-hidden="true"></span> En liguilla</span>
+                    {% elif cerrados %}
+                        <span class="chapa chapa-verde">Grupos cerrados</span>
+                    {% elif jornadas %}
+                        <span class="chapa chapa-gris">{{ pendientes }} por jugar</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if puede_administrar %}
+                <div class="portada-torneo-acciones">
+                    {% if not jornadas %}
+                        <button class="open-modal boton-claro boton-chico" data-url="{% url 'torneo-categoria-equipo-create' torneo.pk categoria.pk %}?modal=1">
+                            <svg class="ico ico-sm"><use href="#ico-mas"></use></svg> Inscribir equipo
+                        </button>
+                        <form action="{% url 'torneo-categoria-generar' torneo.pk categoria.pk %}" method="post">
+                            {% csrf_token %}
+                            <button type="submit" class="boton-oro boton-chico" {% if motivo_generar %}disabled title="{{ motivo_generar }}"{% endif %}>
+                                <svg class="ico ico-sm"><use href="#ico-balon"></use></svg> Generar partidos
+                            </button>
+                        </form>
+                    {% elif not motivo_sembrar %}
+                        <button class="open-modal boton-oro boton-chico" data-url="{% url 'torneo-categoria-sembrar' torneo.pk categoria.pk %}?modal=1">
+                            <svg class="ico ico-sm"><use href="#ico-llaves"></use></svg>
+                            {% if ronda_armada %}Rehacer la liguilla{% else %}Armar la liguilla{% endif %}
+                        </button>
+                    {% endif %}
+                    <button class="open-modal boton-claro boton-chico" data-url="{% url 'torneo-categoria-edit' torneo.pk categoria.pk %}?modal=1">
+                        <svg class="ico ico-sm"><use href="#ico-lapiz"></use></svg> Editar
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+
+        {% if puede_administrar %}
+            <ol class="ruta">
+                {% for paso in pasos %}
+                    <li class="ruta-paso ruta-{{ paso.situacion }}">
+                        <span class="ruta-marca">
+                            {% if paso.situacion == 'listo' %}
+                                <svg class="ico ico-sm"><use href="#ico-listo"></use></svg>
+                            {% else %}{{ paso.numero }}{% endif %}
+                        </span>
+                        <span class="ruta-texto">{{ paso.titulo }}</span>
+                    </li>
+                {% endfor %}
+            </ol>
+        {% endif %}
+    </header>
+
+    {% if motivo_generar and puede_administrar and not jornadas %}
+        <p class="aviso-suave">{{ motivo_generar }}</p>
+    {% endif %}
+
+    {% if jornadas %}
+        <nav class="atajos" aria-label="Secciones">
+            <a href="#tablas"><svg class="ico ico-sm"><use href="#ico-grupos"></use></svg> Tablas</a>
+            <a href="#partidos"><svg class="ico ico-sm"><use href="#ico-balon"></use></svg> Partidos</a>
+            {% if cuadro or eliminacion %}<a href="#liguilla"><svg class="ico ico-sm"><use href="#ico-llaves"></use></svg> Liguilla</a>{% endif %}
+            <a href="#plantillas"><svg class="ico ico-sm"><use href="#ico-jugadores"></use></svg> Equipos</a>
+        </nav>
+
+        <section class="panel" id="tablas">
+            <div class="panel-cabecera">
+                <div>
+                    <h2><svg class="ico"><use href="#ico-grupos"></use></svg> Tablas de grupo</h2>
+                    <p>
+                        {% if cerrados %}
+                            Ya se jugó todo. Arma la liguilla con quien tú decidas.
+                        {% else %}
+                            Faltan {{ pendientes }} partido{{ pendientes|pluralize }} por jugar.
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+
+            <div class="rejilla-tablas">
+                {% for bloque in grupos %}
+                    {% include 'torneos/_tabla_grupo.html' with etiqueta=bloque.etiqueta letra=bloque.grupo posiciones=bloque.posiciones clasifican=0 %}
+                {% endfor %}
+            </div>
+
+            <details class="tabla-general">
+                <summary>Ver la tabla general de {{ categoria.nombre }}</summary>
+                <div class="tabla-general-cuerpo">
+                    {% include 'torneos/_tabla_grupo.html' with etiqueta='Tabla general' letra='' posiciones=general clasifican=0 mostrar_grupo=1 %}
+                </div>
+            </details>
+        </section>
+
+        <section class="panel" id="partidos">
+            <div class="panel-cabecera">
+                <div>
+                    <h2><svg class="ico"><use href="#ico-balon"></use></svg> Partidos de grupos</h2>
+                    <p>
+                        {% if categoria.empate_define_penales %}
+                            El empate se define en penales y da un punto extra al que los gane.
+                        {% else %}
+                            El empate vale un punto para cada uno.
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+
+            {% for jornada in jornadas %}
+                <details class="jornada" {% if not jornada.completa %}open{% endif %}>
+                    <summary class="jornada-resumen">
+                        <span class="jornada-flecha" aria-hidden="true"></span>
+                        <span class="jornada-titulo">Jornada {{ jornada.numero }}</span>
+                        {% if jornada.desde %}
+                            <span class="jornada-fecha">
+                                <svg class="ico ico-sm"><use href="#ico-calendario"></use></svg>
+                                {% if jornada.un_solo_dia %}{{ jornada.desde|date:'l d \d\e F' }}{% else %}{{ jornada.desde|date:'d/m' }} – {{ jornada.hasta|date:'d/m' }}{% endif %}
+                            </span>
+                        {% else %}
+                            <span class="jornada-fecha jornada-fecha-vacia">Sin fecha</span>
+                        {% endif %}
+                        <span class="jornada-avance {% if jornada.completa %}jornada-avance-listo{% endif %}">{{ jornada.jugados }}/{{ jornada.total }}</span>
+                    </summary>
+
+                    {% if jornada.canchas %}
+                        <p class="jornada-canchas">
+                            <svg class="ico ico-sm"><use href="#ico-pin"></use></svg>
+                            {{ jornada.canchas|join:' · ' }}
+                        </p>
+                    {% endif %}
+
+                    <div class="jornada-lista">
+                        {% for partido in jornada.partidos %}
+                            {% include 'torneos/_partido_torneo.html' %}
+                        {% endfor %}
+                    </div>
+                </details>
+            {% endfor %}
+        </section>
+    {% endif %}
+
+    {% if cuadro or eliminacion or cerrados %}
+        <section class="panel" id="liguilla">
+            <div class="panel-cabecera">
+                <div>
+                    <h2><svg class="ico"><use href="#ico-llaves"></use></svg> Liguilla</h2>
+                    <p>A un solo partido. Si terminan empatados, gana quien cobre mejor los penales.</p>
+                </div>
+            </div>
+
+            {% if cuadro %}
+                {% include 'estadisticas/_bracket.html' %}
+            {% else %}
+                <p class="panel-vacio">
+                    Los grupos ya cerraron.
+                    {% if puede_administrar %}
+                        Aprieta <strong>Armar la liguilla</strong> y elige quiénes pasan y contra quién juegan.
+                    {% else %}
+                        Falta que el administrador arme la liguilla.
+                    {% endif %}
+                </p>
+            {% endif %}
+
+            {% if eliminacion %}
+                <div class="jornada-lista jornada-lista-suelta">
+                    {% for partido in eliminacion %}
+                        {% include 'torneos/_partido_torneo.html' %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </section>
+    {% endif %}
+
+    <section class="panel" id="plantillas">
+        <div class="panel-cabecera">
+            <div>
+                <h2><svg class="ico"><use href="#ico-jugadores"></use></svg> Equipos y plantillas</h2>
+                <p>
+                    {% if jornadas %}Entra a cada equipo para cargarle sus jugadores.
+                    {% else %}Reparte los equipos entre los grupos y cárgales sus jugadores.{% endif %}
+                </p>
+            </div>
+        </div>
+
+        <div class="rejilla-grupos">
+            {% for bloque in plantillas %}
+                <div class="carta-grupo">
+                    <header class="carta-grupo-cabecera">
+                        <span class="carta-grupo-letra">{{ bloque.letra }}</span>
+                        <div class="min-w-0">
+                            <h3>{{ bloque.etiqueta }}</h3>
+                            <p>{{ bloque.equipos|length }} equipo{{ bloque.equipos|length|pluralize }}</p>
+                        </div>
+                    </header>
+
+                    <div class="carta-grupo-lista">
+                        {% for equipo in bloque.equipos %}
+                            <div class="renglon-equipo">
+                                <a href="{% url 'jugador-list' equipo.pk %}" class="renglon-equipo-enlace">
+                                    <img src="{{ equipo.escudo_url }}" alt="" loading="lazy" decoding="async">
+                                    <span class="min-w-0">
+                                        <span class="renglon-equipo-nombre">{{ equipo.nombre }}</span>
+                                        <span class="renglon-equipo-nota">
+                                            {% if equipo.cuantos_jugadores %}
+                                                {{ equipo.cuantos_jugadores }} jugador{{ equipo.cuantos_jugadores|pluralize:"es" }}
+                                            {% else %}
+                                                <span class="sin-jugadores">Sin jugadores</span>
+                                            {% endif %}
+                                        </span>
+                                    </span>
+                                </a>
+                                {% if puede_administrar %}
+                                    <button data-url="{% url 'torneo-equipo-edit' torneo.pk categoria.pk equipo.pk %}?modal=1"
+                                            class="open-modal boton-icono" aria-label="Editar {{ equipo.nombre }}">
+                                        <svg class="ico ico-sm"><use href="#ico-lapiz"></use></svg>
+                                    </button>
+                                {% endif %}
+                            </div>
+                        {% empty %}
+                            <p class="carta-grupo-vacia">Sin equipos en este grupo.</p>
+                        {% endfor %}
+                    </div>
+
+                    {% if puede_administrar and not jornadas %}
+                        <button class="open-modal carta-grupo-agregar"
+                                data-url="{% url 'torneo-categoria-equipo-create' torneo.pk categoria.pk %}?modal=1&grupo={{ bloque.letra }}">
+                            <svg class="ico ico-sm"><use href="#ico-mas"></use></svg> Inscribir en {{ bloque.etiqueta }}
+                        </button>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+
+{% include '_modal.html' %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/bracket.js' %}" defer></script>
+<script src="{% static 'js/siembra.js' %}" defer></script>
+{% endblock %}

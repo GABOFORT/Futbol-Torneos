@@ -868,14 +868,6 @@ textarea.campo-invalido {
     font-size: var(--texto-xl);
 }
 
-.escudo-mini {
-    height: 3rem;
-    width: 3rem;
-    object-fit: contain;
-
-    flex-shrink: 0;
-}
-
 .escudo-grande {
     height: 5rem;
     width: 5rem;
@@ -2183,13 +2175,6 @@ textarea.campo-invalido {
 
 .tarjeta-liga-pendiente { font-size: var(--texto-sm); color: var(--texto-debil); }
 
-.panel-cifras {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
-    gap: 1.25rem;
-    margin-bottom: 1.25rem;
-}
-
 .cifra {
     padding: 1.5rem 1.75rem;
     border-radius: var(--radio-xl);
@@ -2236,13 +2221,6 @@ textarea.campo-invalido {
 
 .barra-fina { margin-top: 0; height: 0.25rem; flex: 1; }
 
-.panel-notas {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-bottom: 1.5rem;
-}
-
 .nota-dato {
     padding: 0.375rem 0.75rem;
     border-radius: var(--radio-full);
@@ -2259,34 +2237,6 @@ textarea.campo-invalido {
     border-color: var(--aviso-borde);
     color: var(--aviso-texto);
 }
-
-.tarjeta-categoria {
-    display: flex;
-    flex-direction: column;
-    padding: 1.5rem 1.75rem;
-    border-radius: var(--radio-xl);
-    background-color: var(--blanco);
-    border: 1px solid var(--verde-100);
-    box-shadow: var(--sombra-sm);
-    transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
-}
-
-.tarjeta-categoria:hover {
-    border-color: var(--verde-300);
-    box-shadow: var(--sombra-marca-lg);
-    transform: translateY(-1px);
-}
-
-.tarjeta-categoria-cabecera {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 0.5rem;
-}
-
-.tarjeta-categoria-nombre { font-size: var(--texto-2xl); font-weight: 800; color: var(--gris-900); }
-.tarjeta-categoria-meta { margin-top: 0.125rem; font-size: var(--texto-sm); color: var(--gris-500); }
 
 .estado-categoria {
     flex-shrink: 0;
@@ -2305,13 +2255,6 @@ textarea.campo-invalido {
 .estado-listo       { background-color: var(--oro-fondo); border-color: var(--aviso-borde); color: var(--aviso-texto); }
 .estado-liguilla    { background-color: var(--error-fondo); border-color: var(--error-borde); color: var(--error-texto); }
 .estado-concluida   { background-color: #f5f3ff; border-color: #ddd6fe; color: #6d28d9; }
-
-.tarjeta-categoria-cuerpo {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
-    gap: 0.75rem;
-    margin-top: 1rem;
-}
 
 .destacado {
     padding: 0.75rem 0.875rem;
@@ -2359,34 +2302,6 @@ textarea.campo-invalido {
 }
 
 .destacado-detalle { margin-top: 0.375rem; font-size: var(--texto-xs); color: var(--gris-500); }
-
-.tarjeta-categoria-pie {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-top: auto;
-    padding-top: 1rem;
-    border-top: 1px solid var(--gris-100);
-}
-
-.tarjeta-categoria-cuerpo + .tarjeta-categoria-pie { margin-top: 1.25rem; }
-
-.tarjeta-categoria-avance {
-    flex-shrink: 0;
-    font-size: var(--texto-xs);
-    color: var(--gris-500);
-    font-variant-numeric: tabular-nums;
-}
-
-.tarjeta-categoria-vacia {
-    margin-top: 0.875rem;
-    padding: 0.75rem 0.875rem;
-    border-radius: var(--radio-lg);
-    background-color: var(--gris-50);
-    border: 1px dashed var(--gris-200);
-    font-size: var(--texto-sm);
-    color: var(--gris-500);
-}
 
 .vitrina-identidad {
     display: flex;
@@ -3860,3 +3775,1905 @@ body.con-portada {
 }
 
 .bracket-marco[data-desplazable] + .bracket-aviso { display: block; }
+
+.con-portada .cabecera-categoria,
+.con-portada .panel,
+.con-portada .paso {
+    background-color: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(2px);
+}
+
+.torneo-ui {
+    --t-pasto-950: #04240f;
+    --t-pasto-900: #06341a;
+    --t-pasto-800: #0b5130;
+    --t-pasto-700: #10714a;
+    --t-pasto-600: #17935f;
+    --t-pasto-500: #22b573;
+    --t-lima: #7be495;
+    --t-lima-suave: #e8fbef;
+    --t-oro: #e8a317;
+    --t-oro-fuerte: #c97f0a;
+    --t-oro-suave: #fff7e6;
+    --t-arena: #fdfbf6;
+    --t-tinta: #10231a;
+    --t-tinta-suave: #4c6459;
+    --t-tinta-debil: #7d918a;
+    --t-linea: #e3ece7;
+    --t-linea-fuerte: #cfded6;
+    --t-nieve: #ffffff;
+    --t-humo: #f4f8f5;
+    --t-rojo: #c0392b;
+    --t-rojo-suave: #fdeeec;
+
+    --t-r-sm: 0.5rem;
+    --t-r-md: 0.875rem;
+    --t-r-lg: 1.125rem;
+    --t-r-xl: 1.5rem;
+    --t-r-full: 9999px;
+
+    --t-s-baja: 0 1px 2px rgba(6, 52, 26, 0.06);
+    --t-s-media: 0 4px 16px -4px rgba(6, 52, 26, 0.12);
+    --t-s-alta: 0 16px 40px -16px rgba(6, 52, 26, 0.28);
+    --t-s-oro: 0 8px 24px -10px rgba(232, 163, 23, 0.55);
+
+    --t-paso: 180ms cubic-bezier(0.22, 0.61, 0.36, 1);
+    --t-toque: 2.75rem;
+
+    color: var(--t-tinta);
+}
+
+.torneo-ui .ico {
+    width: 1.15rem;
+    height: 1.15rem;
+    flex-shrink: 0;
+    display: inline-block;
+    vertical-align: -0.2em;
+}
+
+.torneo-ui .ico-sm { width: 0.95rem; height: 0.95rem; }
+.torneo-ui .ico-xl { width: 2.75rem; height: 2.75rem; }
+.torneo-ui .iconos-torneo { display: none; }
+
+.torneo-ui .kicker {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: var(--t-pasto-600);
+}
+
+.torneo-ui .kicker-claro { color: var(--t-lima); }
+
+.torneo-ui .min-w-0 { min-width: 0; }
+
+.torneo-ui.hoja-torneos,
+.torneo-ui.hoja-torneo,
+.torneo-ui.hoja-formulario {
+    max-width: 100rem;
+    margin: 0 auto;
+    padding: 1rem;
+    display: grid;
+    gap: 1.125rem;
+    align-content: start;
+}
+
+.torneo-ui.hoja-formulario { max-width: 52rem; }
+
+.torneo-ui .portada-torneos {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    padding: 1.5rem 1.25rem;
+    border-radius: var(--t-r-xl);
+    background:
+        radial-gradient(120% 140% at 92% 0%, rgba(123, 228, 149, 0.22) 0%, transparent 55%),
+        linear-gradient(135deg, var(--t-pasto-900) 0%, var(--t-pasto-700) 100%);
+    color: var(--t-nieve);
+    box-shadow: var(--t-s-alta);
+    position: relative;
+    overflow: hidden;
+}
+
+.torneo-ui .portada-torneos::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+        90deg, rgba(255, 255, 255, 0.05) 0 2px, transparent 2px 84px);
+    pointer-events: none;
+}
+
+.torneo-ui .portada-torneos > * { position: relative; z-index: 1; }
+
+.torneo-ui .portada-torneos h1 {
+    margin-top: 0.375rem;
+    font-size: 1.75rem;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+}
+
+.torneo-ui .portada-torneos-nota {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.82);
+    max-width: 48ch;
+}
+
+.torneo-ui .portada-torneos-pie {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.875rem;
+}
+
+.torneo-ui .enlace-suave {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--t-lima);
+    transition: color var(--t-paso);
+}
+
+.torneo-ui .enlace-suave:hover { color: var(--t-nieve); }
+.torneo-ui .enlace-suave:focus-visible { outline: 2px solid var(--t-lima); outline-offset: 3px; border-radius: var(--t-r-sm); }
+
+.torneo-ui .cuota {
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--t-r-full);
+    background-color: rgba(255, 255, 255, 0.12);
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.torneo-ui .cuota strong { color: var(--t-nieve); }
+
+.torneo-ui .portada-torneo {
+    display: grid;
+    gap: 1rem;
+    padding: 1.375rem 1.25rem;
+    border-radius: var(--t-r-xl);
+    background:
+        radial-gradient(110% 150% at 100% 0%, rgba(123, 228, 149, 0.2) 0%, transparent 55%),
+        linear-gradient(135deg, var(--t-pasto-900) 0%, var(--t-pasto-700) 100%);
+    color: var(--t-nieve);
+    box-shadow: var(--t-s-alta);
+}
+
+.torneo-ui .portada-torneo h1 {
+    font-size: 1.6rem;
+    font-weight: 800;
+    line-height: 1.12;
+    letter-spacing: -0.01em;
+}
+
+.torneo-ui .portada-torneo-fila {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.torneo-ui .portada-torneo-marca {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    min-width: 0;
+}
+
+.torneo-ui .portada-torneo-datos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1rem;
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.torneo-ui .portada-torneo-datos span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+.torneo-ui .portada-torneo-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.torneo-ui .portada-torneo-acciones form { display: contents; }
+
+.torneo-ui .migaja {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.78);
+    transition: color var(--t-paso);
+}
+
+.torneo-ui .migaja:hover { color: var(--t-nieve); }
+
+.torneo-ui.hoja-formulario .migaja { color: var(--t-pasto-600); }
+.torneo-ui.hoja-formulario .migaja:hover { color: var(--t-pasto-800); }
+
+.torneo-ui .tira-grupos {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.375rem;
+    margin-top: 0.875rem;
+}
+
+.torneo-ui .letra-grupo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.85rem;
+    height: 1.85rem;
+    border-radius: var(--t-r-md);
+    background-color: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    color: var(--t-nieve);
+    font-size: 0.85rem;
+    font-weight: 800;
+}
+
+.torneo-ui .boton-primario,
+.torneo-ui .boton-oro,
+.torneo-ui .boton-claro,
+.torneo-ui .boton-fantasma,
+.torneo-ui .boton-secundario,
+.torneo-ui .boton-peligro {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-height: var(--t-toque);
+    padding: 0.5rem 1.125rem;
+    border-radius: var(--t-r-full);
+    border: 1px solid transparent;
+    font-size: 0.875rem;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: transform var(--t-paso), box-shadow var(--t-paso),
+                background-color var(--t-paso), border-color var(--t-paso), color var(--t-paso);
+}
+
+.torneo-ui .boton-chico { min-height: 2.25rem; padding: 0.375rem 0.875rem; font-size: 0.8rem; }
+.torneo-ui .boton-grande { min-height: 3rem; padding: 0.75rem 1.5rem; font-size: 0.95rem; }
+
+.torneo-ui .boton-primario {
+    background: linear-gradient(135deg, var(--t-pasto-800), var(--t-pasto-600));
+    color: var(--t-nieve);
+    box-shadow: var(--t-s-media);
+}
+
+.torneo-ui .boton-primario:hover { transform: translateY(-1px); box-shadow: var(--t-s-alta); }
+.torneo-ui .boton-primario:active { transform: translateY(0); }
+
+.torneo-ui .boton-oro {
+    background: linear-gradient(135deg, var(--t-oro-fuerte), var(--t-oro));
+    color: #2a1c00;
+    box-shadow: var(--t-s-oro);
+}
+
+.torneo-ui .boton-oro:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.05); }
+
+.torneo-ui .boton-claro {
+    background-color: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.24);
+    color: var(--t-nieve);
+}
+
+.torneo-ui .boton-claro:hover { background-color: rgba(255, 255, 255, 0.24); }
+
+.torneo-ui .boton-fantasma,
+.torneo-ui .boton-secundario {
+    background-color: var(--t-nieve);
+    border-color: var(--t-linea-fuerte);
+    color: var(--t-pasto-700);
+}
+
+.torneo-ui .boton-fantasma:hover,
+.torneo-ui .boton-secundario:hover:not(:disabled) {
+    border-color: var(--t-pasto-500);
+    background-color: var(--t-lima-suave);
+}
+
+.torneo-ui .boton-peligro {
+    background-color: var(--t-nieve);
+    border-color: #f0cdc8;
+    color: var(--t-rojo);
+}
+
+.torneo-ui .boton-peligro:hover { background-color: var(--t-rojo-suave); border-color: var(--t-rojo); }
+
+.torneo-ui button:disabled,
+.torneo-ui .boton-oro:disabled,
+.torneo-ui .boton-secundario:disabled {
+    background: var(--t-humo);
+    border-color: var(--t-linea);
+    color: var(--t-tinta-debil);
+    box-shadow: none;
+    transform: none;
+    cursor: not-allowed;
+    filter: none;
+}
+
+.torneo-ui .boton-primario:focus-visible,
+.torneo-ui .boton-oro:focus-visible,
+.torneo-ui .boton-claro:focus-visible,
+.torneo-ui .boton-fantasma:focus-visible,
+.torneo-ui .boton-secundario:focus-visible,
+.torneo-ui .boton-peligro:focus-visible {
+    outline: 2px solid var(--t-pasto-500);
+    outline-offset: 2px;
+}
+
+.torneo-ui .boton-icono {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    flex-shrink: 0;
+    border-radius: var(--t-r-md);
+    color: var(--t-tinta-debil);
+    transition: background-color var(--t-paso), color var(--t-paso);
+}
+
+.torneo-ui .boton-icono:hover { background-color: var(--t-lima-suave); color: var(--t-pasto-700); }
+.torneo-ui .boton-icono:focus-visible { outline: 2px solid var(--t-pasto-500); outline-offset: 1px; }
+
+.torneo-ui .chapas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+}
+
+.torneo-ui .chapa {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: var(--t-r-full);
+    background-color: var(--t-lima-suave);
+    color: var(--t-pasto-800);
+    font-size: 0.74rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.torneo-ui .chapa-gris { background-color: var(--t-humo); color: var(--t-tinta-suave); }
+.torneo-ui .chapa-verde { background-color: var(--t-lima-suave); color: var(--t-pasto-800); }
+.torneo-ui .chapa-oro { background-color: var(--t-oro-suave); color: var(--t-oro-fuerte); }
+
+.torneo-ui .chapa-viva {
+    background-color: var(--t-lima-suave);
+    color: var(--t-pasto-800);
+}
+
+.torneo-ui .latido {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: var(--t-r-full);
+    background-color: var(--t-pasto-500);
+    animation: t-latido 1.8s ease-in-out infinite;
+}
+
+@keyframes t-latido {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.45; transform: scale(0.72); }
+}
+
+.torneo-ui .pastilla-grupo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: var(--t-r-full);
+    background-color: var(--t-humo);
+    border: 1px solid var(--t-linea);
+    font-size: 0.72rem;
+    color: var(--t-tinta-suave);
+}
+
+.torneo-ui .pastilla-grupo strong { color: var(--t-pasto-800); font-weight: 800; }
+
+.torneo-ui .pastilla-letra {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.2rem;
+    height: 1.2rem;
+    border-radius: var(--t-r-sm);
+    background-color: var(--t-pasto-700);
+    color: var(--t-nieve);
+    font-size: 0.68rem;
+    font-weight: 800;
+}
+
+.torneo-ui .rejilla-torneos,
+.torneo-ui .rejilla-categorias {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+}
+
+.torneo-ui .tarjeta-torneo,
+.torneo-ui .tarjeta-cat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+    border: 1px solid var(--t-linea);
+    border-radius: var(--t-r-lg);
+    background-color: var(--t-nieve);
+    box-shadow: var(--t-s-baja);
+    transition: transform var(--t-paso), box-shadow var(--t-paso), border-color var(--t-paso);
+}
+
+.torneo-ui .tarjeta-torneo:hover,
+.torneo-ui .tarjeta-cat:hover {
+    transform: translateY(-3px);
+    border-color: var(--t-pasto-500);
+    box-shadow: var(--t-s-alta);
+}
+
+.torneo-ui .tarjeta-torneo-tapa,
+.torneo-ui .tarjeta-cat-tapa {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.torneo-ui .tarjeta-cat-tapa { justify-content: space-between; flex-wrap: wrap; }
+
+.torneo-ui .tarjeta-torneo-escudo { flex-shrink: 0; }
+
+.torneo-ui .tarjeta-torneo-nombre,
+.torneo-ui .tarjeta-cat-nombre {
+    display: block;
+    font-size: 1.05rem;
+    font-weight: 800;
+    line-height: 1.25;
+    color: var(--t-tinta);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.torneo-ui .tarjeta-torneo-tapa:hover .torneo-ui .tarjeta-torneo-nombre,
+.torneo-ui .tarjeta-cat-tapa:hover .torneo-ui .tarjeta-cat-nombre { color: var(--t-pasto-700); }
+
+.torneo-ui .tarjeta-torneo-fecha {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.15rem;
+    font-size: 0.78rem;
+    color: var(--t-tinta-debil);
+}
+
+.torneo-ui .tarjeta-torneo-nota,
+.torneo-ui .tarjeta-cat-nota {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: var(--t-tinta-suave);
+}
+
+.torneo-ui .tarjeta-cat-grupos { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+
+.torneo-ui .tarjeta-torneo-pie,
+.torneo-ui .tarjeta-cat-pie {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: auto;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--t-linea);
+}
+
+.torneo-ui .sin-torneos {
+    grid-column: 1 / -1;
+    display: grid;
+    justify-items: center;
+    gap: 0.75rem;
+    padding: 2.5rem 1.5rem;
+    border: 1px dashed var(--t-linea-fuerte);
+    border-radius: var(--t-r-xl);
+    background-color: var(--t-nieve);
+    text-align: center;
+    color: var(--t-tinta-suave);
+}
+
+.torneo-ui .sin-torneos .ico-xl { color: var(--t-linea-fuerte); }
+
+.torneo-ui .panel {
+    padding: 1.125rem;
+    border: 1px solid var(--t-linea);
+    border-radius: var(--t-r-xl);
+    background-color: var(--t-nieve);
+    box-shadow: var(--t-s-baja);
+}
+
+.torneo-ui .panel-cabecera {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.875rem;
+    border-bottom: 1px solid var(--t-linea);
+}
+
+.torneo-ui .panel-cabecera h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--t-pasto-800);
+}
+
+.torneo-ui .panel-cabecera h2 .ico { color: var(--t-pasto-500); }
+
+.torneo-ui .panel-cabecera p {
+    margin-top: 0.25rem;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--t-tinta-suave);
+}
+
+.torneo-ui .panel-acciones { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.torneo-ui .panel-acciones form { display: contents; }
+
+.torneo-ui .panel-vacio {
+    padding: 1.5rem;
+    border: 1px dashed var(--t-linea-fuerte);
+    border-radius: var(--t-r-lg);
+    background-color: var(--t-humo);
+    font-size: 0.875rem;
+    color: var(--t-tinta-suave);
+    text-align: center;
+}
+
+.torneo-ui .descripcion-torneo {
+    padding: 0 0.25rem;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--t-tinta-suave);
+}
+
+.torneo-ui .aviso-suave {
+    display: block;
+    padding: 0.875rem 1rem;
+    border: 1px solid #f3dfae;
+    border-left: 4px solid var(--t-oro);
+    border-radius: var(--t-r-md);
+    background-color: var(--t-oro-suave);
+    font-size: 0.85rem;
+    color: #7a5205;
+}
+
+.torneo-ui .texto-aviso { color: var(--t-oro-fuerte); font-weight: 700; }
+.torneo-ui .sin-jugadores { color: var(--t-oro-fuerte); font-weight: 700; }
+
+.torneo-ui .ruta {
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.torneo-ui .ruta-paso {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.torneo-ui .ruta-marca {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    flex-shrink: 0;
+    border-radius: var(--t-r-full);
+    background-color: rgba(255, 255, 255, 0.14);
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.torneo-ui .ruta-texto {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.torneo-ui .ruta-listo .ruta-marca { background-color: var(--t-lima); color: var(--t-pasto-900); }
+.torneo-ui .ruta-listo .ruta-texto { color: rgba(255, 255, 255, 0.95); }
+
+.torneo-ui .ruta-actual .ruta-marca {
+    background-color: var(--t-oro);
+    color: #2a1c00;
+    box-shadow: 0 0 0 4px rgba(232, 163, 23, 0.28);
+}
+
+.torneo-ui .ruta-actual .ruta-texto { color: var(--t-nieve); font-weight: 800; }
+.torneo-ui .ruta-pendiente { opacity: 0.5; }
+
+.torneo-ui .atajos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    padding: 0.625rem 0;
+    background-color: var(--gris-100, #f3f4f6);
+}
+
+.torneo-ui .atajos a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 2.25rem;
+    padding: 0.375rem 0.875rem;
+    border: 1px solid var(--t-linea);
+    border-radius: var(--t-r-full);
+    background-color: var(--t-nieve);
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--t-pasto-700);
+    box-shadow: var(--t-s-baja);
+    transition: transform var(--t-paso), border-color var(--t-paso), color var(--t-paso);
+}
+
+.torneo-ui .atajos a:hover {
+    transform: translateY(-1px);
+    border-color: var(--t-pasto-500);
+    color: var(--t-pasto-900);
+}
+
+.torneo-ui .rejilla-tablas {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 25rem), 1fr));
+}
+
+.torneo-ui .tabla-grupo {
+    border: 1px solid var(--t-linea);
+    border-radius: var(--t-r-lg);
+    background-color: var(--t-nieve);
+    overflow: hidden;
+}
+
+.torneo-ui .tabla-grupo-cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.75rem 0.875rem;
+    background: linear-gradient(135deg, var(--t-pasto-800), var(--t-pasto-600));
+    color: var(--t-nieve);
+}
+
+.torneo-ui .tabla-grupo-cabecera h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 800;
+}
+
+.torneo-ui .tabla-grupo-letra {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: var(--t-r-sm);
+    background-color: rgba(255, 255, 255, 0.2);
+    font-size: 0.8rem;
+    font-weight: 800;
+}
+
+.torneo-ui .tabla-grupo-cabecera p {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.85);
+    white-space: nowrap;
+}
+
+.torneo-ui .tabla-grupo-scroll {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+.torneo-ui .tabla-grupo-datos {
+    width: 100%;
+    min-width: 21rem;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+}
+
+.torneo-ui .tabla-grupo-datos th,
+.torneo-ui .tabla-grupo-datos td {
+    padding: 0.55rem 0.4rem;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.torneo-ui .tabla-grupo-datos thead th {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--t-tinta-debil);
+    background-color: var(--t-humo);
+    border-bottom: 1px solid var(--t-linea);
+}
+
+.torneo-ui .tabla-grupo-datos th abbr {
+    text-decoration: none;
+    border-bottom: 1px dotted var(--t-linea-fuerte);
+    cursor: help;
+}
+
+.torneo-ui .tabla-grupo-datos tbody tr { transition: background-color var(--t-paso); }
+.torneo-ui .tabla-grupo-datos tbody tr:hover { background-color: var(--t-lima-suave); }
+.torneo-ui .tabla-grupo-datos tbody tr + tr td { border-top: 1px solid var(--t-linea); }
+.torneo-ui .tabla-grupo-datos tbody td { color: var(--t-tinta-suave); }
+
+.torneo-ui .tabla-grupo-datos .col-puesto { width: 2.4rem; }
+
+.torneo-ui .tabla-grupo-datos .col-equipo {
+    text-align: left;
+    white-space: normal;
+    min-width: 8.5rem;
+    width: 99%;
+}
+
+.torneo-ui .tabla-grupo-datos .col-puntos {
+    font-weight: 800;
+    font-size: 0.95rem;
+    color: var(--t-pasto-800);
+    background-color: var(--t-lima-suave);
+}
+
+.torneo-ui .td-gana { color: var(--t-pasto-600); font-weight: 700; }
+.torneo-ui .td-pierde { color: #b07b74; }
+.torneo-ui .td-dg { font-weight: 700; color: var(--t-tinta); }
+
+.torneo-ui .puesto-numero {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: var(--t-r-full);
+    background-color: var(--t-humo);
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: var(--t-tinta-debil);
+}
+
+.torneo-ui .fila-clasifica { background-color: var(--t-lima-suave); }
+.torneo-ui .fila-clasifica .puesto-numero { background-color: var(--t-pasto-600); color: var(--t-nieve); }
+
+.torneo-ui .tabla-grupo .celda-equipo {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-width: 0;
+}
+
+.torneo-ui .tabla-grupo .escudo-mini {
+    width: 1.5rem;
+    height: 1.5rem;
+    flex-shrink: 0;
+    border-radius: var(--t-r-full);
+    object-fit: cover;
+    background-color: var(--t-humo);
+}
+
+.torneo-ui .tabla-grupo .equipo-enlace {
+    font-weight: 600;
+    color: var(--t-tinta);
+    text-align: left;
+    transition: color var(--t-paso);
+}
+
+.torneo-ui .tabla-grupo .equipo-enlace:hover { color: var(--t-pasto-600); }
+.torneo-ui .fila-clasifica .equipo-enlace { font-weight: 800; color: var(--t-pasto-900); }
+
+.torneo-ui .chip-grupo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.15rem;
+    padding: 0 0.3rem;
+    border-radius: var(--t-r-full);
+    background-color: var(--t-pasto-700);
+    color: var(--t-nieve);
+    font-size: 0.66rem;
+    font-weight: 800;
+}
+
+.torneo-ui .tabla-grupo .chip-penales {
+    display: inline-block;
+    padding: 0.05rem 0.35rem;
+    border-radius: var(--t-r-full);
+    background-color: var(--t-oro-suave);
+    color: var(--t-oro-fuerte);
+    font-size: 0.7rem;
+    font-weight: 800;
+}
+
+.torneo-ui .cero { color: var(--t-linea-fuerte); }
+
+.torneo-ui .tabla-grupo-vacia {
+    padding: 1.5rem 1rem;
+    color: var(--t-tinta-debil);
+    text-align: center;
+}
+
+.torneo-ui .tabla-general { margin-top: 1.125rem; }
+
+.torneo-ui .tabla-general > summary {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.5rem;
+    padding: 0.5rem 0.875rem;
+    border: 1px solid var(--t-linea);
+    border-radius: var(--t-r-full);
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--t-pasto-700);
+    cursor: pointer;
+    transition: border-color var(--t-paso), background-color var(--t-paso);
+}
+
+.torneo-ui .tabla-general > summary:hover { border-color: var(--t-pasto-500); background-color: var(--t-lima-suave); }
+.torneo-ui .tabla-general-cuerpo { margin-top: 0.875rem; }
+
+.torneo-ui .jornada {
+    border: 1px solid var(--t-linea);
+    border-radius: var(--t-r-lg);
+    background-color: var(--t-nieve);
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+    transition: border-color var(--t-paso), box-shadow var(--t-paso);
+}
+
+.torneo-ui .jornada[open] { border-color: var(--t-linea-fuerte); box-shadow: var(--t-s-baja); }
+
+.torneo-ui .jornada-resumen {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    min-height: var(--t-toque);
+    padding: 0.625rem 0.875rem;
+    background-color: var(--t-humo);
+    cursor: pointer;
+    list-style: none;
+    transition: background-color var(--t-paso);
+}
+
+.torneo-ui .jornada-resumen::-webkit-details-marker { display: none; }
+.torneo-ui .jornada-resumen:hover { background-color: var(--t-lima-suave); }
+
+.torneo-ui .jornada-flecha {
+    width: 0.5rem;
+    height: 0.5rem;
+    flex-shrink: 0;
+    border-right: 2px solid var(--t-pasto-600);
+    border-bottom: 2px solid var(--t-pasto-600);
+    transform: rotate(-45deg);
+    transition: transform var(--t-paso);
+}
+
+.torneo-ui .jornada[open] .jornada-flecha { transform: rotate(45deg); }
+
+.torneo-ui .jornada-titulo {
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--t-pasto-700);
+}
+
+.torneo-ui .jornada-fecha {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex: 1;
+    min-width: 0;
+    font-size: 0.82rem;
+    color: var(--t-tinta-suave);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.torneo-ui .jornada-fecha-vacia { color: var(--t-oro-fuerte); font-weight: 700; }
+
+.torneo-ui .jornada-avance {
+    padding: 0.15rem 0.55rem;
+    border-radius: var(--t-r-full);
+    background-color: var(--t-linea);
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: var(--t-tinta-suave);
+    white-space: nowrap;
+}
+
+.torneo-ui .jornada-avance-listo { background-color: var(--t-pasto-600); color: var(--t-nieve); }
+
+.torneo-ui .jornada-canchas {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.625rem 0.875rem 0;
+    font-size: 0.74rem;
+    color: var(--t-tinta-debil);
+}
+
+.torneo-ui .jornada-lista {
+    display: grid;
+    gap: 0.625rem;
+    padding: 0.75rem;
+}
+
+.torneo-ui .jornada-lista-suelta { padding: 0; margin-top: 1rem; }
+
+.torneo-ui .partido-torneo {
+    display: grid;
+    gap: 0.5rem;
+    padding: 0.75rem 0.875rem;
+    border: 1px solid var(--t-linea);
+    border-radius: var(--t-r-md);
+    background-color: var(--t-nieve);
+    transition: border-color var(--t-paso), box-shadow var(--t-paso), transform var(--t-paso);
+}
+
+.torneo-ui .partido-torneo:hover {
+    border-color: var(--t-pasto-500);
+    box-shadow: var(--t-s-media);
+    transform: translateY(-1px);
+}
+
+.torneo-ui .partido-jugado { background-color: var(--t-arena); }
+
+.torneo-ui .partido-torneo-fase {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--t-pasto-600);
+}
+
+.torneo-ui .partido-marcador {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.torneo-ui .partido-lado {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-width: 0;
+}
+
+.torneo-ui .partido-lado-visita { justify-content: flex-end; }
+
+.torneo-ui .partido-lado img {
+    width: 1.75rem;
+    height: 1.75rem;
+    flex-shrink: 0;
+    border-radius: var(--t-r-full);
+    object-fit: cover;
+    background-color: var(--t-humo);
+}
+
+.torneo-ui .partido-nombre {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--t-tinta);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.torneo-ui .partido-lado-visita .partido-nombre { text-align: right; }
+
+.torneo-ui .partido-cifras {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: var(--t-r-sm);
+    background-color: var(--t-pasto-800);
+    color: var(--t-nieve);
+    font-size: 1rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+.torneo-ui .partido-guion { opacity: 0.5; font-weight: 500; }
+
+.torneo-ui .partido-cifras-vs {
+    background-color: transparent;
+    color: var(--t-tinta-debil);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.torneo-ui .partido-penales {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--t-oro-fuerte);
+    text-align: center;
+}
+
+.torneo-ui .partido-torneo-pie {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.875rem;
+    padding-top: 0.4rem;
+    border-top: 1px dashed var(--t-linea);
+    font-size: 0.74rem;
+    color: var(--t-tinta-debil);
+}
+
+.torneo-ui .partido-torneo-pie span { display: inline-flex; align-items: center; gap: 0.3rem; }
+.torneo-ui .partido-pasa { color: var(--t-pasto-600); font-weight: 700; }
+
+.torneo-ui .partido-torneo .acciones-partido {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.torneo-ui .partido-torneo .btn-accion {
+    min-height: 2rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: var(--t-r-full);
+    border: 1px solid var(--t-linea-fuerte);
+    background-color: var(--t-nieve);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--t-pasto-700);
+    transition: border-color var(--t-paso), background-color var(--t-paso);
+}
+
+.torneo-ui .partido-torneo .btn-accion:hover {
+    border-color: var(--t-pasto-500);
+    background-color: var(--t-lima-suave);
+}
+
+.torneo-ui .partido-torneo .btn-accion-principal {
+    background: linear-gradient(135deg, var(--t-pasto-800), var(--t-pasto-600));
+    border-color: transparent;
+    color: var(--t-nieve);
+}
+
+.torneo-ui .rejilla-grupos {
+    display: grid;
+    gap: 0.875rem;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+}
+
+.torneo-ui .rejilla-equipos {
+    display: grid;
+    gap: 0.625rem;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+}
+
+.torneo-ui .carta-grupo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    padding: 0.75rem;
+    border: 1px solid var(--t-linea);
+    border-radius: var(--t-r-lg);
+    background-color: var(--t-humo);
+}
+
+.torneo-ui .carta-grupo-cabecera {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.torneo-ui .carta-grupo-letra {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.15rem;
+    height: 2.15rem;
+    flex-shrink: 0;
+    border-radius: var(--t-r-md);
+    background: linear-gradient(135deg, var(--t-pasto-800), var(--t-pasto-600));
+    color: var(--t-nieve);
+    font-size: 1rem;
+    font-weight: 800;
+    box-shadow: var(--t-s-baja);
+}
+
+.torneo-ui .carta-grupo-cabecera h3 { font-size: 0.9rem; font-weight: 800; color: var(--t-pasto-800); }
+.torneo-ui .carta-grupo-cabecera p { font-size: 0.72rem; color: var(--t-tinta-debil); }
+
+.torneo-ui .carta-grupo-lista { display: grid; gap: 0.3rem; flex: 1; }
+
+.torneo-ui .renglon-equipo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding: 0.3rem 0.45rem;
+    border: 1px solid var(--t-linea);
+    border-radius: var(--t-r-md);
+    background-color: var(--t-nieve);
+    transition: border-color var(--t-paso), transform var(--t-paso);
+}
+
+.torneo-ui .renglon-equipo:hover { border-color: var(--t-pasto-500); transform: translateX(2px); }
+
+.torneo-ui .renglon-equipo-enlace {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.torneo-ui .renglon-equipo-enlace img {
+    width: 1.75rem;
+    height: 1.75rem;
+    flex-shrink: 0;
+    border-radius: var(--t-r-full);
+    object-fit: cover;
+    background-color: var(--t-humo);
+}
+
+.torneo-ui .renglon-equipo-nombre {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--t-tinta);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.torneo-ui .renglon-equipo-nota {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--t-tinta-debil);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.torneo-ui .carta-grupo-vacia {
+    padding: 0.875rem 0.5rem;
+    font-size: 0.8rem;
+    color: var(--t-tinta-debil);
+    text-align: center;
+}
+
+.torneo-ui .carta-grupo-agregar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    width: 100%;
+    min-height: 2.5rem;
+    padding: 0.4rem;
+    border: 1px dashed var(--t-pasto-500);
+    border-radius: var(--t-r-md);
+    background-color: transparent;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--t-pasto-700);
+    cursor: pointer;
+    transition: background-color var(--t-paso), border-color var(--t-paso);
+}
+
+.torneo-ui .carta-grupo-agregar:hover { background-color: var(--t-lima-suave); border-style: solid; }
+
+.torneo-ui .tarjeta-equipo {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    min-height: 2.75rem;
+    padding: 0.55rem;
+    border: 1px solid var(--t-linea);
+    border-radius: var(--t-r-md);
+    background-color: var(--t-nieve);
+    transition: border-color var(--t-paso), transform var(--t-paso), box-shadow var(--t-paso);
+}
+
+.torneo-ui .tarjeta-equipo:hover {
+    border-color: var(--t-pasto-500);
+    transform: translateY(-2px);
+    box-shadow: var(--t-s-media);
+}
+
+.torneo-ui .tarjeta-equipo img {
+    width: 2.25rem;
+    height: 2.25rem;
+    flex-shrink: 0;
+    border-radius: var(--t-r-full);
+    object-fit: cover;
+    background-color: var(--t-humo);
+}
+
+.torneo-ui .tarjeta-equipo-nombre {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--t-tinta);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.torneo-ui .tarjeta-equipo-nota {
+    font-size: 0.72rem;
+    color: var(--t-tinta-debil);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.torneo-ui .tarjeta-formulario {
+    border: 1px solid var(--t-linea);
+    border-radius: var(--t-r-xl);
+    background-color: var(--t-nieve);
+    box-shadow: var(--t-s-media);
+    overflow: hidden;
+}
+
+.torneo-ui .tarjeta-formulario-cabecera {
+    padding: 1.25rem;
+    background: linear-gradient(135deg, var(--t-pasto-900), var(--t-pasto-700));
+    color: var(--t-nieve);
+}
+
+.torneo-ui .tarjeta-formulario-cabecera h1 {
+    margin-top: 0.3rem;
+    font-size: 1.5rem;
+    font-weight: 800;
+    line-height: 1.15;
+}
+
+.torneo-ui .tarjeta-formulario-nota {
+    margin-top: 0.625rem;
+    font-size: 0.85rem;
+    line-height: 1.55;
+    color: rgba(255, 255, 255, 0.82);
+}
+
+.torneo-ui .tarjeta-formulario-nota strong { color: var(--t-lima); }
+
+.torneo-ui .cuerpo-formulario { display: grid; gap: 1.125rem; padding: 1.25rem; }
+
+.torneo-ui .pie-formulario {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 0.625rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--t-linea);
+}
+
+.torneo-ui .pie-formulario > * { width: 100%; }
+
+@media (prefers-reduced-motion: reduce) {
+    .torneo-ui *,
+    .torneo-ui *::before,
+    .torneo-ui *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    .torneo-ui .tarjeta-torneo:hover,
+    .torneo-ui .tarjeta-cat:hover,
+    .torneo-ui .partido-torneo:hover,
+    .torneo-ui .tarjeta-equipo:hover { transform: none; }
+}
+
+@media (max-width: 40rem) {
+    .torneo-ui .tabla-grupo-datos .col-opcional { display: none; }
+    .torneo-ui .tabla-grupo-datos { min-width: 0; }
+    .torneo-ui .partido-marcador { grid-template-columns: 1fr auto 1fr; }
+    .torneo-ui .partido-nombre { font-size: 0.78rem; }
+}
+
+@media (min-width: 40rem) {
+    .torneo-ui .pie-formulario { flex-direction: row; justify-content: flex-end; }
+    .torneo-ui .pie-formulario > * { width: auto; }
+}
+
+@media (min-width: 48rem) {
+    .torneo-ui.hoja-torneos,
+    .torneo-ui.hoja-torneo,
+    .torneo-ui.hoja-formulario { padding: 1.5rem; gap: 1.5rem; }
+
+    .torneo-ui .portada-torneos {
+        flex-direction: row;
+        align-items: flex-end;
+        justify-content: space-between;
+        padding: 2rem;
+    }
+
+    .torneo-ui .portada-torneos h1 { font-size: 2.25rem; }
+    .torneo-ui .portada-torneo { padding: 1.75rem 2rem; }
+    .torneo-ui .portada-torneo h1 { font-size: 2rem; }
+
+    .torneo-ui .portada-torneo-fila {
+        flex-direction: row;
+        align-items: flex-start;
+        justify-content: space-between;
+    }
+
+    .torneo-ui .portada-torneo-acciones { flex-shrink: 0; justify-content: flex-end; }
+
+    .torneo-ui .panel { padding: 1.5rem 1.75rem; }
+
+    .torneo-ui .panel-cabecera {
+        flex-direction: row;
+        align-items: flex-start;
+        justify-content: space-between;
+    }
+
+    .torneo-ui .jornada-lista { grid-template-columns: repeat(auto-fill, minmax(23rem, 1fr)); }
+    .torneo-ui .jornada-lista-suelta { grid-template-columns: repeat(auto-fill, minmax(23rem, 1fr)); }
+    .torneo-ui .tarjeta-formulario-cabecera { padding: 1.75rem 2rem; }
+    .torneo-ui .cuerpo-formulario { padding: 1.75rem 2rem; }
+}
+
+.torneo-ui.siembra-marco,
+.torneo-ui .siembra-marco {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 58rem;
+    max-height: 92vh;
+    border-radius: var(--t-r-xl);
+    background-color: var(--t-arena);
+    box-shadow: var(--t-s-alta);
+    overflow: hidden;
+}
+
+.torneo-ui.siembra-marco-pagina,
+.torneo-ui .siembra-marco-pagina {
+    max-height: none;
+    margin-top: 0.75rem;
+    border: 1px solid var(--t-linea);
+}
+
+.torneo-ui .siembra-cabecera {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    flex-shrink: 0;
+    padding: 1.125rem 1.25rem;
+    background:
+        radial-gradient(120% 160% at 100% 0%, rgba(232, 163, 23, 0.28) 0%, transparent 55%),
+        linear-gradient(135deg, var(--t-pasto-950) 0%, var(--t-pasto-700) 100%);
+    color: var(--t-nieve);
+}
+
+.torneo-ui .siembra-copa {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    flex-shrink: 0;
+    border-radius: var(--t-r-md);
+    background: linear-gradient(135deg, var(--t-oro-fuerte), var(--t-oro));
+    color: #2a1c00;
+    box-shadow: var(--t-s-oro);
+}
+
+.torneo-ui .siembra-copa .ico { width: 1.5rem; height: 1.5rem; }
+
+.torneo-ui .siembra-kicker {
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--t-lima);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.torneo-ui .siembra-cabecera h2 {
+    margin-top: 0.15rem;
+    font-size: 1.3rem;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+}
+
+.torneo-ui .siembra-sub { font-size: 0.82rem; color: rgba(255, 255, 255, 0.78); }
+
+.torneo-ui .siembra-cerrar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--t-toque);
+    height: var(--t-toque);
+    flex-shrink: 0;
+    margin-left: auto;
+    border-radius: var(--t-r-full);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1.1rem;
+    transition: background-color var(--t-paso), color var(--t-paso);
+}
+
+.torneo-ui .siembra-cerrar:hover { background-color: rgba(255, 255, 255, 0.18); color: var(--t-nieve); }
+.torneo-ui .siembra-cerrar:focus-visible { outline: 2px solid var(--t-lima); outline-offset: 2px; }
+
+.torneo-ui .siembra-cuerpo {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 1.25rem;
+    display: grid;
+    gap: 1.25rem;
+    align-content: start;
+}
+
+.torneo-ui .siembra-paso {
+    display: grid;
+    gap: 0.75rem;
+    padding: 1rem;
+    border: 1px solid var(--t-linea);
+    border-radius: var(--t-r-lg);
+    background-color: var(--t-nieve);
+    box-shadow: var(--t-s-baja);
+}
+
+.torneo-ui .siembra-paso[hidden] { display: none; }
+
+.torneo-ui .siembra-paso-cabeza {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.625rem;
+}
+
+.torneo-ui .siembra-paso-numero {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    flex-shrink: 0;
+    border-radius: var(--t-r-full);
+    background: linear-gradient(135deg, var(--t-pasto-800), var(--t-pasto-600));
+    color: var(--t-nieve);
+    font-size: 0.8rem;
+    font-weight: 800;
+    box-shadow: var(--t-s-baja);
+}
+
+.torneo-ui .siembra-paso-cabeza h3 {
+    font-size: 0.98rem;
+    font-weight: 800;
+    line-height: 1.25;
+    color: var(--t-pasto-900);
+}
+
+.torneo-ui .siembra-paso-cabeza p {
+    margin-top: 0.15rem;
+    font-size: 0.8rem;
+    line-height: 1.45;
+    color: var(--t-tinta-debil);
+}
+
+.torneo-ui .siembra-tablas {
+    display: grid;
+    gap: 0.625rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+}
+
+.torneo-ui .siembra-tabla {
+    border: 1px solid var(--t-linea);
+    border-radius: var(--t-r-md);
+    background-color: var(--t-humo);
+    overflow: hidden;
+}
+
+.torneo-ui .siembra-tabla-cabeza {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.45rem 0.6rem;
+    background: linear-gradient(135deg, var(--t-pasto-800), var(--t-pasto-600));
+    color: var(--t-nieve);
+}
+
+.torneo-ui .siembra-tabla-letra {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.4rem;
+    height: 1.4rem;
+    flex-shrink: 0;
+    border-radius: var(--t-r-sm);
+    background-color: rgba(255, 255, 255, 0.22);
+    font-size: 0.72rem;
+    font-weight: 800;
+}
+
+.torneo-ui .siembra-tabla-cabeza h4 {
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+}
+
+.torneo-ui .siembra-tabla ol { display: grid; gap: 1px; background-color: var(--t-linea); }
+
+.torneo-ui .siembra-tabla li {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.5rem;
+    background-color: var(--t-nieve);
+    font-size: 0.78rem;
+    color: var(--t-tinta-suave);
+}
+
+.torneo-ui .siembra-arriba {
+    background-color: var(--t-lima-suave);
+    font-weight: 700;
+    color: var(--t-pasto-900);
+}
+
+.torneo-ui .siembra-arriba .siembra-puesto {
+    background: linear-gradient(135deg, var(--t-pasto-800), var(--t-pasto-600));
+    color: var(--t-nieve);
+}
+
+.torneo-ui .siembra-puesto {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.15rem;
+    height: 1.15rem;
+    flex-shrink: 0;
+    border-radius: var(--t-r-full);
+    background-color: var(--t-humo);
+    font-size: 0.62rem;
+    font-weight: 800;
+    color: var(--t-tinta-debil);
+}
+
+.torneo-ui .siembra-escudo {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex-shrink: 0;
+    border-radius: var(--t-r-full);
+    object-fit: cover;
+    background-color: var(--t-humo);
+}
+
+.torneo-ui .siembra-nombre {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.torneo-ui .siembra-pts {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.15rem;
+    font-weight: 800;
+    color: var(--t-pasto-700);
+    white-space: nowrap;
+}
+
+.torneo-ui .siembra-pts small {
+    font-size: 0.58rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--t-tinta-debil);
+}
+
+.torneo-ui .siembra-rondas {
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+}
+
+.torneo-ui .siembra-ronda {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-height: var(--t-toque);
+    padding: 0.65rem 0.75rem;
+    border: 1.5px solid var(--t-linea);
+    border-radius: var(--t-r-md);
+    background-color: var(--t-nieve);
+    font-size: 0.82rem;
+    color: var(--t-tinta-suave);
+    cursor: pointer;
+    transition: border-color var(--t-paso), background-color var(--t-paso),
+                transform var(--t-paso), box-shadow var(--t-paso);
+}
+
+.torneo-ui .siembra-ronda input { position: absolute; opacity: 0; pointer-events: none; }
+
+.torneo-ui .siembra-ronda-marca {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    flex-shrink: 0;
+    border-radius: var(--t-r-sm);
+    background-color: var(--t-humo);
+    color: var(--t-tinta-debil);
+    transition: background-color var(--t-paso), color var(--t-paso);
+}
+
+.torneo-ui .siembra-ronda-texto { flex: 1; min-width: 0; line-height: 1.3; }
+
+.torneo-ui .siembra-ronda-tilde {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    flex-shrink: 0;
+    border-radius: var(--t-r-full);
+    background-color: var(--t-pasto-600);
+    color: var(--t-nieve);
+    opacity: 0;
+    transform: scale(0.6);
+    transition: opacity var(--t-paso), transform var(--t-paso);
+}
+
+.torneo-ui .siembra-ronda:hover {
+    border-color: var(--t-pasto-500);
+    transform: translateY(-1px);
+    box-shadow: var(--t-s-media);
+}
+
+.torneo-ui .siembra-ronda:has(input:checked) {
+    border-color: var(--t-pasto-600);
+    background-color: var(--t-lima-suave);
+    color: var(--t-pasto-900);
+    font-weight: 700;
+    box-shadow: var(--t-s-media);
+}
+
+.torneo-ui .siembra-ronda:has(input:checked) .siembra-ronda-marca {
+    background: linear-gradient(135deg, var(--t-pasto-800), var(--t-pasto-600));
+    color: var(--t-nieve);
+}
+
+.torneo-ui .siembra-ronda:has(input:checked) .siembra-ronda-tilde { opacity: 1; transform: scale(1); }
+.torneo-ui .siembra-ronda:has(input:focus-visible) { outline: 2px solid var(--t-pasto-500); outline-offset: 2px; }
+
+.torneo-ui .siembra-llaves { display: grid; gap: 0.625rem; }
+
+.torneo-ui .siembra-llave {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border: 1px solid var(--t-linea);
+    border-left: 4px solid var(--t-oro);
+    border-radius: var(--t-r-md);
+    background-color: var(--t-humo);
+    animation: t-aparece 220ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.torneo-ui .siembra-llave[hidden] { display: none; }
+
+@keyframes t-aparece {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: none; }
+}
+
+.torneo-ui .siembra-llave-numero {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    padding: 0.3rem 0;
+    flex-shrink: 0;
+    border-radius: var(--t-r-sm);
+    background: linear-gradient(135deg, var(--t-oro-fuerte), var(--t-oro));
+    color: #2a1c00;
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.torneo-ui .siembra-llave-numero small {
+    font-size: 0.5rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.75;
+}
+
+.torneo-ui .siembra-llave-campos {
+    display: grid;
+    gap: 0.5rem;
+    align-items: end;
+    flex: 1;
+    min-width: 0;
+    grid-template-columns: 1fr auto 1fr;
+}
+
+.torneo-ui .siembra-lado { display: grid; gap: 0.2rem; min-width: 0; }
+
+.torneo-ui .siembra-lado-etiqueta {
+    font-size: 0.62rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--t-tinta-debil);
+}
+
+.torneo-ui .siembra-vs {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    align-self: center;
+    margin-top: 0.85rem;
+    border-radius: var(--t-r-full);
+    background-color: var(--t-pasto-900);
+    color: var(--t-nieve);
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+}
+
+.torneo-ui .campo-siembra {
+    width: 100%;
+    min-height: var(--t-toque);
+    border-radius: var(--t-r-md);
+    border: 1px solid var(--t-linea-fuerte);
+    background-color: var(--t-nieve);
+    padding: 0.5rem 0.7rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--t-tinta);
+    transition: border-color var(--t-paso), box-shadow var(--t-paso);
+}
+
+.torneo-ui .campo-siembra:focus {
+    outline: none;
+    border-color: var(--t-pasto-600);
+    box-shadow: 0 0 0 3px rgba(34, 181, 115, 0.22);
+}
+
+.torneo-ui .campo-siembra:disabled { background-color: var(--t-humo); color: var(--t-tinta-debil); }
+
+.torneo-ui .campo-siembra-repetido {
+    border-color: var(--t-rojo);
+    background-color: var(--t-rojo-suave);
+    color: var(--t-rojo);
+    box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.14);
+}
+
+.torneo-ui .siembra-espera {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1.125rem 1rem;
+    border: 1.5px dashed var(--t-pasto-500);
+    border-radius: var(--t-r-lg);
+    background-color: var(--t-lima-suave);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--t-pasto-800);
+    text-align: center;
+}
+
+.torneo-ui .siembra-espera .ico { color: var(--t-pasto-600); }
+.torneo-ui .siembra-espera[hidden] { display: none; }
+
+.torneo-ui .siembra-error {
+    padding: 0.875rem 1rem;
+    border: 1px solid #f0cdc8;
+    border-left: 4px solid var(--t-rojo);
+    border-radius: var(--t-r-md);
+    background-color: var(--t-rojo-suave);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--t-rojo);
+}
+
+.torneo-ui .siembra-error-campo { font-size: 0.8rem; font-weight: 600; color: var(--t-rojo); }
+
+.torneo-ui .siembra-pie {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 0.625rem;
+    position: sticky;
+    bottom: -1.25rem;
+    margin: 0 -1.25rem -1.25rem;
+    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--t-linea);
+    background-color: var(--t-nieve);
+    box-shadow: 0 -6px 18px -12px rgba(6, 52, 26, 0.35);
+}
+
+.torneo-ui .siembra-pie > * { width: 100%; }
+
+@media (max-width: 40rem) {
+    .torneo-ui .siembra-cuerpo { padding: 1rem; gap: 1rem; }
+    .torneo-ui .siembra-paso { padding: 0.875rem; }
+    .torneo-ui .siembra-llave { flex-direction: column; align-items: stretch; gap: 0.5rem; }
+
+    .torneo-ui .siembra-llave-numero {
+        flex-direction: row;
+        gap: 0.3rem;
+        width: auto;
+        align-self: flex-start;
+        padding: 0.2rem 0.6rem;
+    }
+
+    .torneo-ui .siembra-llave-campos { grid-template-columns: 1fr; }
+    .torneo-ui .siembra-vs { margin: 0 auto; }
+    .torneo-ui .siembra-pie { bottom: -1rem; margin: 0 -1rem -1rem; padding: 0.875rem 1rem; }
+}
+
+@media (min-width: 40rem) {
+    .torneo-ui .siembra-cabecera { padding: 1.25rem 1.75rem; }
+    .torneo-ui .siembra-cuerpo { padding: 1.5rem 1.75rem; }
+    .torneo-ui .siembra-paso { padding: 1.25rem 1.375rem; }
+    .torneo-ui .siembra-cabecera h2 { font-size: 1.5rem; }
+
+    .torneo-ui .siembra-pie {
+        flex-direction: row;
+        justify-content: flex-end;
+        bottom: -1.5rem;
+        margin: 0 -1.75rem -1.5rem;
+        padding: 1rem 1.75rem;
+    }
+
+    .torneo-ui .siembra-pie > * { width: auto; }
+}

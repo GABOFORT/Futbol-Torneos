@@ -1,0 +1,102 @@
+{% if form.non_field_errors %}
+    <div class="siembra-error" role="alert">
+        {% for error in form.non_field_errors %}
+            <p>{{ error }}</p>
+        {% endfor %}
+    </div>
+{% endif %}
+
+<section class="siembra-paso">
+    <div class="siembra-paso-cabeza">
+        <span class="siembra-paso-numero">1</span>
+        <div class="min-w-0">
+            <h3>Mira cómo quedaron los grupos</h3>
+            <p>Las tablas ordenan y muestran. Quién pasa lo decides tú.</p>
+        </div>
+    </div>
+
+    <div class="siembra-tablas">
+        {% for bloque in grupos %}
+            <div class="siembra-tabla">
+                <header class="siembra-tabla-cabeza">
+                    <span class="siembra-tabla-letra">{{ bloque.grupo }}</span>
+                    <h4>{{ bloque.etiqueta }}</h4>
+                </header>
+                <ol>
+                    {% for fila in bloque.posiciones %}
+                        <li{% if forloop.counter <= 2 %} class="siembra-arriba"{% endif %}>
+                            <span class="siembra-puesto">{{ forloop.counter }}</span>
+                            <img src="{{ fila.equipo.escudo_url }}" alt="" class="siembra-escudo" loading="lazy" decoding="async">
+                            <span class="siembra-nombre" title="{{ fila.equipo.nombre }}">{{ fila.equipo.nombre }}</span>
+                            <span class="siembra-pts">{{ fila.pts }}<small>pts</small></span>
+                        </li>
+                    {% endfor %}
+                </ol>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="siembra-paso">
+    <div class="siembra-paso-cabeza">
+        <span class="siembra-paso-numero">2</span>
+        <div class="min-w-0">
+            <h3>¿Desde qué ronda arranca?</h3>
+            <p>De ahí en adelante los ganadores avanzan solos.</p>
+        </div>
+    </div>
+
+    <div class="siembra-rondas">
+        {% for radio in form.ronda %}
+            <label class="siembra-ronda">
+                {{ radio.tag }}
+                <span class="siembra-ronda-marca" aria-hidden="true">
+                    <svg class="ico"><use href="#ico-llaves"></use></svg>
+                </span>
+                <span class="siembra-ronda-texto">{{ radio.choice_label }}</span>
+                <span class="siembra-ronda-tilde" aria-hidden="true">
+                    <svg class="ico ico-sm"><use href="#ico-listo"></use></svg>
+                </span>
+            </label>
+        {% endfor %}
+    </div>
+    {% for error in form.ronda.errors %}
+        <p class="siembra-error-campo">{{ error }}</p>
+    {% endfor %}
+</section>
+
+<section class="siembra-paso" data-siembra-llaves-marco hidden>
+    <div class="siembra-paso-cabeza">
+        <span class="siembra-paso-numero">3</span>
+        <div class="min-w-0">
+            <h3>¿Quién juega contra quién?</h3>
+            <p>Un equipo no puede repetirse en dos llaves.</p>
+        </div>
+    </div>
+
+    <div class="siembra-llaves" data-siembra-llaves>
+        {% for llave in form.llaves %}
+            <div class="siembra-llave" data-llave="{{ llave.numero }}" hidden>
+                <span class="siembra-llave-numero">
+                    <small>Llave</small>{{ llave.numero|add:1 }}
+                </span>
+                <div class="siembra-llave-campos">
+                    <label class="siembra-lado">
+                        <span class="siembra-lado-etiqueta">Local</span>
+                        {{ llave.local }}
+                    </label>
+                    <span class="siembra-vs" aria-hidden="true">VS</span>
+                    <label class="siembra-lado">
+                        <span class="siembra-lado-etiqueta">Visitante</span>
+                        {{ llave.visitante }}
+                    </label>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+
+<p class="siembra-espera" data-siembra-espera>
+    <svg class="ico"><use href="#ico-llaves"></use></svg>
+    Elige arriba la ronda y aquí aparecerán las llaves para llenar.
+</p>

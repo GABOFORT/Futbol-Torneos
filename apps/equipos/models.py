@@ -14,6 +14,10 @@ class Equipo(models.Model):
         ('4-2-3-1', '4-2-3-1'),
     ]
 
+    LETRAS_GRUPO = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+    GRUPO_CHOICES = [(letra, f'Grupo {letra}') for letra in LETRAS_GRUPO]
+
     nombre = models.CharField('Nombre del equipo', max_length=140)
     escudo = models.ImageField(
         'Escudo del equipo', upload_to='escudos/', blank=True, null=True,
@@ -41,6 +45,14 @@ class Equipo(models.Model):
         null=True,
         blank=True,
         help_text='Solo si se inscribió con el calendario ya generado. Vacío es desde el inicio.',
+    )
+    grupo = models.CharField(
+        'Grupo',
+        max_length=1,
+        choices=GRUPO_CHOICES,
+        blank=True,
+        default='',
+        help_text='Solo en las categorías de torneo que se juegan por grupos.',
     )
     formacion = models.CharField('Formación', max_length=20, choices=FORMACION_CHOICES, blank=True)
     observaciones = models.TextField('Observaciones', blank=True)

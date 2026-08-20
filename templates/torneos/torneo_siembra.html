@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block titulo %}{{ title }}{% endblock %}
+
+{% block contenido %}
+<div class="torneo-ui hoja-formulario">
+    {% include 'torneos/_iconos.html' %}
+
+    <a href="{% url 'torneo-categoria' torneo.pk categoria.pk %}" class="migaja">
+        <svg class="ico ico-sm"><use href="#ico-flecha"></use></svg> {{ categoria.nombre }}
+    </a>
+
+    <div class="siembra-marco siembra-marco-pagina">
+        <header class="siembra-cabecera">
+            <span class="siembra-copa" aria-hidden="true">
+                <svg class="ico"><use href="#ico-copa"></use></svg>
+            </span>
+            <div class="min-w-0">
+                <p class="siembra-kicker">{{ torneo.nombre }}</p>
+                <h2>Armar la liguilla</h2>
+                <p class="siembra-sub">{{ categoria.nombre }}</p>
+            </div>
+        </header>
+
+        <form method="post" novalidate class="siembra-cuerpo"
+              data-llaves-por-ronda="{% for fase, cuantas in llaves_por_ronda.items %}{{ fase }}:{{ cuantas }}{% if not forloop.last %},{% endif %}{% endfor %}">
+            {% csrf_token %}
+            {% include 'torneos/_siembra_form.html' %}
+
+            <footer class="siembra-pie">
+                <a href="{% url 'torneo-categoria' torneo.pk categoria.pk %}" class="boton-fantasma">Cancelar</a>
+                <button type="submit" class="boton-oro">
+                    <svg class="ico ico-sm"><use href="#ico-listo"></use></svg>
+                    Guardar la liguilla
+                </button>
+            </footer>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/siembra.js' %}" defer></script>
+{% endblock %}

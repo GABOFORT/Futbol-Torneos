@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.equipos.models import Equipo
 from apps.torneos import palmares
-from apps.usuarios.permissions import ligas_administradas
+from apps.usuarios.permissions import ligas_y_torneos_administrados
 
 from .forms import JugadorForm
 from .models import Jugador
@@ -21,7 +21,7 @@ def _puede_gestionar(user, equipo):
     if user.is_superuser or user.role == user.ROLE_SUPERADMIN:
         return True
     if user.role == user.ROLE_ADMIN_LIGA:
-        return equipo.liga_id in ligas_administradas(user).values_list('id', flat=True)
+        return equipo.liga_id in ligas_y_torneos_administrados(user).values_list('id', flat=True)
     return equipo.entrenador_id == user.id
 
 

@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block titulo %}{{ torneo.nombre }} - Torneo{% endblock %}
+
+{% block contenido %}
+<div class="torneo-ui hoja-torneo">
+    {% include 'torneos/_iconos.html' %}
+    {% include 'torneos/_cabecera_torneo.html' %}
+
+    {% if torneo.liga.descripcion %}
+        <p class="descripcion-torneo">{{ torneo.liga.descripcion }}</p>
+    {% endif %}
+
+    <section class="panel">
+        <div class="panel-cabecera">
+            <div>
+                <h2><svg class="ico"><use href="#ico-grupos"></use></svg> Categorías</h2>
+                <p>Cada categoría juega lo suyo: sus grupos, su tabla y su liguilla. Nunca se cruzan entre ellas.</p>
+            </div>
+            {% if puede_administrar %}
+                <button class="open-modal boton-primario" data-url="{% url 'torneo-categoria-create' torneo.pk %}?modal=1">
+                    <svg class="ico ico-sm"><use href="#ico-mas"></use></svg> Nueva categoría
+                </button>
+            {% endif %}
+        </div>
+
+        <div class="rejilla-categorias">
+            {% for tarjeta in tarjetas %}
+                <article class="tarjeta-cat">
+                    <a href="{% url 'torneo-categoria' torneo.pk tarjeta.categoria.pk %}" class="tarjeta-cat-tapa">
+                        <span class="tarjeta-cat-nombre">{{ tarjeta.categoria.nombre }}</span>
+                        {% if tarjeta.campeon %}
+                            <span class="chapa chapa-oro">
+                                <svg class="ico ico-sm"><use href="#ico-copa"></use></svg> {{ tarjeta.campeon.nombre }}
+                            </span>
+                        {% elif tarjeta.ronda %}
+                            <span class="chapa chapa-viva"><span class="latido" aria-hidden="true"></span> En liguilla</span>
+                        {% elif tarjeta.generados %}
+                            <span class="chapa {% if tarjeta.cerrados %}chapa-verde{% else %}chapa-viva{% endif %}">
+                                {% if tarjeta.cerrados %}Grupos cerrados{% else %}{{ tarjeta.pendientes }} por jugar{% endif %}
+                            </span>
+                        {% else %}
+                            <span class="chapa chapa-gris">Sin partidos</span>
+                        {% endif %}
+                    </a>
+
+                    <p class="tarjeta-cat-nota">
+                        <svg class="ico ico-sm"><use href="#ico-escudo"></use></svg>
+                        {{ tarjeta.inscritos }} equipo(s) en {{ tarjeta.categoria.grupos }} grupo(s)
+                        {% if tarjeta.sin_grupo %}· <span class="texto-aviso">{{ tarjeta.sin_grupo }} sin grupo</span>{% endif %}
+                    </p>
+
+                    <div class="tarjeta-cat-grupos">
+                        {% for bloque in tarjeta.reparto %}
+                            <span class="pastilla-grupo" title="Grupo {{ bloque.letra }}: {{ bloque.equipos }} equipo(s)">
+                                <strong>{{ bloque.letra }}</strong><span>{{ bloque.equipos }}</span>
+                            </span>
+                        {% endfor %}
+                    </div>
+
+                    <footer class="tarjeta-cat-pie">
+                        <a href="{% url 'torneo-categoria' torneo.pk tarjeta.categoria.pk %}" class="boton-primario boton-chico">Abrir</a>
+                        {% if puede_administrar %}
+                            <button data-url="{% url 'torneo-categoria-edit' torneo.pk tarjeta.categoria.pk %}?modal=1" class="open-modal boton-fantasma boton-chico">Editar</button>
+                            {% if es_superadmin %}
+                                <button data-url="{% url 'torneo-categoria-delete' torneo.pk tarjeta.categoria.pk %}?modal=1" class="open-modal boton-peligro boton-chico">Eliminar</button>
+                            {% endif %}
+                        {% endif %}
+                    </footer>
+                </article>
+            {% empty %}
+                <div class="sin-torneos">
+                    <svg class="ico ico-xl"><use href="#ico-grupos"></use></svg>
+                    <p>Todavía no hay categorías.{% if puede_administrar %} Crea la primera con el botón de arriba.{% endif %}</p>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+
+{% include '_modal.html' %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/torneo_form.js' %}" defer></script>
+{% endblock %}

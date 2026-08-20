@@ -1,0 +1,60 @@
+<div class="tabla-grupo">
+    <div class="tabla-grupo-cabecera">
+        <h3>
+            {% if letra %}<span class="tabla-grupo-letra">{{ letra }}</span>{% endif %}
+            {{ etiqueta }}
+        </h3>
+        {% if clasifican %}<p>Pasan los {{ clasifican }} primeros</p>{% endif %}
+    </div>
+
+    <div class="tabla-grupo-scroll">
+        <table class="tabla-grupo-datos">
+            <thead>
+                <tr>
+                    <th scope="col" class="col-puesto">#</th>
+                    <th scope="col" class="col-equipo">Equipo</th>
+                    <th scope="col"><abbr title="Partidos jugados">PJ</abbr></th>
+                    <th scope="col"><abbr title="Partidos ganados">PG</abbr></th>
+                    <th scope="col"><abbr title="Partidos empatados">PE</abbr></th>
+                    <th scope="col"><abbr title="Partidos perdidos">PP</abbr></th>
+                    <th scope="col" class="col-opcional"><abbr title="Goles a favor">GF</abbr></th>
+                    <th scope="col" class="col-opcional"><abbr title="Goles en contra">GC</abbr></th>
+                    <th scope="col"><abbr title="Diferencia de goles">DG</abbr></th>
+                    <th scope="col" class="col-opcional"><abbr title="Puntos extra ganados en penales">PEX</abbr></th>
+                    <th scope="col" class="col-puntos">Pts</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fila in posiciones %}
+                    <tr {% if clasifican and forloop.counter <= clasifican %}class="fila-clasifica"{% endif %}>
+                        <td class="col-puesto"><span class="puesto-numero">{{ forloop.counter }}</span></td>
+                        <td class="col-equipo">
+                            <div class="celda-equipo">
+                                <img src="{{ fila.equipo.escudo_url }}" alt="" class="escudo-mini" loading="lazy" decoding="async">
+                                <button type="button" class="open-modal equipo-enlace"
+                                        data-url="{% url 'equipo-perfil' fila.equipo.pk %}"
+                                        aria-label="Ver el perfil de {{ fila.equipo.nombre }}">{{ fila.equipo.nombre }}</button>
+                                {% if mostrar_grupo and fila.equipo.grupo %}
+                                    <span class="chip-grupo">{{ fila.equipo.grupo }}</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>{{ fila.pj }}</td>
+                        <td class="td-gana">{{ fila.pg }}</td>
+                        <td>{{ fila.pe }}</td>
+                        <td class="td-pierde">{{ fila.pp }}</td>
+                        <td class="col-opcional">{{ fila.gf }}</td>
+                        <td class="col-opcional">{{ fila.gc }}</td>
+                        <td class="td-dg">{{ fila.dg }}</td>
+                        <td class="col-opcional">
+                            {% if fila.pen %}<span class="chip-penales">+{{ fila.pen }}</span>{% else %}<span class="cero">0</span>{% endif %}
+                        </td>
+                        <td class="col-puntos">{{ fila.pts }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="11" class="tabla-grupo-vacia">Todavía no hay equipos en este grupo.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>

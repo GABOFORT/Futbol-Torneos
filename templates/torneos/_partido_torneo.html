@@ -1,0 +1,64 @@
+<article class="partido-torneo {% if partido.jugado %}partido-jugado{% endif %}">
+    <p class="partido-torneo-fase">
+        {% if partido.es_liguilla %}
+            <svg class="ico ico-sm"><use href="#ico-llaves"></use></svg> {{ partido.get_fase_display }}
+        {% else %}
+            <span class="pastilla-letra">{{ partido.equipo_local.grupo }}</span> Jornada {{ partido.jornada }}
+        {% endif %}
+    </p>
+
+    <div class="partido-marcador">
+        <span class="partido-lado partido-lado-local">
+            <img src="{{ partido.equipo_local.escudo_url }}" alt="" loading="lazy" decoding="async">
+            <span class="partido-nombre">{{ partido.equipo_local.nombre }}</span>
+        </span>
+
+        {% if partido.jugado %}
+            <span class="partido-cifras">
+                <span class="partido-goles">{{ partido.goles_local }}</span>
+                <span class="partido-guion">–</span>
+                <span class="partido-goles">{{ partido.goles_visitante }}</span>
+            </span>
+        {% else %}
+            <span class="partido-cifras partido-cifras-vs">vs</span>
+        {% endif %}
+
+        <span class="partido-lado partido-lado-visita">
+            <span class="partido-nombre">{{ partido.equipo_visitante.nombre }}</span>
+            <img src="{{ partido.equipo_visitante.escudo_url }}" alt="" loading="lazy" decoding="async">
+        </span>
+    </div>
+
+    {% if partido.hubo_tanda %}
+        <p class="partido-penales">Penales {{ partido.penales_local }} – {{ partido.penales_visitante }}</p>
+    {% endif %}
+
+    <p class="partido-torneo-pie">
+        <span>
+            <svg class="ico ico-sm"><use href="#ico-calendario"></use></svg>
+            {% if partido.fecha %}{{ partido.fecha|date:'d/m · H:i' }}{% else %}Sin fecha{% endif %}
+        </span>
+        {% if partido.sede %}
+            <span><svg class="ico ico-sm"><use href="#ico-pin"></use></svg> {{ partido.sede.nombre }}</span>
+        {% endif %}
+        {% if partido.jugado and partido.es_liguilla and partido.ganador %}
+            <span class="partido-pasa"><svg class="ico ico-sm"><use href="#ico-listo"></use></svg> pasa {{ partido.ganador.nombre }}</span>
+        {% endif %}
+    </p>
+
+    <div class="acciones-partido">
+        <button data-url="{% url 'partido-detalle' partido.pk %}?modal=1" class="open-modal btn-accion">Ficha</button>
+        {% if puede_administrar %}
+            {% if partido.jugado %}
+                {% if es_superadmin %}
+                    <button data-url="{% url 'partido-resultado' partido.pk %}?modal=1" class="open-modal btn-accion">Corregir resultado</button>
+                {% endif %}
+            {% elif partido.ya_empezo %}
+                <button data-url="{% url 'partido-resultado' partido.pk %}?modal=1" class="open-modal btn-accion btn-accion-principal">Resultado</button>
+                <button data-url="{% url 'partido-edit' partido.pk %}?modal=1" class="open-modal btn-accion">Reprogramar</button>
+            {% else %}
+                <button data-url="{% url 'partido-edit' partido.pk %}?modal=1" class="open-modal btn-accion">Fecha y cancha</button>
+            {% endif %}
+        {% endif %}
+    </div>
+</article>

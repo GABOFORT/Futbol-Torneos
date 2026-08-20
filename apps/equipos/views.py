@@ -181,7 +181,7 @@ def equipo_edit(request, pk):
     user = request.user
     es_dueno = equipo.entrenador_id == user.id
     puede_administrar = user.is_superuser or (
-        user.role == user.ROLE_ADMIN_LIGA and equipo.liga_id in ligas_administradas(user).values_list('id', flat=True)
+        user.role == user.ROLE_ADMIN_LIGA and equipo.liga_id in ligas_y_torneos_administrados(user).values_list('id', flat=True)
     )
     if not (puede_administrar or es_dueno):
         return HttpResponseForbidden('No tienes acceso a este equipo.')
@@ -257,7 +257,7 @@ def equipo_detail(request, pk):
     es_dueno = user.is_authenticated and equipo.entrenador_id == user.id
     puede_administrar = user.is_authenticated and (
         user.is_superuser
-        or (user.role == user.ROLE_ADMIN_LIGA and equipo.liga_id in ligas_administradas(user).values_list('id', flat=True))
+        or (user.role == user.ROLE_ADMIN_LIGA and equipo.liga_id in ligas_y_torneos_administrados(user).values_list('id', flat=True))
     )
 
     if user.is_authenticated and user.role == user.ROLE_ENTRENADOR and not user.is_superuser and not es_dueno:

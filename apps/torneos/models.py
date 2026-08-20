@@ -181,6 +181,15 @@ class Categoria(models.Model):
     cupo_equipos = models.PositiveIntegerField('Cupo de equipos', default=8)
     descripcion = models.TextField('Descripción', blank=True)
 
+    MAXIMO_GRUPOS = 26
+    SIN_GRUPOS = 0
+
+    grupos = models.PositiveSmallIntegerField(
+        'Grupos',
+        default=SIN_GRUPOS,
+        help_text='En cuántos grupos se reparten los equipos. Cero es sin grupos.',
+    )
+
     limite_edad = models.CharField(
         'Límite de edad', max_length=4, choices=LIMITE_EDAD_CHOICES, blank=True,
         help_text='U9 entra un jugador de 9 años o menos, no uno de 10.',
@@ -256,6 +265,28 @@ class Categoria(models.Model):
 
     def __str__(self):
         return f'{self.liga.nombre} - {self.nombre}'
+
+    @property
+    def juega_por_grupos(self):
+        return self.grupos > self.SIN_GRUPOS
+
+    @property
+    def letras_de_grupo(self):
+        from apps.equipos.models import Equipo
+
+        return list(Equipo.LETRAS_GRUPO[:self.grupos])
+
+    @property
+    def reparto(self):
+        conteo = {letra: 0 for letra in self.letras_de_grupo}
+        for equipo in self.equipos.all():
+            if equipo.grupo in conteo:
+                conteo[equipo.grupo] += 1
+        return conteo
+
+    @property
+    def equipos_sin_grupo(self):
+        return self.equipos.exclude(grupo__in=self.letras_de_grupo).count()
 
     def motivo_para_no_recibir_equipos(self):
         """Por que la categoria no admite un equipo mas, o '' si si admite.
@@ -500,13 +531,26 @@ class Categoria(models.Model):
 
 class TorneoQuerySet(models.QuerySet):
     def terminados(self):
-        """Los que ya jugaron su final."""
+        """Los que ya jugaron la final de TODAS sus categorias.
+
+        Con una sola categoria —la eliminacion directa— es lo de siempre. Con
+        varias importa: un torneo al que le falta jugar media parrilla de edades
+        sigue en curso y sigue ocupando cuota.
+        """
         from apps.partidos.models import Partido
 
-        return self.filter(
-            liga__categorias__partidos__fase=Partido.FASE_FINAL,
-            liga__categorias__partidos__estado=Partido.ESTADO_FINALIZADO,
-        ).distinct()
+        return self.annotate(
+            _cuantas_categorias=models.Count('liga__categorias', distinct=True),
+            _cuantas_finales=models.Count(
+                'liga__categorias__partidos',
+                filter=models.Q(
+                    liga__categorias__partidos__fase=Partido.FASE_FINAL,
+                    liga__categorias__partidos__estado=Partido.ESTADO_FINALIZADO),
+                distinct=True),
+        ).filter(
+            _cuantas_categorias__gt=0,
+            _cuantas_finales__gte=models.F('_cuantas_categorias'),
+        )
 
     def en_curso(self):
         """Los que todavia no terminan. Son los que ocupan cuota.
@@ -519,13 +563,18 @@ class TorneoQuerySet(models.QuerySet):
 
 
 class Torneo(models.Model):
-    """Un torneo relámpago: un solo día, eliminación directa, 8 o 16 equipos.
+    """Un torneo: eliminación directa de un día, o por categorías y grupos.
 
-    Se apoya en una Liga con una única Categoría. No es un rodeo: así los
-    equipos, jugadores, partidos y actuaciones son los mismos de siempre, y el
-    entrenador carga su plantilla con las pantallas que ya conoce. La Liga
-    aporta el nombre, el logo, la portada y la descripción; aquí solo vive lo
-    propio del torneo.
+    Se apoya en una Liga. No es un rodeo: así los equipos, jugadores, partidos y
+    actuaciones son los mismos de siempre, y el entrenador carga su plantilla
+    con las pantallas que ya conoce. La Liga aporta el nombre, el logo, la
+    portada y la descripción; aquí solo vive lo propio del torneo.
+
+    En `directa` la Liga lleva una sola Categoría y el cuadro sale de un sorteo.
+    En `grupos` lleva las que el administrador cree —una por edad o división—,
+    cada una con sus propios grupos, su tabla y su liguilla, sin cruzarse entre
+    ellas. Las categorías de torneo no validan edad ni peso: entra quien el
+    administrador inscriba.
 
     Las ligas con torneo quedan fuera del apartado de ligas: los cuatro sitios
     que las listan las descartan.
@@ -539,16 +588,42 @@ class Torneo(models.Model):
         (EQUIPOS_DIECISEIS, '16 equipos · octavos, cuartos, semifinal y final'),
     ]
 
+    FORMATO_DIRECTA = 'directa'
+    FORMATO_GRUPOS = 'grupos'
+
+    FORMATO_CHOICES = [
+        (FORMATO_DIRECTA, 'Eliminación directa'),
+        (FORMATO_GRUPOS, 'Por categorías y grupos'),
+    ]
+
+    MODALIDADES = [
+        ('8', EQUIPOS_OCHO, FORMATO_DIRECTA,
+         '8 equipos · un día, cuartos, semifinal y final'),
+        ('16', EQUIPOS_DIECISEIS, FORMATO_DIRECTA,
+         '16 equipos · un día, octavos, cuartos, semifinal y final'),
+        ('grupos', None, FORMATO_GRUPOS,
+         'Por categorías y grupos · tú armas la liguilla'),
+    ]
+
+    MODALIDAD_CHOICES = [(clave, etiqueta) for clave, _, _, etiqueta in MODALIDADES]
+
     liga = models.OneToOneField(
         Liga, on_delete=models.CASCADE, related_name='torneo')
     fecha = models.DateField(
         'Día del torneo',
-        help_text='Se juega entero en esta fecha.',
+        help_text='En eliminación directa se juega entero ese día. Por grupos es '
+                  'la fecha de arranque: cada partido lleva la suya.',
     )
     equipos = models.PositiveSmallIntegerField(
         'Equipos que participan',
         choices=EQUIPOS_CHOICES,
         default=EQUIPOS_OCHO,
+    )
+    formato = models.CharField(
+        'Formato',
+        max_length=20,
+        choices=FORMATO_CHOICES,
+        default=FORMATO_DIRECTA,
     )
     creado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -572,34 +647,106 @@ class Torneo(models.Model):
         return self.liga.nombre
 
     @property
+    def es_por_grupos(self):
+        return self.formato == self.FORMATO_GRUPOS
+
+    @property
+    def categorias(self):
+        return self.liga.categorias.order_by('nombre')
+
+    @property
     def categoria(self):
         return self.liga.categorias.first()
 
     @property
     def inscritos(self):
-        categoria = self.categoria
-        return categoria.equipos.count() if categoria else 0
+        from apps.equipos.models import Equipo
+
+        return Equipo.objects.filter(categoria__liga_id=self.liga_id).count()
 
     @property
     def completo(self):
+        if self.es_por_grupos:
+            return False
         return self.inscritos == self.equipos
 
     @property
     def faltan(self):
+        if self.es_por_grupos:
+            return 0
         return max(0, self.equipos - self.inscritos)
 
     @property
+    def modalidad(self):
+        for clave, equipos, formato, _ in self.MODALIDADES:
+            if formato != self.formato:
+                continue
+            if equipos is None or equipos == self.equipos:
+                return clave
+        return self.MODALIDADES[0][0]
+
+    @classmethod
+    def desde_modalidad(cls, clave):
+        for actual, equipos, formato, _ in cls.MODALIDADES:
+            if actual == clave:
+                return equipos, formato
+        return cls.EQUIPOS_OCHO, cls.FORMATO_DIRECTA
+
+    @property
+    def formato_texto(self):
+        if self.es_por_grupos:
+            return 'por categorías y grupos'
+        return 'eliminación directa'
+
+    @property
+    def fecha_inicio(self):
+        return self.liga.fecha_inicio or self.fecha
+
+    @property
+    def fecha_fin(self):
+        return self.liga.fecha_final or self.fecha
+
+    @property
+    def de_un_solo_dia(self):
+        return self.fecha_inicio == self.fecha_fin
+
+    @property
+    def fechas_texto(self):
+        if self.de_un_solo_dia:
+            return f'{self.fecha_inicio:%d/%m/%Y}'
+        return f'del {self.fecha_inicio:%d/%m/%Y} al {self.fecha_fin:%d/%m/%Y}'
+
+    @property
+    def resumen_texto(self):
+        if not self.es_por_grupos:
+            return f'{self.equipos} equipos · eliminación directa'
+        cuantas = self.categorias.count()
+        if not cuantas:
+            return 'Por categorías y grupos · sin categorías todavía'
+        return (f'{cuantas} categoría(s) · {self.inscritos} equipo(s) · '
+                f'por categorías y grupos')
+
+    @property
     def sorteado(self):
-        return self.categoria is not None and self.categoria.partidos.exists()
+        from apps.partidos.models import Partido
+
+        return Partido.objects.filter(categoria__liga_id=self.liga_id).exists()
+
+    @property
+    def _finales_jugadas(self):
+        from apps.partidos.models import Partido
+
+        return (Partido.objects
+                .filter(categoria__liga_id=self.liga_id,
+                        fase=Partido.FASE_FINAL,
+                        estado=Partido.ESTADO_FINALIZADO)
+                .select_related('categoria', 'equipo_local', 'equipo_visitante',
+                                'ganador_penales')
+                .order_by('categoria__nombre'))
 
     @property
     def _final_jugada(self):
-        from apps.partidos.models import Partido
-
-        if not self.sorteado:
-            return None
-        return self.categoria.partidos.filter(
-            fase=Partido.FASE_FINAL, estado=Partido.ESTADO_FINALIZADO).first()
+        return self._finales_jugadas.first()
 
     @property
     def campeon(self):
@@ -607,8 +754,22 @@ class Torneo(models.Model):
         return final.ganador if final else None
 
     @property
+    def campeones(self):
+        return [{'categoria': final.categoria, 'equipo': final.ganador}
+                for final in self._finales_jugadas if final.ganador]
+
+    @property
     def terminado(self):
-        return self.campeon is not None
+        """Terminado es que TODAS sus categorías jugaron su final.
+
+        Con una sola categoría —la eliminación directa— coincide con lo de
+        siempre. Importa porque de esto depende la cuota de `limite_torneos`:
+        un torneo con la mitad de las edades sin jugar sigue en curso.
+        """
+        categorias = self.categorias.count()
+        if not categorias:
+            return False
+        return self._finales_jugadas.count() >= categorias
 
     DIAS_EN_VITRINA = 30
 

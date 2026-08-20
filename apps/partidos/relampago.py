@@ -1,11 +1,16 @@
-"""Cuadro de un torneo relámpago: un día, eliminación directa, partido único.
+"""Cuadro de eliminación de un torneo: partido único, empate a penales.
 
 Se diferencia de la liguilla de una liga en tres cosas, y por eso vive aparte:
 
   - Todas las rondas van a partido unico. No hay ida y vuelta.
-  - El empate se define SIEMPRE en penales, en cualquier ronda. Aqui no hay
-    tabla de posiciones de la que sacar un mejor sembrado.
-  - El cuadro sale de un sorteo, no de una siembra ganada en el torneo regular.
+  - En las rondas de eliminacion el empate se define SIEMPRE en penales.
+  - El cuadro no sale de una siembra ganada en el torneo regular: en el formato
+    de eliminacion directa sale de un sorteo, y en el de grupos lo arma a mano
+    el administrador (ver `apps/partidos/grupos.py`).
+
+El motor trabaja por CATEGORIA, no por torneo. Importa porque un torneo por
+grupos lleva varias categorias —una por edad o division— y cada una corre su
+propio cuadro sin cruzarse con las demas.
 
 Lo que si se reusa es el resto del sistema: los equipos, los jugadores, la ficha
 de partido, las actuaciones y el dibujo del cuadro.
@@ -31,6 +36,10 @@ CRUCES = {
     2: [(0, 1)],
 }
 
+DERIVADAS = {
+    Partido.FASE_SEMIFINAL: [Partido.FASE_TERCERO, Partido.FASE_FINAL],
+}
+
 PRIMER_HORARIO = 9
 MINUTOS_ENTRE_PARTIDOS = 45
 
@@ -39,13 +48,20 @@ def ronda_de(cuantos):
     return RONDAS.get(cuantos)
 
 
+def torneo_de(categoria):
+    if categoria is None:
+        return None
+    return getattr(categoria.liga, 'torneo', None)
+
+
 def ya_empezo(torneo):
-    categoria = torneo.categoria
-    return categoria is not None and categoria.partidos.exists()
+    return torneo is not None and torneo.sorteado
 
 
 def motivo_para_no_sortear(torneo):
     """Por que este torneo todavia no se puede sortear, o '' si ya se puede."""
+    if torneo.es_por_grupos:
+        return 'Este torneo se arma por categorías, no con un sorteo general.'
     if ya_empezo(torneo):
         return 'El cuadro de este torneo ya está sorteado.'
     if torneo.categoria is None:
@@ -74,21 +90,22 @@ def sortear(torneo, semilla=None):
 
     fase = ronda_de(len(equipos))
     partidos = [
-        _armar(categoria, fase, orden, equipos[uno], equipos[otro], uno + 1, otro + 1)
+        armar(categoria, fase, orden, equipos[uno], equipos[otro], uno + 1, otro + 1)
         for orden, (uno, otro) in enumerate(CRUCES[len(equipos)])
     ]
-    _programar(torneo, partidos)
+    _programar_seguido(torneo.fecha, partidos)
     Partido.objects.bulk_create(partidos)
     return partidos
 
 
-def _armar(categoria, fase, orden, local, visitante, siembra_local, siembra_visitante):
+def armar(categoria, fase, orden, local, visitante,
+          siembra_local=None, siembra_visitante=None, jornada=0):
     return Partido(
         categoria=categoria,
         fase=fase,
         orden=orden,
         vuelta=False,
-        jornada=0,
+        jornada=jornada,
         equipo_local=local,
         equipo_visitante=visitante,
         siembra_local=siembra_local,
@@ -96,20 +113,20 @@ def _armar(categoria, fase, orden, local, visitante, siembra_local, siembra_visi
     )
 
 
-def _programar(torneo, partidos):
+def _programar_seguido(dia, partidos, desde=None):
     """Las horas corridas del día, que es lo que hace un relámpago."""
-    inicio = datetime.datetime.combine(torneo.fecha, datetime.time(PRIMER_HORARIO, 0))
+    arranque = desde or timezone.make_aware(
+        datetime.datetime.combine(dia, datetime.time(PRIMER_HORARIO, 0)))
     for numero, partido in enumerate(partidos):
-        momento = timezone.make_aware(
-            inicio + datetime.timedelta(minutes=MINUTOS_ENTRE_PARTIDOS * numero))
+        momento = arranque + datetime.timedelta(minutes=MINUTOS_ENTRE_PARTIDOS * numero)
         partido.fecha = momento
         partido.fecha_original = momento
 
 
-def series(torneo, fase=None):
-    """Las llaves del cuadro, con el ganador ya resuelto."""
+def series(categoria, fase=None):
+    """Las llaves del cuadro de una categoria, con el ganador ya resuelto."""
     partidos = (Partido.objects
-                .filter(categoria=torneo.categoria)
+                .filter(categoria=categoria)
                 .exclude(fase=Partido.FASE_REGULAR)
                 .select_related('equipo_local', 'equipo_visitante', 'ganador_penales', 'sede'))
     if fase is not None:
@@ -159,55 +176,31 @@ def _perdedor(partido):
             else partido.equipo_local)
 
 
-DERIVADAS = {
-    Partido.FASE_SEMIFINAL: [Partido.FASE_TERCERO, Partido.FASE_FINAL],
-}
+def sin_cambios():
+    return {'creados': [], 'rehechas': []}
 
 
 def avanzar(partido):
     """Arma la ronda siguiente cuando la actual termina. Rehace si cambio quien paso."""
+    categoria = partido.categoria
+    if torneo_de(categoria) is None:
+        return sin_cambios()
     if not partido.es_liguilla:
-        return {'creados': [], 'rehechas': []}
+        return sin_cambios()
 
-    torneo = getattr(partido.categoria.liga, 'torneo', None)
-    if torneo is None:
-        return {'creados': [], 'rehechas': []}
-
-    ronda = series(torneo, partido.fase)
+    ronda = series(categoria, partido.fase)
     if not ronda or any(llave['ganador'] is None for llave in ronda):
-        return {'creados': [], 'rehechas': []}
+        return sin_cambios()
 
     siguientes = _cruces_siguientes(partido.fase, ronda)
     if not siguientes:
-        return {'creados': [], 'rehechas': []}
+        return sin_cambios()
 
     creados, rehechas = [], []
     for fase, cruces in siguientes.items():
-        existentes = {p.orden: p for p in Partido.objects.filter(
-            categoria=torneo.categoria, fase=fase)}
-
-        if not existentes:
-            creados += _crear(torneo, fase, cruces)
-            continue
-
-        cambio = False
-        for orden, (uno, otro) in enumerate(cruces):
-            actual = existentes.get(orden)
-            if actual is None:
-                creados += _crear(torneo, fase, [(uno, otro)], desde=orden)
-                continue
-            if {actual.equipo_local_id, actual.equipo_visitante_id} == {uno[0].id, otro[0].id}:
-                continue
-            actual.delete()
-            creados += _crear(torneo, fase, [(uno, otro)], desde=orden)
-            cambio = True
-
-        if cambio:
-            rehechas.append(dict(Partido.FASE_CHOICES)[fase])
-            derivadas = Partido.objects.filter(
-                categoria=torneo.categoria, fase__in=DERIVADAS.get(fase, []))
-            rehechas += sorted({p.get_fase_display() for p in derivadas})
-            derivadas.delete()
+        parcial = sincronizar(categoria, fase, cruces)
+        creados += parcial['creados']
+        rehechas += parcial['rehechas']
 
     return {'creados': creados, 'rehechas': rehechas}
 
@@ -243,32 +236,70 @@ def _cae(llave):
             else llave['partido'].siembra_visitante)
 
 
-def _crear(torneo, fase, cruces, desde=0):
+def sincronizar(categoria, fase, cruces):
+    """Crea la ronda, o la rehace si cambio quien la juega."""
+    existentes = {p.orden: p for p in Partido.objects.filter(
+        categoria=categoria, fase=fase)}
+
+    if not existentes:
+        return {'creados': crear(categoria, fase, cruces), 'rehechas': []}
+
+    creados, cambio = [], False
+    for orden, (uno, otro) in enumerate(cruces):
+        actual = existentes.get(orden)
+        if actual is None:
+            creados += crear(categoria, fase, [(uno, otro)], desde=orden)
+            continue
+        if {actual.equipo_local_id, actual.equipo_visitante_id} == {uno[0].id, otro[0].id}:
+            continue
+        actual.delete()
+        creados += crear(categoria, fase, [(uno, otro)], desde=orden)
+        cambio = True
+
+    rehechas = []
+    if cambio:
+        rehechas.append(dict(Partido.FASE_CHOICES)[fase])
+        derivadas = Partido.objects.filter(
+            categoria=categoria, fase__in=DERIVADAS.get(fase, []))
+        rehechas += sorted({p.get_fase_display() for p in derivadas})
+        derivadas.delete()
+
+    return {'creados': creados, 'rehechas': rehechas}
+
+
+def crear(categoria, fase, cruces, desde=0):
     partidos = []
     for numero, (uno, otro) in enumerate(cruces, start=desde):
-        partidos.append(_armar(
-            torneo.categoria, fase, numero, uno[0], otro[0], uno[1], otro[1]))
-    _programar_siguiente(torneo, fase, partidos)
+        partidos.append(armar(categoria, fase, numero, uno[0], otro[0], uno[1], otro[1]))
+    _programar_siguiente(categoria, partidos)
     Partido.objects.bulk_create(partidos)
     return partidos
 
 
-def _programar_siguiente(torneo, fase, partidos):
-    """Cada ronda arranca donde termino la anterior, el mismo día."""
-    ultima = (Partido.objects.filter(categoria=torneo.categoria, fecha__isnull=False)
+def _programar_siguiente(categoria, partidos):
+    """Cada ronda arranca donde termino la anterior.
+
+    En el formato por grupos no se programa nada: ahi el administrador le pone
+    a cada partido su fecha, su hora y su cancha, que es lo que necesita un
+    torneo que dura varios dias y se juega en varias sedes.
+    """
+    if categoria.juega_por_grupos:
+        return
+
+    torneo = torneo_de(categoria)
+    if torneo is None:
+        return
+
+    ultima = (Partido.objects.filter(categoria=categoria, fecha__isnull=False)
               .order_by('-fecha').first())
-    arranque = (ultima.fecha + datetime.timedelta(minutes=MINUTOS_ENTRE_PARTIDOS)
-                if ultima else timezone.make_aware(datetime.datetime.combine(
-                    torneo.fecha, datetime.time(PRIMER_HORARIO, 0))))
-    for numero, partido in enumerate(partidos):
-        momento = arranque + datetime.timedelta(minutes=MINUTOS_ENTRE_PARTIDOS * numero)
-        partido.fecha = momento
-        partido.fecha_original = momento
+    desde = (ultima.fecha + datetime.timedelta(minutes=MINUTOS_ENTRE_PARTIDOS)
+             if ultima else None)
+    _programar_seguido(torneo.fecha, partidos, desde=desde)
 
 
-def cuadro(torneo):
-    """El cuadro completo, en dos mitades que convergen en la final."""
-    llaves = series(torneo)
+def cuadro(categoria):
+    """El cuadro completo de una categoria, en dos mitades que convergen."""
+    llaves = series(categoria)
     if not llaves:
         return None
 
@@ -299,5 +330,7 @@ def cuadro(torneo):
         'tercer_lugar': tercero['ganador'] if tercero else None,
         'es_mini': False,
         'titulo': 'Cuadro del torneo',
-        'subtitulo': 'Eliminación directa · el empate se define en penales',
+        'subtitulo': ('Clasificados de los grupos · el empate se define en penales'
+                      if categoria.juega_por_grupos
+                      else 'Eliminación directa · el empate se define en penales'),
     }

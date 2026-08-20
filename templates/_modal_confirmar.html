@@ -20,7 +20,7 @@
             {% if en_modal %}
                 <button type="button" id="modal-cancel" class="rounded-full border border-gray-300 bg-white px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50">Entendido</button>
             {% else %}
-                <a href="{% url cancel_url %}" class="rounded-full border border-gray-300 bg-white px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50">Entendido</a>
+                <a href="{{ cancel_href }}" class="rounded-full border border-gray-300 bg-white px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50">Entendido</a>
             {% endif %}
         </div>
     {% else %}
@@ -44,7 +44,7 @@
                 {% if en_modal %}
                     <button type="button" id="modal-cancel" class="rounded-full border border-gray-300 bg-white px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50">Cancelar</button>
                 {% else %}
-                    <a href="{% url cancel_url %}" class="rounded-full border border-gray-300 bg-white px-6 py-3 text-center text-sm font-semibold text-gray-700 hover:bg-gray-50">Cancelar</a>
+                    <a href="{{ cancel_href }}" class="rounded-full border border-gray-300 bg-white px-6 py-3 text-center text-sm font-semibold text-gray-700 hover:bg-gray-50">Cancelar</a>
                 {% endif %}
                 <button type="submit" class="btn-peligro">
                     Sí, eliminar
