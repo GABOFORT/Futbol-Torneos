@@ -230,6 +230,29 @@ class Partido(models.Model):
         return self.es_liguilla and self.cuadro == self.CUADRO_CONSOLACION
 
     @property
+    def cruza_grupos(self):
+        """Si enfrenta a equipos de dos grupos distintos.
+
+        Pasa cuando un grupo tiene una cantidad impar de equipos: uno descansa
+        por jornada. En vez de dejar parados a los que descansan en dos grupos,
+        se los cruza entre si. Cada uno suma en la tabla de SU grupo.
+        """
+        if self.es_liguilla:
+            return False
+        uno = self.equipo_local.grupo
+        otro = self.equipo_visitante.grupo
+        return bool(uno) and bool(otro) and uno != otro
+
+    @property
+    def etiqueta_grupo(self):
+        """La letra que se muestra, o 'C/D' si el partido cruza dos grupos."""
+        if self.es_liguilla:
+            return ''
+        if self.cruza_grupos:
+            return f'{self.equipo_local.grupo}/{self.equipo_visitante.grupo}'
+        return self.equipo_local.grupo
+
+    @property
     def es_de_torneo(self):
         """Si es de un torneo relámpago y no de una liga.
 

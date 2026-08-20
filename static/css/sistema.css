@@ -1761,6 +1761,22 @@ textarea.campo-invalido {
 
 .celda-equipo .trofeos { margin-left: 0.125rem; flex-shrink: 0; }
 
+.escudo-mini {
+    width: 1.75rem;
+    height: 1.75rem;
+    flex-shrink: 0;
+    border-radius: 9999px;
+    object-fit: cover;
+    background-color: #f3f4f6;
+}
+
+.tarjeta-equipo .escudo-mini {
+    width: 3.25rem;
+    height: 3.25rem;
+    object-fit: contain;
+    background-color: transparent;
+}
+
 .trofeo {
     height: 1.125rem;
     width: auto;
@@ -4422,10 +4438,21 @@ body.con-portada {
     flex-wrap: wrap;
     gap: 0.4rem;
     position: sticky;
-    top: 0;
+    top: 0.5rem;
     z-index: 10;
-    padding: 0.625rem 0;
-    background-color: var(--gris-100, #f3f4f6);
+    width: fit-content;
+    max-width: 100%;
+    padding: 0.4rem;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: var(--t-r-full);
+    background-color: rgba(255, 255, 255, 0.7);
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
+    backdrop-filter: blur(12px) saturate(150%);
+    box-shadow: var(--t-s-baja);
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+    .torneo-ui .atajos { background-color: rgba(255, 255, 255, 0.94); }
 }
 
 .torneo-ui .atajos a {
@@ -5676,4 +5703,23 @@ body.con-portada {
     }
 
     .torneo-ui .siembra-pie > * { width: auto; }
+}
+
+.torneo-ui .pastilla-letra-cruce {
+    width: auto;
+    padding: 0 0.4rem;
+    background: linear-gradient(135deg, var(--t-oro-fuerte), var(--t-oro));
+    color: #2a1c00;
+    letter-spacing: 0.02em;
+}
+
+.torneo-ui .marca-cruce {
+    padding: 0.1rem 0.45rem;
+    border-radius: var(--t-r-full);
+    background-color: var(--t-oro-suave);
+    color: var(--t-oro-fuerte);
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: none;
+    letter-spacing: 0;
 }

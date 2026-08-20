@@ -3,7 +3,9 @@
         {% if partido.es_liguilla %}
             <svg class="ico ico-sm"><use href="#ico-llaves"></use></svg> {{ partido.get_fase_display }}
         {% else %}
-            <span class="pastilla-letra">{{ partido.equipo_local.grupo }}</span> Jornada {{ partido.jornada }}
+            <span class="pastilla-letra {% if partido.cruza_grupos %}pastilla-letra-cruce{% endif %}">{{ partido.etiqueta_grupo }}</span>
+            Jornada {{ partido.jornada }}
+            {% if partido.cruza_grupos %}<span class="marca-cruce">cruce entre grupos</span>{% endif %}
         {% endif %}
     </p>
 

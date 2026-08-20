@@ -22,8 +22,10 @@ def calcular(categoria, grupo=None):
     Entran todos los equipos de la categoria, tambien los que no jugaron
     todavia: en la tabla figuran desde el arranque con la fila en cero.
 
-    Con `grupo` se acota a los equipos de ese grupo y a los partidos que
-    jugaron entre ellos, que es lo que necesita un torneo por grupos.
+    Con `grupo` se acota a los equipos de ese grupo. Los partidos que CRUZAN dos
+    grupos —los que se arman cuando un grupo impar deja a alguien descansando—
+    entran igual, pero solo suman para el equipo que pertenece a este grupo: el
+    rival ya los sumo en la tabla del suyo.
     """
     equipos = Equipo.objects.filter(categoria=categoria)
     if grupo:
@@ -37,33 +39,43 @@ def calcular(categoria, grupo=None):
     ).select_related('equipo_local', 'equipo_visitante')
 
     for partido in partidos:
-        if grupo and not (partido.equipo_local_id in tabla
-                          and partido.equipo_visitante_id in tabla):
-            continue
+        if grupo:
+            if not (partido.equipo_local_id in tabla
+                    or partido.equipo_visitante_id in tabla):
+                continue
+        else:
+            tabla.setdefault(partido.equipo_local_id, fila_vacia(partido.equipo_local))
+            tabla.setdefault(partido.equipo_visitante_id, fila_vacia(partido.equipo_visitante))
 
-        local = tabla.setdefault(partido.equipo_local_id, fila_vacia(partido.equipo_local))
-        visitante = tabla.setdefault(partido.equipo_visitante_id, fila_vacia(partido.equipo_visitante))
+        local = tabla.get(partido.equipo_local_id)
+        visitante = tabla.get(partido.equipo_visitante_id)
 
-        local['pj'] += 1
-        visitante['pj'] += 1
-        local['gf'] += partido.goles_local
-        local['gc'] += partido.goles_visitante
-        visitante['gf'] += partido.goles_visitante
-        visitante['gc'] += partido.goles_local
+        if local is not None:
+            local['pj'] += 1
+            local['gf'] += partido.goles_local
+            local['gc'] += partido.goles_visitante
+        if visitante is not None:
+            visitante['pj'] += 1
+            visitante['gf'] += partido.goles_visitante
+            visitante['gc'] += partido.goles_local
 
         if partido.goles_local > partido.goles_visitante:
-            local['pg'] += 1
-            local['pts'] += 3
-            visitante['pp'] += 1
+            if local is not None:
+                local['pg'] += 1
+                local['pts'] += 3
+            if visitante is not None:
+                visitante['pp'] += 1
         elif partido.goles_local < partido.goles_visitante:
-            visitante['pg'] += 1
-            visitante['pts'] += 3
-            local['pp'] += 1
+            if visitante is not None:
+                visitante['pg'] += 1
+                visitante['pts'] += 3
+            if local is not None:
+                local['pp'] += 1
         else:
-            local['pe'] += 1
-            visitante['pe'] += 1
-            local['pts'] += 1
-            visitante['pts'] += 1
+            for fila in (local, visitante):
+                if fila is not None:
+                    fila['pe'] += 1
+                    fila['pts'] += 1
             if categoria.empate_define_penales and partido.ganador_penales_id in tabla:
                 tabla[partido.ganador_penales_id]['pts'] += 1
                 tabla[partido.ganador_penales_id]['pen'] += 1

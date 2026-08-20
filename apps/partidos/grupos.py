@@ -52,11 +52,17 @@ def generar(categoria):
     if not puede_generar(categoria):
         return []
 
-    por_jornada = {}
+    por_jornada, descansan = {}, {}
     for letra in categoria.letras_de_grupo:
         equipos = list(categoria.equipos.filter(grupo=letra).order_by('id'))
         for numero, jornada in enumerate(calendario.armar_jornadas(equipos), start=1):
             por_jornada.setdefault(numero, []).extend(jornada)
+            libre = _el_que_descansa(equipos, jornada)
+            if libre is not None:
+                descansan.setdefault(numero, []).append(libre)
+
+    for numero, libres in descansan.items():
+        por_jornada.setdefault(numero, []).extend(_cruces(libres))
 
     partidos = []
     for numero in sorted(por_jornada):
@@ -67,6 +73,35 @@ def generar(categoria):
 
     Partido.objects.bulk_create(partidos)
     return partidos
+
+
+def _el_que_descansa(equipos, jornada):
+    """El equipo del grupo que esa jornada se queda sin rival, si lo hay.
+
+    Solo pasa con grupos impares, y siempre es uno solo: el metodo del circulo
+    reparte a los demas de a pares.
+    """
+    juegan = {equipo.id for par in jornada for equipo in par}
+    libres = [equipo for equipo in equipos if equipo.id not in juegan]
+    return libres[0] if len(libres) == 1 else None
+
+
+def _cruces(libres):
+    """Empareja de a dos a los que descansan, siempre de grupos distintos.
+
+    Con tres grupos impares se arma un cruce y el tercero descansa de verdad:
+    no hay con quien emparejarlo sin repetirle rival dentro de la misma jornada.
+    """
+    pendientes = sorted(libres, key=lambda equipo: equipo.grupo)
+    cruces = []
+    while len(pendientes) >= 2:
+        uno = pendientes.pop(0)
+        otro = next((e for e in pendientes if e.grupo != uno.grupo), None)
+        if otro is None:
+            break
+        pendientes.remove(otro)
+        cruces.append((uno, otro))
+    return cruces
 
 
 def posiciones(categoria):
