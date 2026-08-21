@@ -11,6 +11,8 @@ que no hay que configurarlo, pero conviene dejarlo dicho.
 import calendar
 import datetime
 
+from django.utils import timezone
+
 MESES_ALREDEDOR = 24
 
 MESES = [
@@ -57,11 +59,19 @@ def armar(anio, mes, partidos, hoy):
     Cada dia es {fecha, dia, del_mes, es_hoy, partidos}. Los dias de relleno
     —los del mes anterior y el siguiente que completan la primera y la ultima
     semana— vienen con `del_mes=False` para poder atenuarlos.
+
+    El dia se toma de la hora local y no del `datetime` crudo: en la base las
+    fechas van en UTC, y Mexico va seis horas atras. Un partido de las 19:00 es
+    la 01:00 UTC del dia siguiente, asi que `fecha.date()` lo mandaba al dia
+    equivocado —o fuera del mes, si caia el ultimo dia—. La consulta de la vista
+    ya filtra con `__date`, que Django si resuelve en la zona configurada; era
+    solo el reparto en casillas el que quedaba corrido.
     """
     por_dia = {}
     for partido in partidos:
         if partido.fecha:
-            por_dia.setdefault(partido.fecha.date(), []).append(partido)
+            cuando = timezone.localtime(partido.fecha)
+            por_dia.setdefault(cuando.date(), []).append(partido)
 
     semanas = []
     for semana in calendar.Calendar().monthdatescalendar(anio, mes):
