@@ -54,7 +54,7 @@
                 <div class="flex items-center gap-3">
                     {% include 'usuarios/_logo_liga.html' with liga=grupo.categoria.liga %}
                     <div>
-                        <p class="text-xs uppercase tracking-[0.2em] font-semibold text-green-700">{{ grupo.categoria.liga.nombre }} · {{ grupo.categoria.nombre }}</p>
+                        <p class="text-xs uppercase tracking-[0.2em] font-semibold text-green-700">{{ grupo.categoria.liga.nombre }} · {{ grupo.categoria.nombre }}{% if grupo.es_de_torneo %} <span class="marca-torneo">Torneo</span>{% endif %}</p>
 
                         <h2 class="text-2xl font-bold text-green-900">{{ grupo.etiqueta }}</h2>
                     </div>

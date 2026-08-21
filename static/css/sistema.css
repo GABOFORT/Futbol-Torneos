@@ -820,6 +820,20 @@ textarea.campo-invalido {
 .insignia-reprogramado { background-color: #ffedd5; color: #9a3412; }
 .insignia-sinfecha { background-color: var(--gris-100); color: var(--gris-500); }
 
+.marca-torneo {
+    display: inline-block;
+    margin-left: 0.35rem;
+    padding: 0.0625rem 0.5rem;
+    border-radius: var(--radio-full);
+    background-color: var(--verde-100);
+    font-size: 0.625rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: var(--verde-800);
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
 .fecha-anterior {
     display: block;
     font-size: var(--texto-xs);

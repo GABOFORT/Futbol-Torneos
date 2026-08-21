@@ -15,7 +15,7 @@
             <div class="franja-lista">
                 {% for partido in franja %}
                     <a href="{% url 'partido-detalle' partido.pk %}" class="franja-marcador">
-                        <span class="franja-marcador-torneo">{{ partido.categoria.liga.nombre }} · {{ partido.categoria.nombre }}</span>
+                        <span class="franja-marcador-torneo">{{ partido.categoria.liga.nombre }} · {{ partido.categoria.nombre }}{% if partido.es_de_torneo %} <span class="marca-torneo">Torneo</span>{% endif %}</span>
                         <span class="franja-marcador-fila">
                             <span class="franja-marcador-equipo">{{ partido.equipo_local.nombre }}</span>
                             {% if partido.jugado %}
@@ -220,6 +220,7 @@
                     </div>
                     <div class="hoy-datos">
                         <span class="hoy-chip">{{ partido.categoria.liga.nombre }}</span>
+                        {% if partido.es_de_torneo %}<span class="hoy-chip hoy-chip-torneo">Torneo</span>{% endif %}
                         <span class="hoy-chip">{{ partido.categoria.nombre }}</span>
                         {% if partido.sede %}<span class="hoy-chip hoy-cancha">{{ partido.sede.nombre }}</span>{% endif %}
                     </div>
@@ -254,6 +255,7 @@
                     </div>
                     <div class="hoy-datos">
                         <span class="hoy-chip">{{ partido.categoria.liga.nombre }}</span>
+                        {% if partido.es_de_torneo %}<span class="hoy-chip hoy-chip-torneo">Torneo</span>{% endif %}
                         <span class="hoy-chip">{{ partido.categoria.nombre }}</span>
                         {% if partido.sede %}<span class="hoy-chip hoy-cancha">{{ partido.sede.nombre }}</span>{% endif %}
                     </div>

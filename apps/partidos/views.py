@@ -58,7 +58,7 @@ def calendario_mes(request):
     partidos = (
         Partido.objects
         .filter(
-            categoria__liga__in=ligas_visibles(request.user),
+            categoria__liga__in=ligas_y_torneos_visibles(request.user),
             fecha__date__gte=desde,
             fecha__date__lte=hasta,
         )
@@ -112,7 +112,8 @@ def _calendario(request, solo_propias):
         and user.is_authenticated and user.role == user.ROLE_ENTRENADOR and not user.is_superuser
     )
 
-    ambito = ligas_administradas(user) if solo_propias else ligas_visibles(user)
+    ambito = (ligas_y_torneos_administrados(user) if solo_propias
+              else ligas_y_torneos_visibles(user))
     partidos = Partido.objects.filter(categoria__liga__in=ambito)
     if es_entrenador:
         partidos = partidos.filter(Q(equipo_local__entrenador=user) | Q(equipo_visitante__entrenador=user))
@@ -149,7 +150,7 @@ def _calendario(request, solo_propias):
 
     partidos = list(partidos)
     ids_propias = (
-        set(ligas_administradas(user).values_list('id', flat=True))
+        set(ligas_y_torneos_administrados(user).values_list('id', flat=True))
         if puede_gestionar else set()
     )
     for partido in partidos:
@@ -157,8 +158,8 @@ def _calendario(request, solo_propias):
 
     filtros = [
         campo_texto('q', 'Buscar', termino, 'Equipo, categoría o liga'),
-        campo_opciones('liga', 'Liga', seleccion['liga'],
-                       opciones['ligas'].values_list('id', 'nombre'), vacio='Todas las ligas'),
+        campo_opciones('liga', 'Liga o torneo', seleccion['liga'],
+                       _rotulos_de_ambito(opciones['ligas']), vacio='Todos'),
         campo_opciones('categoria', 'Categoría', seleccion['categoria'],
                        opciones['categorias'].values_list('id', 'nombre'), vacio='Todas'),
         campo_opciones('equipo', 'Equipo', seleccion['equipo'],
@@ -166,7 +167,8 @@ def _calendario(request, solo_propias):
     ]
     filtros.append(campo_oculto('jornada', jornada))
 
-    grupos = _agrupar_por_jornada(partidos)
+    grupos = _agrupar_por_jornada(
+        partidos, set(ambito.filter(torneo__isnull=False).values_list('id', flat=True)))
     if not grupos and jornada.isdigit():
         if seleccion['equipo']:
             en_descanso, propio = Equipo.objects.filter(pk=seleccion['equipo']), es_entrenador
@@ -189,6 +191,19 @@ def _calendario(request, solo_propias):
         'total_resultados': len(partidos),
         **(_TEXTOS_MIS_LIGAS if solo_propias else _TEXTOS_PUBLICOS),
     })
+
+
+def _rotulos_de_ambito(ligas):
+    """Los nombres del desplegable, marcando cuales son torneos.
+
+    El calendario si mezcla los dos mundos —la pregunta que responde es "que se
+    juega", y un torneo se juega igual—, pero el desplegable tiene que decir de
+    cual viene cada nombre: sin la marca, un torneo llamado "Copa Verano" se lee
+    como una liga mas.
+    """
+    de_torneo = set(ligas.filter(torneo__isnull=False).values_list('id', flat=True))
+    return [(pk, f'{nombre} · Torneo' if pk in de_torneo else nombre)
+            for pk, nombre in ligas.values_list('id', 'nombre')]
 
 
 def _cascada(parametros, ambito):
@@ -309,12 +324,16 @@ def _bloques_de_descanso(equipos, jornada, propio=False):
     return bloques
 
 
-def _agrupar_por_jornada(partidos):
+def _agrupar_por_jornada(partidos, ids_de_torneo=frozenset()):
     """Arma un bloque por categoria y jornada, con el equipo que descansa.
 
     Los partidos de liguilla se agrupan por fase y no por jornada: todos tienen
     jornada 0, y el bloque tiene que decir 'Semifinal', no 'Jornada 0'. Ahi
     tampoco hay equipo que descanse, porque no juegan todos.
+
+    `ids_de_torneo` llega resuelto de una sola consulta: preguntarle a cada
+    bloque `partido.es_de_torneo` costaria una consulta por bloque, porque el
+    torneo cuelga de la liga por el lado inverso y no entra en select_related.
     """
     bloques = {}
     for partido in partidos:
@@ -324,6 +343,7 @@ def _agrupar_por_jornada(partidos):
             'categoria': partido.categoria,
             'jornada': partido.jornada,
             'es_liguilla': partido.es_liguilla,
+            'es_de_torneo': partido.categoria.liga_id in ids_de_torneo,
             'fuera_de_jornada': partido.fuera_de_jornada,
             'etiqueta': partido.etiqueta,
             'partidos': [],

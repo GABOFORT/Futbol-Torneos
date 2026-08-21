@@ -866,6 +866,14 @@ main:focus { outline: none; }
 
 .hoy-cancha { background-color: #eff6ff; color: #1d4ed8; }
 
+.hoy-chip-torneo {
+    background-color: var(--oro-fondo);
+    color: var(--oro-texto);
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
 .dos-columnas { display: grid; gap: 1.5rem; }
 
 .figura {

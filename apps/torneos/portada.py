@@ -29,13 +29,26 @@ def _ligas_publicas():
     return Liga.objects.filter(activa=True, torneo__isnull=True)
 
 
+def _todo_lo_que_se_juega():
+    """Ligas y torneos activos, juntos.
+
+    La portada tiene dos clases de bloque y cada uno necesita un conjunto
+    distinto. Los que responden "que hay hoy" —partidos, goleadores, cifras—
+    piden este: a quien viene a ver a que hora juega su hijo no le importa si
+    eso se llama liga o torneo. Los que listan un apartado —"categorias en
+    juego"— siguen con `_ligas_publicas`, porque los torneos ya tienen su
+    propia seccion y aparecerian dos veces.
+    """
+    return Liga.objects.filter(activa=True)
+
+
 def cifras():
     """Los cuatro numeros del encabezado.
 
-    Se cuentan sobre las ligas publicas: una liga desactivada no tiene por que
-    inflar el total de jugadores que ve un visitante.
+    Se cuentan sobre lo que esta en juego, liga o torneo: una liga desactivada
+    no tiene por que inflar el total de jugadores que ve un visitante.
     """
-    ligas = _ligas_publicas()
+    ligas = _todo_lo_que_se_juega()
     hoy = timezone.localdate()
     return {
         'partidos_hoy': Partido.objects.filter(
@@ -54,7 +67,8 @@ def _con_todo(consulta):
     dibujar dos escudos, la categoria y la cancha.
     """
     return consulta.select_related(
-        'categoria', 'categoria__liga', 'equipo_local', 'equipo_visitante', 'sede')
+        'categoria', 'categoria__liga', 'categoria__liga__torneo',
+        'equipo_local', 'equipo_visitante', 'sede')
 
 
 def partidos_de_hoy(tope=12):
@@ -65,7 +79,7 @@ def partidos_de_hoy(tope=12):
     """
     hoy = timezone.localdate()
     return list(_con_todo(Partido.objects.filter(
-        categoria__liga__in=_ligas_publicas(), fecha__date=hoy,
+        categoria__liga__in=_todo_lo_que_se_juega(), fecha__date=hoy,
     )).order_by('fecha')[:tope])
 
 
@@ -76,7 +90,7 @@ def proximos(tope=6):
     no es un proximo partido, y ordenar por fecha con nulos los traia primero.
     """
     return list(_con_todo(Partido.objects.filter(
-        categoria__liga__in=_ligas_publicas(),
+        categoria__liga__in=_todo_lo_que_se_juega(),
         estado__in=Partido.ESTADOS_POR_JUGARSE,
         fecha__gte=timezone.now(),
     )).order_by('fecha')[:tope])
@@ -86,7 +100,7 @@ def ultimos_resultados(tope=8):
     """Lo que se jugo en los ultimos dias, del mas reciente al mas viejo."""
     desde = timezone.now() - datetime.timedelta(days=DIAS_DE_LA_SEMANA)
     return list(_con_todo(Partido.objects.filter(
-        categoria__liga__in=_ligas_publicas(),
+        categoria__liga__in=_todo_lo_que_se_juega(),
         estado=Partido.ESTADO_FINALIZADO,
         fecha__gte=desde,
     )).order_by('-fecha')[:tope])
@@ -130,7 +144,7 @@ def partido_destacado():
 
 
 def _lideres(campo, tope):
-    """El ranking de goles o de asistencias, de todas las ligas publicas.
+    """El ranking de goles o de asistencias, de ligas y torneos activos.
 
     Agrupa por jugador en una sola consulta. **No usa `_ranking` de
     estadisticas/views.py a proposito**: esa vista calcula ademas los partidos
@@ -139,7 +153,7 @@ def _lideres(campo, tope):
     """
     filas = (
         Actuacion.objects
-        .filter(jugador__equipo__liga__in=_ligas_publicas())
+        .filter(jugador__equipo__liga__in=_todo_lo_que_se_juega())
         .values(
             'jugador_id', 'jugador__nombre', 'jugador__apellido', 'jugador__numero',
             'jugador__equipo_id', 'jugador__equipo__nombre',
@@ -188,7 +202,7 @@ def vallas(tope=5):
     marcadores = (
         Partido.objects
         .filter(
-            categoria__liga__in=_ligas_publicas(),
+            categoria__liga__in=_todo_lo_que_se_juega(),
             estado=Partido.ESTADO_FINALIZADO,
             fase=Partido.FASE_REGULAR,
         )
@@ -235,7 +249,7 @@ def jugador_del_momento():
     """
     desde = timezone.now() - datetime.timedelta(days=DIAS_DE_LA_SEMANA)
     de_la_semana = Actuacion.objects.filter(
-        jugador__equipo__liga__in=_ligas_publicas(),
+        jugador__equipo__liga__in=_todo_lo_que_se_juega(),
         partido__estado=Partido.ESTADO_FINALIZADO,
         partido__fecha__gte=desde,
     )
@@ -378,8 +392,8 @@ def de_mis_equipos(ids, tope_por_equipo=3):
     Los ids llegan del navegador —el visitante no tiene cuenta, asi que lo que
     sigue se guarda en su propio dispositivo—, o sea que **no son de fiar**: se
     filtran a numeros, se acotan a `MAXIMO_SEGUIDOS` y se piden acotados a las
-    ligas publicas. Alguien que escriba ids a mano no llega a nada que no fuera
-    ya publico.
+    ligas y torneos activos. Alguien que escriba ids a mano no llega a nada que
+    no fuera ya publico.
 
     Devuelve una lista de {equipo, partidos}, en el orden en que se siguieron.
     """
@@ -393,7 +407,7 @@ def de_mis_equipos(ids, tope_por_equipo=3):
 
     equipos = {
         e.id: e for e in Equipo.objects
-        .filter(pk__in=limpios, liga__in=_ligas_publicas())
+        .filter(pk__in=limpios, liga__in=_todo_lo_que_se_juega())
         .select_related('categoria', 'categoria__liga', 'liga')
     }
     if not equipos:
