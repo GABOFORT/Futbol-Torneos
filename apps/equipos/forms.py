@@ -72,9 +72,8 @@ class EquipoForm(StyledFormMixin, forms.ModelForm):
     CAMPOS_CAPITALIZAR = ('nombre',)
 
     categoria = forms.ModelChoiceField(
-        queryset=Categoria.objects.select_related('liga').order_by('liga__nombre', 'nombre'),
+        queryset=Categoria.objects.none(),
         label='Categoría',
-        help_text='La categoría debe pertenecer a la liga seleccionada.',
     )
     entrenador = EntrenadorChoiceField(
         queryset=Usuario.objects.entrenadores().order_by('first_name', 'last_name', 'username'),
@@ -90,7 +89,14 @@ class EquipoForm(StyledFormMixin, forms.ModelForm):
 
     def __init__(self, user, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['liga'].queryset = ligas_administradas(user)
+        liga = self.instance.liga if self.instance.liga_id else None
+        self.torneo = getattr(liga, 'torneo', None)
+
+        if self.torneo:
+            self._fijar_categoria_del_torneo()
+        else:
+            self._ofrecer_ligas_de(user)
+
         entrenadores = Usuario.objects.entrenadores(user)
         if self.instance.pk and self.instance.entrenador_id:
             entrenadores = entrenadores | Usuario.objects.filter(pk=self.instance.entrenador_id)
@@ -98,10 +104,45 @@ class EquipoForm(StyledFormMixin, forms.ModelForm):
             'first_name', 'last_name', 'username'
         )
 
+    def _fijar_categoria_del_torneo(self):
+        """Un equipo de torneo no elige liga: la suya no es una liga del apartado.
+
+        La categoria se deja a la vista pero cerrada con `disabled`, que hace que
+        Django ignore lo que llegue por POST y reponga el valor guardado: quien
+        edite el HTML a mano no consigue mover el equipo de torneo ni de grupo.
+        """
+        del self.fields['liga']
+        campo = self.fields['categoria']
+        campo.queryset = Categoria.objects.filter(pk=self.instance.categoria_id)
+        campo.disabled = True
+        campo.help_text = (
+            f'Este equipo juega el torneo «{self.torneo.liga.nombre}». '
+            f'Su categoría se administra desde el torneo.'
+        )
+        campo.widget.attrs['class'] += ' bg-gray-100 text-gray-600'
+
+    def _ofrecer_ligas_de(self, user):
+        """Solo las ligas que administra, y solo las categorias de esas ligas.
+
+        `ligas_administradas` ya descarta los torneos, asi que acotar las
+        categorias a esas ligas deja fuera de un golpe las de torneo y las de
+        ligas ajenas.
+        """
+        suyas = ligas_administradas(user)
+        self.fields['liga'].queryset = suyas
+        campo = self.fields['categoria']
+        campo.queryset = (Categoria.objects
+                          .filter(liga__in=suyas)
+                          .select_related('liga')
+                          .order_by('liga__nombre', 'nombre'))
+        campo.help_text = 'La categoría debe pertenecer a la liga seleccionada.'
+
     def clean(self):
         cleaned_data = super().clean()
-        liga = cleaned_data.get('liga')
         categoria = cleaned_data.get('categoria')
+        liga = cleaned_data.get('liga')
+        if liga is None and self.instance.liga_id:
+            liga = self.instance.liga
         if liga and categoria and categoria.liga_id != liga.id:
             self.add_error('categoria', 'Esta categoría no pertenece a la liga seleccionada.')
         if categoria and categoria.pk != self.instance.categoria_id:
