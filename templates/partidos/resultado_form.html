@@ -5,7 +5,7 @@
 {% block contenido %}
 <div class="ficha-pagina">
     <div class="ancho-pagina ficha-migas">
-        <a href="{% url 'partido-detalle' partido.pk %}" class="ficha-volver">← Volver a la ficha</a>
+        <a href="{{ partido.get_absolute_url }}" class="ficha-volver">← Volver a la ficha</a>
         <span class="ficha-ruta">
             <span>{{ partido.categoria.liga.nombre }}</span>
             <span class="ficha-ruta-sep">/</span>

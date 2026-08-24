@@ -183,7 +183,7 @@
 
                                 {% for juego in lado.ultimos %}
                                     <li class="ficha-forma-item open-modal"
-                                        data-url="{% url 'partido-detalle' juego.partido_id %}?modal=1"
+                                        data-url="{% url 'partido-detalle-id' juego.partido_id %}?modal=1"
                                         role="button" tabindex="0"
                                         aria-label="Ver la ficha del partido contra {{ juego.rival.nombre }}, {{ juego.etiqueta }}">
                                         <span class="ficha-signo ficha-signo-{{ juego.signo }}">{{ juego.signo }}</span>
@@ -222,7 +222,7 @@
                     {% for cruce in historial.cruces %}
 
                         <li class="ficha-cruce-item open-modal"
-                            data-url="{% url 'partido-detalle' cruce.partido_id %}?modal=1"
+                            data-url="{% url 'partido-detalle-id' cruce.partido_id %}?modal=1"
                             role="button" tabindex="0"
                             aria-label="Ver la ficha de ese enfrentamiento, {{ cruce.etiqueta }}">
                             <span class="ficha-cruce-marcador">{{ cruce.goles_uno }} - {{ cruce.goles_otro }}</span>

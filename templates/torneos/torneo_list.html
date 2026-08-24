@@ -40,7 +40,7 @@
     <div class="rejilla-torneos">
         {% for torneo in torneos %}
             <article class="tarjeta-torneo">
-                <a href="{% url 'torneo-detalle' torneo.pk %}" class="tarjeta-torneo-tapa">
+                <a href="{{ torneo.get_absolute_url }}" class="tarjeta-torneo-tapa">
                     <span class="tarjeta-torneo-escudo">
                         {% include 'usuarios/_logo_liga.html' with liga=torneo.liga %}
                     </span>
@@ -98,7 +98,7 @@
                 </div>
 
                 <footer class="tarjeta-torneo-pie">
-                    <a href="{% url 'torneo-detalle' torneo.pk %}" class="boton-primario boton-chico">Ver torneo</a>
+                    <a href="{{ torneo.get_absolute_url }}" class="boton-primario boton-chico">Ver torneo</a>
                     {% if torneo.puede_administrar %}
                         <button data-url="{% url 'torneo-edit' torneo.pk %}?modal=1" class="open-modal boton-fantasma boton-chico">Editar</button>
                     {% endif %}

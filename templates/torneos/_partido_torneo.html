@@ -49,7 +49,7 @@
     </p>
 
     <div class="acciones-partido">
-        <button data-url="{% url 'partido-detalle' partido.pk %}?modal=1" class="open-modal btn-accion">Ficha</button>
+        <button data-url="{{ partido.get_absolute_url }}?modal=1" class="open-modal btn-accion">Ficha</button>
         {% if puede_administrar %}
             {% if partido.jugado %}
                 {% if es_superadmin %}

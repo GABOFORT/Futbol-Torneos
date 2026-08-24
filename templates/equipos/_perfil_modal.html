@@ -88,7 +88,7 @@
                     {% for fila in calendario %}
 
                         <li class="perfil-juego open-modal {% if fila.jugado %}perfil-juego-{{ fila.signo }}{% endif %}"
-                            data-url="{% url 'partido-detalle' fila.partido_id %}?modal=1"
+                            data-url="{% url 'partido-detalle-id' fila.partido_id %}?modal=1"
                             role="button" tabindex="0"
                             aria-label="Ver la ficha del partido contra {{ fila.rival.nombre }}">
 
@@ -234,7 +234,7 @@
             <section class="perfil-bloque">
                 <div class="perfil-pie">
                     <span>{{ plantel_total }} jugador{{ plantel_total|pluralize:"es" }} en la plantilla</span>
-                    <a href="{% url 'equipo-detail' equipo.pk %}" class="perfil-enlace">Ver equipo completo →</a>
+                    <a href="{{ equipo.get_absolute_url }}" class="perfil-enlace">Ver equipo completo →</a>
                 </div>
             </section>
         </div>

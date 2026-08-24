@@ -25,7 +25,7 @@
     <div class="llave-juegos">
         {% for juego in cruce.partidos %}
             <button type="button" class="open-modal llave-juego"
-                    data-url="{% url 'partido-detalle' juego.pk %}?modal=1"
+                    data-url="{{ juego.get_absolute_url }}?modal=1"
                     aria-label="Ver la ficha de {{ juego.equipo_local.nombre }} contra {{ juego.equipo_visitante.nombre }}">
                 <span class="llave-juego-etiqueta">
                     {% if cruce.a_partido_unico %}Único{% elif juego.vuelta %}Vuelta{% else %}Ida{% endif %}

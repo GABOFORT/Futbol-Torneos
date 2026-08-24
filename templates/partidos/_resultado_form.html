@@ -52,7 +52,7 @@
             {% if en_modal %}
                 <button type="button" id="modal-cancel" class="rounded-full border border-gray-300 bg-white px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50">Cancelar</button>
             {% else %}
-                <a href="{% url 'partido-detalle' partido.pk %}" class="rounded-full border border-gray-300 bg-white px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50">Cancelar</a>
+                <a href="{{ partido.get_absolute_url }}" class="rounded-full border border-gray-300 bg-white px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50">Cancelar</a>
             {% endif %}
             <button type="submit" class="rounded-full bg-green-800 px-6 py-3 text-sm font-semibold text-white hover:bg-green-700">Guardar</button>
         </div>

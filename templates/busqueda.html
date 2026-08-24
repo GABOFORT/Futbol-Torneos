@@ -51,7 +51,7 @@
             <h2 class="grupo-titulo">Equipos</h2>
             <div class="grupo-lista">
                 {% for equipo in resultados.equipos %}
-                    <a href="{% url 'equipo-detail' equipo.pk %}" class="hallazgo">
+                    <a href="{{ equipo.get_absolute_url }}" class="hallazgo">
                         <img src="{{ equipo.escudo_url }}" alt="" class="hallazgo-escudo" loading="lazy" decoding="async">
                         <div class="hallazgo-datos">
                             <p class="hallazgo-nombre">{{ equipo.nombre }}</p>
@@ -88,7 +88,7 @@
             <h2 class="grupo-titulo">Torneos</h2>
             <div class="grupo-lista">
                 {% for categoria in resultados.torneos %}
-                    <a href="{% url 'estadisticas-categoria' categoria.pk %}" class="hallazgo">
+                    <a href="{{ categoria.get_absolute_url }}" class="hallazgo">
                         {% include 'usuarios/_logo_liga.html' with liga=categoria.liga clase='logo-liga-sm' %}
                         <div class="hallazgo-datos">
                             <p class="hallazgo-nombre">{{ categoria.nombre }}</p>

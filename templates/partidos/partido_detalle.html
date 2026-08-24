@@ -2,21 +2,22 @@
 
 {% block titulo %}{{ partido.equipo_local.nombre }} vs {{ partido.equipo_visitante.nombre }}{% endblock %}
 
-{% block og_titulo %}{{ partido.equipo_local.nombre }} vs {{ partido.equipo_visitante.nombre }}{% endblock %}
-{% block descripcion %}{{ partido.categoria.liga.nombre }} · {{ partido.categoria.nombre }} · {{ partido.etiqueta }}{% if partido.jugado %} · Final {{ partido.goles_local }}-{{ partido.goles_visitante }}{% elif partido.fecha %} · {{ partido.fecha|date:'d/m/Y H:i' }}{% endif %}{% endblock %}
-{% block og_descripcion %}{{ partido.categoria.liga.nombre }} · {{ partido.categoria.nombre }} · {{ partido.etiqueta }}{% if partido.jugado %} · Final {{ partido.goles_local }}-{{ partido.goles_visitante }}{% elif partido.fecha %} · {{ partido.fecha|date:'d/m/Y H:i' }}{% endif %}{% endblock %}
+{% block og_titulo %}{% if partido.jugado %}{{ partido.equipo_local.nombre }} {{ partido.goles_local }} - {{ partido.goles_visitante }} {{ partido.equipo_visitante.nombre }}{% else %}{{ partido.equipo_local.nombre }} vs {{ partido.equipo_visitante.nombre }}{% endif %}{% endblock %}
+{% block descripcion %}{{ partido.categoria.liga.nombre }} · {{ partido.categoria.nombre }} · {{ partido.etiqueta }}{% if partido.fecha %} · {{ partido.fecha|date:'d/m/Y H:i' }}{% endif %}{% if partido.sede %} · {{ partido.sede.nombre }}{% endif %}{% endblock %}
+{% block og_descripcion %}{{ partido.categoria.liga.nombre }} · {{ partido.categoria.nombre }} · {{ partido.etiqueta }}{% if partido.fecha %} · {{ partido.fecha|date:'d/m/Y H:i' }}{% endif %}{% if partido.sede %} · {{ partido.sede.nombre }}{% endif %}{% endblock %}
 
 {% block contenido %}
 <div class="ficha-pagina">
     <div class="ancho-pagina ficha-migas">
         <a href="{% url 'partido-calendario' %}" class="ficha-volver">← Calendario</a>
         <span class="ficha-ruta">
-            <a href="{% url 'estadisticas-liga-categorias' partido.categoria.liga.pk %}">{{ partido.categoria.liga.nombre }}</a>
+            <a href="{{ partido.categoria.liga.get_absolute_url }}">{{ partido.categoria.liga.nombre }}</a>
             <span class="ficha-ruta-sep">/</span>
-            <a href="{% url 'estadisticas-categoria' partido.categoria.pk %}">{{ partido.categoria.nombre }}</a>
+            <a href="{{ partido.categoria.get_absolute_url }}">{{ partido.categoria.nombre }}</a>
             <span class="ficha-ruta-sep">/</span>
             <span>{{ partido.etiqueta }}</span>
         </span>
+        {% include '_boton_compartir.html' with titulo=partido.equipo_local.nombre|add:' vs '|add:partido.equipo_visitante.nombre url=compartir_url clase='compartir-chico' %}
     </div>
 
     <div class="ancho-pagina">
@@ -24,7 +25,7 @@
     </div>
 
     <div class="ancho-pagina ficha-atajos">
-        <a href="{% url 'estadisticas-categoria' partido.categoria.pk %}" class="ficha-atajo">
+        <a href="{{ partido.categoria.get_absolute_url }}" class="ficha-atajo">
             <span>
                 <strong>Tabla de posiciones</strong>
                 <small>{{ partido.categoria.nombre }}</small>

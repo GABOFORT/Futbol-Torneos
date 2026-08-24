@@ -1,6 +1,9 @@
 {% extends 'base.html' %}
 
 {% block titulo %}{{ equipo.nombre }} - Equipos{% endblock %}
+{% block og_titulo %}{{ equipo.nombre }}{% endblock %}
+{% block descripcion %}{{ equipo.liga.nombre }} · {{ equipo.categoria.nombre }}{% endblock %}
+{% block og_descripcion %}{{ equipo.liga.nombre }} · {{ equipo.categoria.nombre }}{% endblock %}
 
 {% block contenido %}
 <div class="max-w-5xl mx-auto p-6">
@@ -18,6 +21,7 @@
             </div>
             <div class="flex shrink-0 flex-wrap items-center gap-2">
 
+                {% include '_boton_compartir.html' with titulo=equipo.nombre url=compartir_url %}
                 <button type="button" class="estrella estrella-grande" data-seguir="{{ equipo.pk }}"
                         data-nombre="{{ equipo.nombre }}" aria-pressed="false"
                         aria-label="Seguir a {{ equipo.nombre }}">★ <span>Seguir</span></button>
@@ -98,13 +102,13 @@
                 {% if proximos %}
                     <div class="resultados">
                         {% for partido in proximos %}
-                            <a href="{% url 'partido-detalle' partido.pk %}" class="fecha-fila">
+                            <a href="{{ partido.get_absolute_url }}" class="fecha-fila">
                                 <span class="fecha-cuando">{{ partido.fecha|date:'d/m H:i' }}</span>
                                 <span class="fecha-rival">
                                     {% if partido.equipo_local_id == equipo.pk %}
                                         vs {{ partido.equipo_visitante.nombre }}
                                     {% else %}
-                                        en casa de {{ partido.equipo_local.nombre }}
+                                        en local de {{ partido.equipo_local.nombre }}
                                     {% endif %}
                                 </span>
                                 <span class="fecha-donde">
@@ -123,7 +127,7 @@
                 {% if ultimos %}
                     <div class="resultados">
                         {% for partido in ultimos %}
-                            <a href="{% url 'partido-detalle' partido.pk %}" class="fecha-fila">
+                            <a href="{{ partido.get_absolute_url }}" class="fecha-fila">
                                 <span class="fecha-cuando">{{ partido.fecha|date:'d/m' }}</span>
                                 <span class="fecha-rival">
                                     {{ partido.equipo_local.nombre }}

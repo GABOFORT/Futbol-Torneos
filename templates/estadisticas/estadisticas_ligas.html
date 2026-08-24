@@ -19,7 +19,7 @@
 
     <div class="rejilla-ligas">
         {% for ficha in fichas %}
-            <a href="{% url 'estadisticas-liga-categorias' ficha.liga.pk %}" class="tarjeta-liga">
+            <a href="{{ ficha.liga.get_absolute_url }}" class="tarjeta-liga">
                 <header class="tarjeta-liga-cabecera">
                     {% include 'usuarios/_logo_liga.html' with liga=ficha.liga clase='logo-liga-md' %}
                     <div class="tarjeta-liga-titulo">

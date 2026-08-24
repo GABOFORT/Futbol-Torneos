@@ -70,7 +70,7 @@
                 {% for partido in grupo.partidos %}
 
                     <article class="tarjeta-partido open-modal {% if partido.jugado %}tarjeta-jugada{% endif %}"
-                             data-url="{% url 'partido-detalle' partido.pk %}?modal=1"
+                             data-url="{{ partido.get_absolute_url }}?modal=1"
                              role="button" tabindex="0"
                              aria-label="Ver ficha de {{ partido.equipo_local.nombre }} contra {{ partido.equipo_visitante.nombre }}">
                         <div class="cruce">

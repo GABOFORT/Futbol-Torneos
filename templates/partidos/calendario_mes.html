@@ -45,7 +45,7 @@
                     </p>
 
                     {% for partido in celda.partidos|slice:':3' %}
-                        <a href="{% url 'partido-detalle' partido.pk %}" class="mes-partido">
+                        <a href="{{ partido.get_absolute_url }}" class="mes-partido">
                             <span class="mes-hora">{{ partido.fecha|date:'H:i' }}</span>
                             <span class="mes-cruce">
                                 {{ partido.equipo_local.nombre }}
@@ -61,7 +61,7 @@
                         <details class="mes-mas">
                             <summary>+{{ celda.partidos|length|add:'-3' }} más</summary>
                             {% for partido in celda.partidos|slice:'3:' %}
-                                <a href="{% url 'partido-detalle' partido.pk %}" class="mes-partido">
+                                <a href="{{ partido.get_absolute_url }}" class="mes-partido">
                                     <span class="mes-hora">{{ partido.fecha|date:'H:i' }}</span>
                                     <span class="mes-cruce">
                                         {{ partido.equipo_local.nombre }}

@@ -63,7 +63,7 @@
                         {% endif %}
 
                         <div class="mt-4 flex flex-wrap items-center gap-3">
-                            <a href="{% url 'estadisticas-categoria' categoria.pk %}" class="text-sm font-semibold text-green-700 hover:text-green-900">Ver tabla →</a>
+                            <a href="{{ categoria.get_absolute_url }}" class="text-sm font-semibold text-green-700 hover:text-green-900">Ver tabla →</a>
                             {% if puede_administrar %}
                                 <button data-url="{% url 'categoria-edit' categoria.pk %}?modal=1" class="open-modal text-sm font-semibold text-green-700 hover:text-green-900">Editar</button>
                                 <button data-url="{% url 'categoria-delete' categoria.pk %}?modal=1" class="open-modal texto-peligro text-sm font-semibold text-red-700">Eliminar</button>

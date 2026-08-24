@@ -117,7 +117,7 @@
     </div>
 
     <div class="mt-6 flex flex-wrap items-center gap-3">
-        <a href="{% url 'estadisticas-liga-categorias' categoria.liga_id %}" class="text-sm font-semibold text-green-700 hover:text-green-900">← Volver a {{ categoria.liga.nombre }}</a>
+        <a href="{{ categoria.liga.get_absolute_url }}" class="text-sm font-semibold text-green-700 hover:text-green-900">← Volver a {{ categoria.liga.nombre }}</a>
     </div>
 </div>
 

@@ -3,7 +3,7 @@
 {% block titulo %}BUHO Sports League{% endblock %}
 
 {% block descripcion %}Partidos de hoy, tablas de posiciones, goleadores y campeones de todas las categorías. Consulta libre, sin registro.{% endblock %}
-{% block og_titulo %}BUHO Sports League · BUHO Sports League{% endblock %}
+{% block og_titulo %}BUHO Sports League{% endblock %}
 {% block og_descripcion %}Partidos de hoy, tablas de posiciones, goleadores y campeones de todas las categorías. Consulta libre, sin registro.{% endblock %}
 
 {% block contenido %}
@@ -14,7 +14,7 @@
             <span class="franja-titulo">{{ franja_titulo }}</span>
             <div class="franja-lista">
                 {% for partido in franja %}
-                    <a href="{% url 'partido-detalle' partido.pk %}" class="franja-marcador">
+                    <a href="{{ partido.get_absolute_url }}" class="franja-marcador">
                         <span class="franja-marcador-torneo">{{ partido.categoria.liga.nombre }} · {{ partido.categoria.nombre }}{% if partido.es_de_torneo %} <span class="marca-torneo">Torneo</span>{% endif %}</span>
                         <span class="franja-marcador-fila">
                             <span class="franja-marcador-equipo">{{ partido.equipo_local.nombre }}</span>
@@ -58,7 +58,7 @@
 
         {% if destacado %}
 
-            <a href="{% url 'partido-detalle' destacado.pk %}" class="hero-partido">
+            <a href="{{ destacado.get_absolute_url }}" class="hero-partido">
                 <p class="hero-partido-etiqueta">Partido destacado</p>
                 <div class="hero-cruce">
                     <div class="hero-lado">
@@ -124,7 +124,7 @@
         </div>
         <div class="torneos">
             {% for t in torneos %}
-                <a href="{% url 'estadisticas-categoria' t.categoria.pk %}" class="torneo">
+                <a href="{{ t.categoria.get_absolute_url }}" class="torneo">
                     <div class="torneo-cabecera">
                         {% include 'usuarios/_logo_liga.html' with liga=t.categoria.liga clase='logo-liga-sm' %}
                         <div class="torneo-identidad">
@@ -157,7 +157,7 @@
         <p class="seccion-nota">Se juegan en un solo día, por eliminación directa. El empate se define en penales.</p>
         <div class="torneos">
             {% for r in relampagos %}
-                <a href="{% url 'torneo-detalle' r.torneo.pk %}" class="torneo">
+                <a href="{{ r.torneo.get_absolute_url }}" class="torneo">
                     <div class="torneo-cabecera">
                         {% include 'usuarios/_logo_liga.html' with liga=r.liga clase='logo-liga-sm' %}
                         <div class="torneo-identidad">
@@ -194,7 +194,7 @@
         </div>
         <div class="lista-hoy">
             {% for partido in partidos_hoy %}
-                <a href="{% url 'partido-detalle' partido.pk %}" class="hoy">
+                <a href="{{ partido.get_absolute_url }}" class="hoy">
                     <div class="hoy-hora">
                         <span class="hoy-reloj">{{ partido.fecha|date:'H:i' }}</span>
                         {% if partido.jugado %}
@@ -237,7 +237,7 @@
         </div>
         <div class="lista-hoy">
             {% for partido in proximos %}
-                <a href="{% url 'partido-detalle' partido.pk %}" class="hoy">
+                <a href="{{ partido.get_absolute_url }}" class="hoy">
                     <div class="hoy-hora">
                         <span class="hoy-reloj">{{ partido.fecha|date:'H:i' }}</span>
                         <span class="hoy-estado">{{ partido.fecha|date:'d/m' }}</span>
@@ -304,7 +304,7 @@
                     </dl>
 
                     {% if figura.destacado %}
-                        <a href="{% url 'partido-detalle' figura.destacado.partido_id %}" class="figura-logro">
+                        <a href="{% url 'partido-detalle-id' figura.destacado.partido_id %}" class="figura-logro">
                             <span class="figura-logro-que">
                                 {% if figura.destacado.goles %}
                                     {{ figura.destacado.goles }} gol{{ figura.destacado.goles|pluralize:"es" }}
@@ -331,7 +331,7 @@
                     <h2 class="seccion-titulo">Últimos resultados</h2>
                     <div class="resultados">
                         {% for partido in resultados %}
-                            <a href="{% url 'partido-detalle' partido.pk %}" class="resultado">
+                            <a href="{{ partido.get_absolute_url }}" class="resultado">
                                 <span class="resultado-equipo">{{ partido.equipo_local.nombre }}</span>
                                 <span class="resultado-marcador">{{ partido.goles_local }}-{{ partido.goles_visitante }}</span>
                                 <span class="resultado-equipo resultado-equipo-der">{{ partido.equipo_visitante.nombre }}</span>

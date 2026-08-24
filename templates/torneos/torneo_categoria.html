@@ -3,6 +3,9 @@
 {% load estaticos %}
 
 {% block titulo %}{{ categoria.nombre }} - {{ torneo.nombre }}{% endblock %}
+{% block og_titulo %}{{ categoria.nombre }} · {{ torneo.nombre }}{% endblock %}
+{% block descripcion %}{{ categoria.grupos }} grupo{{ categoria.grupos|pluralize }} · {{ equipos|length }} equipo{{ equipos|length|pluralize }}{% if jornadas %} · {{ jornadas|length }} jornada{{ jornadas|length|pluralize }}{% endif %}{% endblock %}
+{% block og_descripcion %}{{ categoria.grupos }} grupo{{ categoria.grupos|pluralize }} · {{ equipos|length }} equipo{{ equipos|length|pluralize }}{% if jornadas %} · {{ jornadas|length }} jornada{{ jornadas|length|pluralize }}{% endif %}{% endblock %}
 
 {% block cabecera_extra %}
     {% if puede_administrar %}
@@ -17,7 +20,7 @@
     {% include 'torneos/_iconos.html' %}
 
     <header class="portada-torneo">
-        <a href="{% url 'torneo-detalle' torneo.pk %}" class="migaja">
+        <a href="{{ torneo.get_absolute_url }}" class="migaja">
             <svg class="ico ico-sm"><use href="#ico-flecha"></use></svg> {{ torneo.nombre }}
         </a>
 
@@ -46,8 +49,9 @@
                 </div>
             </div>
 
+            <div class="portada-torneo-acciones">
+                {% include '_boton_compartir.html' with titulo=categoria.nombre url=compartir_url clase='compartir-claro compartir-chico' %}
             {% if puede_administrar %}
-                <div class="portada-torneo-acciones">
                     {% if not jornadas %}
                         <button class="open-modal boton-claro boton-chico" data-url="{% url 'torneo-categoria-equipo-create' torneo.pk categoria.pk %}?modal=1">
                             <svg class="ico ico-sm"><use href="#ico-mas"></use></svg> Inscribir equipo
@@ -67,8 +71,8 @@
                     <button class="open-modal boton-claro boton-chico" data-url="{% url 'torneo-categoria-edit' torneo.pk categoria.pk %}?modal=1">
                         <svg class="ico ico-sm"><use href="#ico-lapiz"></use></svg> Editar
                     </button>
-                </div>
             {% endif %}
+            </div>
         </div>
 
         {% if puede_administrar %}

@@ -7,7 +7,7 @@
 <div class="torneo-ui hoja-formulario">
     {% include 'torneos/_iconos.html' %}
 
-    <a href="{% url 'torneo-categoria' torneo.pk categoria.pk %}" class="migaja">
+    <a href="{{ categoria.get_absolute_url }}" class="migaja">
         <svg class="ico ico-sm"><use href="#ico-flecha"></use></svg> {{ categoria.nombre }}
     </a>
 
@@ -29,7 +29,7 @@
             {% include 'torneos/_siembra_form.html' %}
 
             <footer class="siembra-pie">
-                <a href="{% url 'torneo-categoria' torneo.pk categoria.pk %}" class="boton-fantasma">Cancelar</a>
+                <a href="{{ categoria.get_absolute_url }}" class="boton-fantasma">Cancelar</a>
                 <button type="submit" class="boton-oro">
                     <svg class="ico ico-sm"><use href="#ico-listo"></use></svg>
                     Guardar la liguilla
