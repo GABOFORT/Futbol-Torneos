@@ -1,4 +1,4 @@
-{% load static estaticos liga_actual %}{% portada_de_liga as portada_liga %}<!DOCTYPE html>
+{% load static estaticos liga_actual %}{% portada_de_liga as portada_liga %}{% imagen_de_compartir as compartir_imagen %}{% url_de_compartir as compartir_url %}<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -12,9 +12,13 @@
     <meta property="og:locale" content="es_MX">
     <meta property="og:title" content="{% block og_titulo %}BUHO Sports League{% endblock %}">
     <meta property="og:description" content="{% block og_descripcion %}Calendario, tablas, goleadores y campeones de las ligas de fútbol infantil y juvenil.{% endblock %}">
-    <meta property="og:image" content="{% static_v 'img/buho-sport.jpeg' %}">
-    <meta name="twitter:card" content="summary">
-    <link rel="canonical" href="{{ request.path }}">
+    <meta property="og:url" content="{{ compartir_url }}">
+    <meta property="og:image" content="{{ compartir_imagen.url }}">
+    <meta property="og:image:alt" content="{{ compartir_imagen.alt }}">
+    {% if compartir_imagen.ancho %}<meta property="og:image:width" content="{{ compartir_imagen.ancho }}">
+    <meta property="og:image:height" content="{{ compartir_imagen.alto }}">{% endif %}
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="canonical" href="{{ compartir_url }}">
 
     <link rel="stylesheet" href="{% static_v 'css/tokens.css' %}">
     <link rel="stylesheet" href="{% static_v 'css/tailwind.css' %}">
@@ -30,6 +34,7 @@
     <script defer src="{% static_v 'js/cuenta-regresiva.js' %}"></script>
     <script defer src="{% static_v 'js/seguir.js' %}"></script>
     <script defer src="{% static_v 'js/toasts.js' %}"></script>
+    <script defer src="{% static_v 'js/compartir.js' %}"></script>
 
     {% if user.is_authenticated %}<script defer src="{% static_v 'js/sesion.js' %}"></script>{% endif %}
     {% block cabecera_extra %}{% endblock %}

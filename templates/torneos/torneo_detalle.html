@@ -3,6 +3,9 @@
 {% load estaticos %}
 
 {% block titulo %}{{ torneo.nombre }} - Torneo{% endblock %}
+{% block og_titulo %}{{ torneo.nombre }}{% endblock %}
+{% block descripcion %}{{ torneo.formato_texto }} · {{ equipos|length }} equipo{{ equipos|length|pluralize }} · {{ torneo.fechas_texto }}{% endblock %}
+{% block og_descripcion %}{{ torneo.formato_texto }} · {{ equipos|length }} equipo{{ equipos|length|pluralize }} · {{ torneo.fechas_texto }}{% endblock %}
 
 {% block cabecera_extra %}
     {% if puede_administrar %}

@@ -1,6 +1,9 @@
 {% extends 'base.html' %}
 
 {% block titulo %}Estadísticas - {{ liga.nombre }}{% endblock %}
+{% block og_titulo %}{{ liga.nombre }}{% endblock %}
+{% block descripcion %}{{ tarjetas|length }} categoría{{ tarjetas|length|pluralize:"s" }} en juego · tablas, goleadores y calendario{% endblock %}
+{% block og_descripcion %}{{ tarjetas|length }} categoría{{ tarjetas|length|pluralize:"s" }} en juego · tablas, goleadores y calendario{% endblock %}
 
 {% block contenido %}
 <div class="max-w-[100rem] mx-auto p-6">
@@ -66,7 +69,7 @@
 
     <div class="rejilla-ligas">
         {% for ficha in tarjetas %}
-            <a href="{% url 'estadisticas-categoria' ficha.categoria.pk %}" class="tarjeta-categoria">
+            <a href="{{ ficha.categoria.get_absolute_url }}" class="tarjeta-categoria">
                 <header class="tarjeta-categoria-cabecera">
                     <div>
                         <h2 class="tarjeta-categoria-nombre">{{ ficha.categoria.nombre }}</h2>

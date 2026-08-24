@@ -2,6 +2,9 @@
 {% load static %}
 
 {% block titulo %}{{ torneo.nombre }} - Torneo{% endblock %}
+{% block og_titulo %}{{ torneo.nombre }}{% endblock %}
+{% block descripcion %}{{ tarjetas|length }} categoría{{ tarjetas|length|pluralize:"s" }} · {{ torneo.fechas_texto }}{% endblock %}
+{% block og_descripcion %}{{ tarjetas|length }} categoría{{ tarjetas|length|pluralize:"s" }} · {{ torneo.fechas_texto }}{% endblock %}
 
 {% block contenido %}
 <div class="torneo-ui hoja-torneo">
@@ -28,7 +31,7 @@
         <div class="rejilla-categorias">
             {% for tarjeta in tarjetas %}
                 <article class="tarjeta-cat">
-                    <a href="{% url 'torneo-categoria' torneo.pk tarjeta.categoria.pk %}" class="tarjeta-cat-tapa">
+                    <a href="{{ tarjeta.categoria.get_absolute_url }}" class="tarjeta-cat-tapa">
                         <span class="tarjeta-cat-nombre">{{ tarjeta.categoria.nombre }}</span>
                         {% if tarjeta.campeon %}
                             <span class="chapa chapa-oro">
@@ -60,7 +63,7 @@
                     </div>
 
                     <footer class="tarjeta-cat-pie">
-                        <a href="{% url 'torneo-categoria' torneo.pk tarjeta.categoria.pk %}" class="boton-primario boton-chico">Abrir</a>
+                        <a href="{{ tarjeta.categoria.get_absolute_url }}" class="boton-primario boton-chico">Abrir</a>
                         {% if puede_administrar %}
                             <button data-url="{% url 'torneo-categoria-edit' torneo.pk tarjeta.categoria.pk %}?modal=1" class="open-modal boton-fantasma boton-chico">Editar</button>
                             {% if es_superadmin %}

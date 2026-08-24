@@ -186,6 +186,8 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = config('MEDIA_ROOT', default='') or str(BASE_DIR / 'media')
 
+SITIO_URL = config('SITIO_URL', default='').rstrip('/')
+
 LANGUAGE_CODE = 'es-mx'
 TIME_ZONE = 'America/Mexico_City'
 

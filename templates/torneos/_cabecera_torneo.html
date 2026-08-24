@@ -13,6 +13,7 @@
         </div>
 
         <div class="portada-torneo-acciones">
+            {% include '_boton_compartir.html' with titulo=torneo.nombre url=compartir_url clase='compartir-claro compartir-chico' %}
             {% if puede_administrar %}
                 <a href="{% url 'mis-torneos' %}" class="boton-claro boton-chico">
                     <svg class="ico ico-sm"><use href="#ico-flecha"></use></svg> Mis torneos

@@ -15,7 +15,11 @@ La alternativa era recorrer las ~20 vistas agregando `liga` al contexto de cada
 una. Se descarto: es mas codigo, hay que acordarse en cada vista nueva, y una
 que se olvide se queda sin fondo sin que nada lo avise.
 """
+import os
+
 from django import template
+from django.conf import settings
+from django.templatetags.static import static
 
 register = template.Library()
 
@@ -48,6 +52,103 @@ def _es_liga(objeto):
     return hasattr(objeto, 'portada_url')
 
 
+def _ligas_del_contexto(context):
+    """Las ligas a las que apunta esta pantalla, en orden de cercania.
+
+    Es el recorrido que comparten la portada de fondo y la imagen de compartir:
+    las dos preguntan lo mismo —de que liga es esto— y solo cambian en que se
+    quedan.
+    """
+    for variable, camino in CAMINOS:
+        objeto = context.get(variable)
+        if objeto is None:
+            continue
+        liga = _seguir(objeto, camino)
+        if _es_liga(liga):
+            yield liga
+
+
+_MEDIDAS = {}
+
+
+def _medidas(campo):
+    """Ancho y alto del archivo, recordados por ruta y fecha de modificacion.
+
+    Las redes piden las medidas en el encabezado para reservar el hueco antes de
+    bajar la imagen. Sacarlas abre el archivo, y son siempre los mismos cuatro o
+    cinco: se guardan en memoria para no releerlos en cada visita.
+    """
+    try:
+        ruta = campo.path
+        marca = os.path.getmtime(ruta)
+    except (ValueError, OSError, NotImplementedError):
+        return None
+
+    guardado = _MEDIDAS.get(ruta)
+    if guardado and guardado[0] == marca:
+        return guardado[1]
+
+    try:
+        medida = (campo.width, campo.height)
+    except (OSError, ValueError):
+        return None
+
+    _MEDIDAS[ruta] = (marca, medida)
+    return medida
+
+
+def _ficha(url, alto_texto, medida):
+    return {
+        'url': absoluta(url),
+        'alt': alto_texto,
+        'ancho': medida[0] if medida else '',
+        'alto': medida[1] if medida else '',
+    }
+
+
+@register.simple_tag
+def absoluta(ruta):
+    """Pega el dominio del sitio a una ruta interna.
+
+    Sale de `SITIO_URL` en el .env y nunca de la cabecera Host: quien pide la
+    pagina la manda, y un robot que lea la etiqueta terminaria apuntando al
+    dominio que el atacante quiera.
+    """
+    if not ruta or '://' in ruta:
+        return ruta
+    return f'{settings.SITIO_URL}{ruta}' if settings.SITIO_URL else ruta
+
+
+@register.simple_tag(takes_context=True)
+def imagen_de_compartir(context):
+    """La imagen que sale en la tarjeta al pegar el link, con sus medidas.
+
+    Baja por la escalera y se queda con la primera que exista: el escudo del
+    equipo, la portada de la liga o torneo de esta pantalla, su logo, y al final
+    el logo del sitio. Asi un link nunca se comparte sin imagen.
+    """
+    equipo = context.get('equipo')
+    escudo = getattr(equipo, 'escudo', None)
+    if escudo:
+        return _ficha(escudo.url, f'Escudo de {equipo.nombre}', _medidas(escudo))
+
+    for liga in _ligas_del_contexto(context):
+        for campo, plantilla in ((liga.portada, 'Portada de {}'),
+                                 (liga.logo, 'Logo de {}')):
+            if campo:
+                return _ficha(campo.url, plantilla.format(liga.nombre),
+                              _medidas(campo))
+
+    return _ficha(static('img/buho-sport.jpeg'), 'BUHO Sports League', None)
+
+
+@register.simple_tag(takes_context=True)
+def url_de_compartir(context):
+    """La direccion completa de la pantalla que se esta viendo."""
+    peticion = context.get('request')
+    return absoluta(peticion.path if peticion is not None else '/')
+
+
 @register.simple_tag(takes_context=True)
 def portada_de_liga(context):
     """La URL de la portada de la liga de esta pantalla, o '' si no aplica.
@@ -72,12 +173,8 @@ def portada_de_liga(context):
         primera fila seria arbitrario.
       - Ligas que todavia no cargaron ninguna portada.
     """
-    for variable, camino in CAMINOS:
-        objeto = context.get(variable)
-        if objeto is None:
-            continue
-        liga = _seguir(objeto, camino)
-        if _es_liga(liga) and liga.portada_url:
+    for liga in _ligas_del_contexto(context):
+        if liga.portada_url:
             return liga.portada_url
 
     return ''
