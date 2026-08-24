@@ -555,10 +555,10 @@ def _tarjetas_de_categoria(torneo):
     return tarjetas
 
 
-def torneo_detalle(request, pk):
+def torneo_detalle(request, torneo):
     """La portada del torneo: su cuadro, o sus categorías si va por grupos."""
     torneo = get_object_or_404(
-        torneos_visibles(request.user).select_related('liga'), pk=pk)
+        torneos_visibles(request.user).select_related('liga'), liga__slug=torneo)
     puede_administrar = _puede_administrar(request.user, torneo)
 
     contexto = {
@@ -591,11 +591,11 @@ def torneo_detalle(request, pk):
     return render(request, 'torneos/torneo_detalle.html', contexto)
 
 
-def torneo_categoria(request, pk, categoria_pk):
+def torneo_categoria(request, torneo, categoria):
     """Una categoría del torneo: sus grupos, sus tablas, sus partidos y su cuadro."""
     torneo = get_object_or_404(
-        torneos_visibles(request.user).select_related('liga'), pk=pk)
-    categoria = get_object_or_404(torneo.categorias, pk=categoria_pk)
+        torneos_visibles(request.user).select_related('liga'), liga__slug=torneo)
+    categoria = get_object_or_404(torneo.categorias, slug=categoria)
 
     estado = grupos.resumen(categoria)
     equipos = list(categoria.equipos
@@ -700,7 +700,7 @@ def _formulario_de_categoria(request, torneo, instancia):
                 f'{categoria.grupos} grupo(s).')
             if modal:
                 return JsonResponse({'success': True})
-            return redirect('torneo-categoria', pk=torneo.pk, categoria_pk=categoria.pk)
+            return redirect(categoria)
     else:
         form = TorneoCategoriaForm(torneo, instancia=instancia)
 
@@ -763,7 +763,7 @@ def torneo_categoria_generar(request, pk, categoria_pk):
                 request,
                 f'{categoria.nombre}: se generaron {len(creados)} partido(s) en '
                 f'{cuantas} jornada(s). Ponles fecha, hora y cancha desde la lista.')
-    return redirect('torneo-categoria', pk=torneo.pk, categoria_pk=categoria.pk)
+    return redirect(categoria)
 
 
 @admin_liga_required
@@ -777,7 +777,7 @@ def torneo_categoria_sembrar(request, pk, categoria_pk):
         messages.error(request, motivo)
         if modal:
             return JsonResponse({'success': False, 'recargar': True})
-        return redirect('torneo-categoria', pk=torneo.pk, categoria_pk=categoria.pk)
+        return redirect(categoria)
 
     if request.method == 'POST':
         form = SiembraForm(categoria, request.POST)
@@ -790,7 +790,7 @@ def torneo_categoria_sembrar(request, pk, categoria_pk):
                 f'{etiqueta}. De aquí en adelante los ganadores avanzan solos.')
             if modal:
                 return JsonResponse({'success': True})
-            return redirect('torneo-categoria', pk=torneo.pk, categoria_pk=categoria.pk)
+            return redirect(categoria)
     else:
         form = SiembraForm(categoria)
 
@@ -847,7 +847,7 @@ def torneo_create(request):
                 f'Torneo "{torneo.nombre}" creado ({torneo.fechas_texto}). {siguiente}')
             if modal:
                 return JsonResponse({'success': True})
-            return redirect('torneo-detalle', pk=torneo.pk)
+            return redirect(torneo)
     else:
         form = TorneoForm()
 
@@ -868,7 +868,7 @@ def torneo_edit(request, pk):
             messages.success(request, 'Torneo actualizado.')
             if modal:
                 return JsonResponse({'success': True})
-            return redirect('torneo-detalle', pk=torneo.pk)
+            return redirect(torneo)
     else:
         form = TorneoForm(instancia=torneo)
 
@@ -885,7 +885,7 @@ def torneo_equipo_create(request, pk, categoria_pk=None):
                  if categoria_pk else torneo.categoria)
     if categoria is None:
         messages.error(request, 'Este torneo todavía no tiene categorías.')
-        return redirect('torneo-detalle', pk=torneo.pk)
+        return redirect(torneo)
 
     return _formulario_de_equipo(request, torneo, categoria, instancia=None)
 
@@ -931,8 +931,8 @@ def _formulario_de_equipo(request, torneo, categoria, instancia):
 
 def _volver_a(torneo, categoria):
     if torneo.es_por_grupos:
-        return redirect('torneo-categoria', pk=torneo.pk, categoria_pk=categoria.pk)
-    return redirect('torneo-detalle', pk=torneo.pk)
+        return redirect(categoria)
+    return redirect(torneo)
 
 
 @admin_liga_required
@@ -950,7 +950,7 @@ def torneo_sortear(request, pk):
                 request,
                 f'Cuadro sorteado: {len(creados)} partido(s) de {ronda}, desde las '
                 f'{creados[0].fecha:%H:%M}. El empate se define en penales.')
-    return redirect('torneo-detalle', pk=torneo.pk)
+    return redirect(torneo)
 
 
 @superadmin_required

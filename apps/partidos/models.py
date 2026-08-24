@@ -1,4 +1,5 @@
 from django.db import models
+from django.urls import reverse
 from django.utils import timezone
 
 
@@ -251,6 +252,22 @@ class Partido(models.Model):
         if self.cruza_grupos:
             return f'{self.equipo_local.grupo}/{self.equipo_visitante.grupo}'
         return self.equipo_local.grupo
+
+    @property
+    def slug(self):
+        """Como se nombra este partido en la direccion: 'j3-leon-vs-cart'.
+
+        No se guarda en la base porque se deduce: cambia solo si cambia la
+        jornada o el nombre de un equipo, y en ese caso la direccion nueva es
+        justamente la que debe valer. Quien tenga la vieja llega por el numero.
+        """
+        cabeza = f'j{self.jornada}' if not self.es_liguilla else self.fase
+        return f'{cabeza}-{self.equipo_local.slug}-vs-{self.equipo_visitante.slug}'
+
+    def get_absolute_url(self):
+        return reverse('partido-detalle',
+                       args=[self.categoria.liga.slug, self.categoria.slug,
+                             self.slug])
 
     @property
     def es_de_torneo(self):

@@ -359,7 +359,7 @@ def _agrupar_por_jornada(partidos, ids_de_torneo=frozenset()):
     return list(bloques.values())
 
 
-def partido_detalle(request, pk):
+def partido_detalle(request, liga, categoria, partido):
     """La ficha completa del partido: previa si no se jugo, cronica si ya se jugo.
 
     De solo lectura y acotada por `ligas_visibles`: el admin de liga llega a las
@@ -371,14 +371,16 @@ def partido_detalle(request, pk):
     dejar al entrenador afuera lo dejaba viendo menos que cualquiera. Ademas los
     ultimos cinco del rival se pueden pulsar, y sin esto le fallarian todos.
     """
-    partido = get_object_or_404(
-        Partido.objects.filter(
-            categoria__liga__in=ligas_y_torneos_visibles(request.user)).select_related(
-            'categoria', 'categoria__liga', 'equipo_local', 'equipo_visitante',
-            'ganador_penales', 'sede', 'sede_original', 'no_se_presento',
-        ),
-        pk=pk,
+    candidatos = Partido.objects.filter(
+        categoria__liga__in=ligas_y_torneos_visibles(request.user),
+        categoria__liga__slug=liga, categoria__slug=categoria,
+    ).select_related(
+        'categoria', 'categoria__liga', 'equipo_local', 'equipo_visitante',
+        'ganador_penales', 'sede', 'sede_original', 'no_se_presento',
     )
+    partido = next((uno for uno in candidatos if uno.slug == partido), None)
+    if partido is None:
+        raise Http404('No existe ese partido.')
     modal = request.GET.get('modal') == '1'
     contexto = {'partido': partido, 'en_modal': modal, **ficha.armar(partido)}
     if modal:
@@ -527,7 +529,7 @@ def partido_resultado(request, pk):
                     )
                 if modal:
                     return JsonResponse({'success': True})
-                return redirect('partido-detalle', pk=resultado.pk)
+                return redirect(resultado)
     else:
         form = ResultadoForm(instance=partido)
         filas = {}

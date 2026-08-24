@@ -3,14 +3,17 @@ import datetime
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.urls import reverse
 from django.utils import timezone
 
+from apps.usuarios import rutas
 from apps.usuarios.imagenes import TOPE_PANTALLA_PX, achicar_imagen
 from apps.usuarios.monograma import iniciales_de
 
 
 class Liga(models.Model):
     nombre = models.CharField('Nombre de la liga', max_length=150)
+    slug = models.SlugField('Nombre en la dirección', max_length=120, blank=True)
     logo = models.ImageField(
         'Logo de la liga', upload_to='logos-ligas/', blank=True, null=True,
         help_text='Opcional. Si lo dejas vacío se muestran las iniciales de la liga.',
@@ -39,6 +42,9 @@ class Liga(models.Model):
     class Meta:
         verbose_name = 'Liga'
         verbose_name_plural = 'Ligas'
+        constraints = [
+            models.UniqueConstraint(fields=['slug'], name='liga_slug_unico'),
+        ]
 
     def __str__(self):
         return self.nombre
@@ -46,7 +52,11 @@ class Liga(models.Model):
     def save(self, *args, **kwargs):
         achicar_imagen(self.logo)
         achicar_imagen(self.portada, tope=TOPE_PANTALLA_PX)
+        rutas.asignar(self, Liga.objects.all())
         super().save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        return reverse('estadisticas-liga-categorias', args=[self.slug])
 
     @property
     def portada_url(self):
@@ -178,6 +188,7 @@ class Categoria(models.Model):
 
     liga = models.ForeignKey(Liga, on_delete=models.CASCADE, related_name='categorias')
     nombre = models.CharField('Categoría', max_length=120)
+    slug = models.SlugField('Nombre en la dirección', max_length=120, blank=True)
     cupo_equipos = models.PositiveIntegerField('Cupo de equipos', default=8)
     descripcion = models.TextField('Descripción', blank=True)
 
@@ -262,6 +273,25 @@ class Categoria(models.Model):
         verbose_name = 'Categoría'
         verbose_name_plural = 'Categorías'
         unique_together = ('liga', 'nombre')
+        constraints = [
+            models.UniqueConstraint(fields=['liga', 'slug'],
+                                    name='categoria_slug_unico_por_liga'),
+        ]
+
+    def save(self, *args, **kwargs):
+        rutas.asignar(self, Categoria.objects.filter(liga_id=self.liga_id))
+        super().save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        """Su pantalla: la del torneo si la liga tiene uno, la de la liga si no.
+
+        Una categoria de torneo vive en el apartado de torneos y otra en el de
+        ligas; el objeto es el mismo, la direccion no. Se resuelve aca para que
+        nadie tenga que acordarse al armar un enlace.
+        """
+        if hasattr(self.liga, 'torneo'):
+            return reverse('torneo-categoria', args=[self.liga.slug, self.slug])
+        return reverse('estadisticas-categoria', args=[self.liga.slug, self.slug])
 
     def __str__(self):
         return f'{self.liga.nombre} - {self.nombre}'
@@ -645,6 +675,13 @@ class Torneo(models.Model):
     @property
     def nombre(self):
         return self.liga.nombre
+
+    @property
+    def slug(self):
+        return self.liga.slug
+
+    def get_absolute_url(self):
+        return reverse('torneo-detalle', args=[self.liga.slug])
 
     @property
     def es_por_grupos(self):

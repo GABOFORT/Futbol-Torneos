@@ -249,9 +249,10 @@ def equipo_perfil(request, pk):
     return render(request, 'equipos/_perfil_modal.html', perfil.armar(equipo))
 
 
-def equipo_detail(request, pk):
+def equipo_detail(request, liga, categoria, equipo):
     equipo = get_object_or_404(
-        Equipo.objects.select_related('liga', 'categoria', 'entrenador').prefetch_related('jugadores'), pk=pk
+        Equipo.objects.select_related('liga', 'categoria', 'entrenador').prefetch_related('jugadores'),
+        liga__slug=liga, categoria__slug=categoria, slug=equipo
     )
     user = request.user
     es_dueno = user.is_authenticated and equipo.entrenador_id == user.id

@@ -70,14 +70,14 @@ def estadisticas_mis_ligas(request):
     })
 
 
-def estadisticas_liga_categorias(request, liga_id):
+def estadisticas_liga_categorias(request, liga):
     """El panorama de la liga: sus numeros y como va cada categoria.
 
     Acotada por `ligas_visibles`: el admin de liga entra a las suyas y el
     publico a las activas. Antes usaba `get_object_or_404(Liga, ...)` a secas y
     se llegaba a cualquier liga escribiendo su id en la URL.
     """
-    liga = get_object_or_404(ligas_visibles(request.user), pk=liga_id)
+    liga = get_object_or_404(ligas_visibles(request.user), slug=liga)
     return render(request, 'estadisticas/estadisticas_liga_categorias.html', {
         'liga': liga,
         'panel': resumen.panel(liga),
@@ -85,8 +85,9 @@ def estadisticas_liga_categorias(request, liga_id):
     })
 
 
-def tabla_posiciones(request, categoria_id):
-    categoria = get_object_or_404(Categoria.objects.select_related('liga'), pk=categoria_id)
+def tabla_posiciones(request, liga, categoria):
+    categoria = get_object_or_404(Categoria.objects.select_related('liga'),
+                                  liga__slug=liga, slug=categoria)
     posiciones = tabla.calcular(categoria)
 
     premios = palmares.trofeos_por_categoria([categoria.id])

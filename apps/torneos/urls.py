@@ -1,24 +1,38 @@
+from django.shortcuts import get_object_or_404
 from django.urls import path
+
+from apps.usuarios.rutas import canonica
+
 from . import torneos, views
+from .models import Categoria, Torneo
 
 urlpatterns = [
     path('', views.inicio, name='inicio'),
     path('torneos/', torneos.torneo_list, name='torneo-list'),
     path('torneos/mis-torneos/', torneos.mis_torneos, name='mis-torneos'),
     path('torneos/crear/', torneos.torneo_create, name='torneo-create'),
-    path('torneos/<int:pk>/', torneos.torneo_detalle, name='torneo-detalle'),
+    path('torneos/<int:pk>/',
+         canonica(lambda pk: get_object_or_404(
+             Torneo.objects.select_related('liga'), pk=pk)),
+         name='torneo-detalle-id'),
     path('torneos/<int:pk>/editar/', torneos.torneo_edit, name='torneo-edit'),
     path('torneos/<int:pk>/eliminar/', torneos.torneo_delete, name='torneo-delete'),
     path('torneos/<int:pk>/equipos/crear/', torneos.torneo_equipo_create, name='torneo-equipo-create'),
     path('torneos/<int:pk>/sortear/', torneos.torneo_sortear, name='torneo-sortear'),
     path('torneos/<int:pk>/categorias/crear/', torneos.torneo_categoria_create, name='torneo-categoria-create'),
-    path('torneos/<int:pk>/categorias/<int:categoria_pk>/', torneos.torneo_categoria, name='torneo-categoria'),
+    path('torneos/<int:pk>/categorias/<int:categoria_pk>/',
+         canonica(lambda pk, categoria_pk: get_object_or_404(
+             Categoria.objects.select_related('liga'),
+             pk=categoria_pk, liga__torneo__pk=pk)),
+         name='torneo-categoria-id'),
     path('torneos/<int:pk>/categorias/<int:categoria_pk>/editar/', torneos.torneo_categoria_edit, name='torneo-categoria-edit'),
     path('torneos/<int:pk>/categorias/<int:categoria_pk>/eliminar/', torneos.torneo_categoria_delete, name='torneo-categoria-delete'),
     path('torneos/<int:pk>/categorias/<int:categoria_pk>/generar/', torneos.torneo_categoria_generar, name='torneo-categoria-generar'),
     path('torneos/<int:pk>/categorias/<int:categoria_pk>/liguilla/', torneos.torneo_categoria_sembrar, name='torneo-categoria-sembrar'),
     path('torneos/<int:pk>/categorias/<int:categoria_pk>/equipos/crear/', torneos.torneo_equipo_create, name='torneo-categoria-equipo-create'),
     path('torneos/<int:pk>/categorias/<int:categoria_pk>/equipos/<int:equipo_pk>/editar/', torneos.torneo_equipo_edit, name='torneo-equipo-edit'),
+    path('torneos/<slug:torneo>/', torneos.torneo_detalle, name='torneo-detalle'),
+    path('torneos/<slug:torneo>/<slug:categoria>/', torneos.torneo_categoria, name='torneo-categoria'),
     path('roles/', views.roles, name='roles'),
     path('buscar/', views.buscar_vista, name='buscar'),
     path('sedes/', views.sedes_vista, name='sedes'),

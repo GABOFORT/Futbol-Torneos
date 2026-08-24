@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.db import models
+from django.urls import reverse
 
+from apps.usuarios import rutas
 from apps.usuarios.imagenes import achicar_imagen
 from apps.usuarios.monograma import color_de, iniciales_de, monograma
 
@@ -19,6 +21,7 @@ class Equipo(models.Model):
     GRUPO_CHOICES = [(letra, f'Grupo {letra}') for letra in LETRAS_GRUPO]
 
     nombre = models.CharField('Nombre del equipo', max_length=140)
+    slug = models.SlugField('Nombre en la dirección', max_length=120, blank=True)
     escudo = models.ImageField(
         'Escudo del equipo', upload_to='escudos/', blank=True, null=True,
         help_text='Opcional. Si lo dejas vacío se muestra un escudo neutro.',
@@ -61,13 +64,22 @@ class Equipo(models.Model):
         verbose_name = 'Equipo'
         verbose_name_plural = 'Equipos'
         unique_together = ('nombre', 'liga', 'categoria')
+        constraints = [
+            models.UniqueConstraint(fields=['categoria', 'slug'],
+                                    name='equipo_slug_unico_por_categoria'),
+        ]
 
     def __str__(self):
         return self.nombre
 
     def save(self, *args, **kwargs):
         achicar_imagen(self.escudo)
+        rutas.asignar(self, Equipo.objects.filter(categoria_id=self.categoria_id))
         super().save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        return reverse('equipo-detail',
+                       args=[self.liga.slug, self.categoria.slug, self.slug])
 
     @property
     def iniciales(self):
