@@ -26,11 +26,13 @@ waitress-*.log
 # Nunca al repositorio: llevan nombres de usuario, IPs y trazas de error.
 logs/
 
-# Manuales de usuario y sus capturas. No van al repositorio: se entregan
-# aparte, y las capturas llevan nombres de jugadores y de entrenadores
-# reales sacados de la base de produccion.
-# Los documentos tecnicos que ya estaban versionados (avisos-tecnicos.md,
-# seguridad-agosto-2026.md, web.config.referencia) siguen igual: esto solo
-# cubre los manuales y su carpeta de imagenes.
-docs/manual-*.md
-docs/images/
+# La carpeta de documentacion no va al repositorio. Adentro viven los manuales
+# de usuario y sus capturas, que llevan nombres de entrenadores y de jugadores
+# menores de edad sacados de la base de produccion, y las notas tecnicas de
+# despliegue. Se guardan y se comparten aparte.
+#
+# OJO: avisos-tecnicos.md, seguridad-agosto-2026.md y web.config.referencia
+# estuvieron versionados hasta el 29/08/2026 y siguen existiendo en el
+# historial. Si se formatea el servidor, hay que recuperarlos de una copia
+# propia: ya no se bajan con el `git clone`.
+docs/
