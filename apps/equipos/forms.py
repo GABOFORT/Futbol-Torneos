@@ -9,6 +9,25 @@ from apps.torneos.models import Categoria
 from .models import Equipo
 
 
+def categorias_que_ya_tienen(nombre, categorias, excluir=None):
+    """Los nombres de las categorias donde ese nombre de equipo ya esta tomado.
+
+    `Equipo` lleva `unique_together = ('nombre', 'liga', 'categoria')`, pero
+    Django **descarta esa comprobacion en silencio** si al formulario le falta
+    alguno de los tres campos: `EquipoForm` borra `liga` para los equipos de
+    torneo, y ahi la unicidad dejaba de validarse y el choque saltaba recien en
+    el INSERT, como un 500. Por eso se comprueba a mano.
+
+    Se compara sin distinguir mayusculas aunque la restriccion de la base si las
+    distinga: `CAMPOS_CAPITALIZAR` convierte 'tigres' en 'Tigres' antes de
+    guardar, asi que las dos formas terminan chocando igual.
+    """
+    equipos = Equipo.objects.filter(categoria__in=categorias, nombre__iexact=nombre)
+    if excluir is not None:
+        equipos = equipos.exclude(pk=excluir)
+    return sorted(equipos.values_list('categoria__nombre', flat=True))
+
+
 class EntrenadorChoiceField(forms.ModelChoiceField):
     """Desplegable de entrenadores que muestra el nombre y apellido.
 
@@ -66,6 +85,19 @@ class EquipoCreateForm(StyledFormMixin, forms.Form):
         if motivos:
             raise forms.ValidationError(motivos)
         return categorias
+
+    def clean(self):
+        datos = super().clean()
+        nombre = datos.get('nombre')
+        categorias = datos.get('categorias')
+        if nombre and categorias:
+            ocupadas = categorias_que_ya_tienen(nombre, categorias)
+            if ocupadas:
+                self.add_error(
+                    'nombre',
+                    f'"{nombre}" ya está inscrito en {", ".join(ocupadas)}. '
+                    f'Desmarca esa(s) categoría(s) o elige otro nombre.')
+        return datos
 
 
 class EquipoForm(StyledFormMixin, forms.ModelForm):
@@ -149,6 +181,12 @@ class EquipoForm(StyledFormMixin, forms.ModelForm):
             motivo = categoria.motivo_para_no_recibir_equipos()
             if motivo:
                 self.add_error('categoria', motivo)
+
+        nombre = cleaned_data.get('nombre')
+        if nombre and categoria:
+            ocupadas = categorias_que_ya_tienen(nombre, [categoria], excluir=self.instance.pk)
+            if ocupadas:
+                self.add_error('nombre', f'"{nombre}" ya está inscrito en {ocupadas[0]}.')
         return cleaned_data
 
 

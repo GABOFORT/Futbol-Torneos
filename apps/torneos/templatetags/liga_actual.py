@@ -178,3 +178,24 @@ def portada_de_liga(context):
             return liga.portada_url
 
     return ''
+
+
+@register.simple_tag(takes_context=True)
+def patrocinadores_de_la_pantalla(context):
+    """Los patrocinadores de la liga o el torneo al que pertenece esta pantalla.
+
+    Baja por la misma escalera que la portada de fondo, porque la pregunta es
+    exactamente la misma: de que liga es esto. Gracias a eso el patrocinio
+    aparece solo en las categorias, los equipos, los jugadores, los partidos y
+    las tablas sin tocar una sola vista, y las pantallas que se agreguen manana
+    lo heredan sin que nadie tenga que acordarse.
+
+    Devuelve None —y entonces no se dibuja nada— cuando la pantalla no es de
+    ninguna liga en particular (la portada del sitio, el buscador, el
+    reglamento) o cuando esa liga todavia no cargo ninguno.
+    """
+    for liga in _ligas_del_contexto(context):
+        patrocinadores = list(liga.patrocinadores.filter(activo=True))
+        if patrocinadores:
+            return {'liga': liga, 'lista': patrocinadores}
+    return None

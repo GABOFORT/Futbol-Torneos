@@ -1,0 +1,22 @@
+{% load liga_actual %}{% patrocinadores_de_la_pantalla as aliado %}
+{% if aliado %}
+    <section class="aliados" aria-labelledby="aliados-titulo">
+        <div class="aliados-interior">
+            <p class="aliados-rotulo">Patrocinan</p>
+            <p class="aliados-liga" id="aliados-titulo">{{ aliado.liga.nombre }}</p>
+
+            <ul class="aliados-tira">
+                {% for patrocinador in aliado.lista %}
+                    <li>
+                        <a href="{% url 'patrocinador-ficha' patrocinador.pk %}" class="open-modal aliado"
+                           data-url="{% url 'patrocinador-ficha' patrocinador.pk %}?modal=1"
+                           title="{{ patrocinador.nombre }}">
+                            <img src="{{ patrocinador.logo_url }}" alt="{{ patrocinador.nombre }}"
+                                 loading="lazy" decoding="async">
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </section>
+{% endif %}

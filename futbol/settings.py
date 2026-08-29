@@ -57,6 +57,7 @@ SECURE_CSP_REPORT_ONLY = {
     'style-src': [CSP.SELF, CSP.UNSAFE_INLINE],
     'img-src': [CSP.SELF, 'data:', 'https://*.tile.openstreetmap.org'],
     'connect-src': [CSP.SELF, 'https://nominatim.openstreetmap.org'],
+    'frame-src': ['https://maps.google.com', 'https://www.google.com'],
     'frame-ancestors': [CSP.NONE],
     'base-uri': [CSP.SELF],
     'object-src': [CSP.NONE],
@@ -85,7 +86,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'futbol.middleware.NoCacheEnDesarrolloMiddleware',
+    'futbol.middleware.CabecerasDeCacheMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.middleware.csp.ContentSecurityPolicyMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',

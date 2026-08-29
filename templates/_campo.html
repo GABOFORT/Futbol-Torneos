@@ -1,8 +1,12 @@
-{% if field.name == 'categorias' %}
+{% if field.is_hidden %}
+    {{ field }}
+{% elif field.name == 'categorias' %}
     {% include 'equipos/_categorias_checkboxes.html' %}
 {% elif field.name == 'sede' %}
 
     {% include 'partidos/_selector_sede.html' %}
+{% elif field.name == 'direccion' and form.mapa %}
+    {% include 'torneos/_patrocinador_mapa.html' %}
 {% elif field.field.widget.input_type == 'radio' %}
     {% include '_radios.html' %}
 {% elif field.field.widget.input_type == 'checkbox' %}

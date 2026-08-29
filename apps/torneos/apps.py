@@ -8,6 +8,7 @@ class TorneosConfig(AppConfig):
 
     def ready(self):
         from apps.usuarios.archivos import conectar
-        from .models import Liga
+        from .models import Liga, Patrocinador
 
         conectar(Liga)
+        conectar(Patrocinador)

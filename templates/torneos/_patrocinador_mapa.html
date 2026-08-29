@@ -1,0 +1,31 @@
+<div class="selector-aliado" data-selector-aliado
+     data-centro-lat="{{ centro_mapa.0|stringformat:'s' }}"
+     data-centro-lng="{{ centro_mapa.1|stringformat:'s' }}">
+
+    <label class="block text-sm font-medium text-gray-700" for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {{ field }}
+    <p class="mt-2 text-sm text-gray-500">
+        Busca la calle o la colonia para acercarte y despues <strong>arrastra el pin</strong>
+        hasta el negocio. Si no lo marcas, igual se guarda: la ficha mostrara la direccion escrita.
+    </p>
+    {% for error in field.errors %}
+        <p class="error-campo">{{ error }}</p>
+    {% endfor %}
+
+    <div class="selector-aliado-buscador">
+        <input type="text" data-aliado-buscar autocomplete="off"
+               placeholder="Av. Gregorio Mendez, Villahermosa"
+               class="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-green-600 focus:ring-2 focus:ring-green-200">
+        <button type="button" class="btn-accion" data-aliado-buscar-btn>Buscar</button>
+    </div>
+
+    <div class="selector-aliado-mapa" data-aliado-mapa></div>
+
+    <p class="selector-aliado-estado" data-aliado-estado></p>
+
+    <div class="selector-aliado-acciones">
+        <button type="button" class="btn-accion btn-accion-peligro" data-aliado-quitar hidden>
+            Quitar el punto del mapa
+        </button>
+    </div>
+</div>

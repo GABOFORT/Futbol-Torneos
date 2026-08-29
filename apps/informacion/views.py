@@ -1,5 +1,7 @@
 from django.shortcuts import render
 
+from . import privacidad
+
 
 def quienes_somos(request):
     return render(request, 'informacion/quienes_somos.html')
@@ -10,7 +12,14 @@ def donde_estamos(request):
 
 
 def aviso_privacidad(request):
-    return render(request, 'informacion/aviso_privacidad.html')
+    return render(request, 'informacion/aviso_privacidad.html', {
+        'secciones': privacidad.SECCIONES,
+        'actualizado': privacidad.ACTUALIZADO,
+        'domicilio': privacidad.DOMICILIO,
+        'telefono': privacidad.TELEFONO,
+        'correo': privacidad.CORREO,
+        'responsable': privacidad.RESPONSABLE,
+    })
 
 
 def reglamento(request):

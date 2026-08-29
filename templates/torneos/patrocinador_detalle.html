@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block titulo %}{{ patrocinador.nombre }}{% endblock %}
+
+{% block descripcion %}{{ patrocinador.nombre }}, patrocinador de {{ patrocinador.liga.nombre }}.{% endblock %}
+{% block og_titulo %}{{ patrocinador.nombre }} · BUHO Sports League{% endblock %}
+{% block og_descripcion %}Patrocinador de {{ patrocinador.liga.nombre }}.{% endblock %}
+
+{% block contenido %}
+<div class="max-w-xl mx-auto p-6">
+    {% if patrocinador.liga.torneo %}
+        <a href="{{ patrocinador.liga.torneo.get_absolute_url }}" class="boton-suave mb-6 inline-flex">
+            Volver a {{ patrocinador.liga.nombre }}
+        </a>
+    {% else %}
+        <a href="{{ patrocinador.liga.get_absolute_url }}" class="boton-suave mb-6 inline-flex">
+            Volver a {{ patrocinador.liga.nombre }}
+        </a>
+    {% endif %}
+    {% include 'torneos/_patrocinador_ficha.html' %}
+</div>
+{% endblock %}

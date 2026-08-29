@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Patrocinadores de {{ liga.nombre }}{% endblock %}
+
+{% load estaticos %}
+
+{% block cabecera_extra %}
+    <link rel="stylesheet" href="{% static_v 'vendor/leaflet/leaflet.css' %}">
+    <script src="{% static_v 'vendor/leaflet/leaflet.js' %}"></script>
+    <script defer src="{% static_v 'js/aliados.js' %}"></script>
+{% endblock %}
+
+{% block contenido %}
+<div class="ancho-pagina ancho-pagina-arriba">
+    <div class="aliados-encabezado">
+        <div class="min-w-0">
+            <p class="kicker">{% if torneo %}Torneo{% else %}Liga{% endif %} · Patrocinadores</p>
+            <h1 class="aliados-h1">{{ liga.nombre }}</h1>
+            <p class="aliados-bajada">
+                Se muestran al pie de todas las pantallas de
+                {% if torneo %}este torneo{% else %}esta liga{% endif %}:
+                categorías, equipos, jugadores, partidos y tablas.
+            </p>
+        </div>
+        <div class="aliados-encabezado-acciones">
+            <a href="{% if torneo %}{{ torneo.get_absolute_url }}{% else %}{% url 'ligas-list' %}{% endif %}"
+               class="boton-suave">Volver</a>
+            <button class="open-modal boton-principal"
+                    data-url="{% url 'patrocinador-create' liga.pk %}?modal=1">Agregar patrocinador</button>
+        </div>
+    </div>
+
+    {% if patrocinadores %}
+        <p class="aliados-cuenta">
+            {{ patrocinadores|length }} cargado{{ patrocinadores|length|pluralize }},
+            {{ visibles }} visible{{ visibles|pluralize }} en el sitio.
+        </p>
+
+        <div class="aliados-cuadricula">
+            {% for patrocinador in patrocinadores %}
+                <article class="aliado-carta{% if not patrocinador.activo %} aliado-carta-oculta{% endif %}">
+                    <span class="aliado-carta-logo">
+                        <img src="{{ patrocinador.logo_url }}" alt="Logo de {{ patrocinador.nombre }}"
+                             loading="lazy" decoding="async">
+                    </span>
+
+                    <div class="aliado-carta-datos">
+                        <h2>{{ patrocinador.nombre }}</h2>
+                        {% if patrocinador.giro %}<p class="aliado-carta-giro">{{ patrocinador.giro }}</p>{% endif %}
+                        <p class="aliado-carta-lugar">
+                            {% if patrocinador.direccion %}
+                                {{ patrocinador.direccion }}
+                            {% else %}
+                                <span class="sin-dato">Sin dirección cargada</span>
+                            {% endif %}
+                        </p>
+                        <p class="aliado-carta-marcas">
+                            {% if patrocinador.ubicado %}
+                                <span class="insignia insignia-ok">Ubicado en el mapa</span>
+                            {% endif %}
+                            {% if not patrocinador.activo %}
+                                <span class="insignia insignia-oculta">Escondido</span>
+                            {% endif %}
+                            {% if patrocinador.telefono %}
+                                <span class="aliado-carta-tel">{{ patrocinador.telefono }}</span>
+                            {% endif %}
+                        </p>
+                    </div>
+
+                    <div class="acciones">
+                        <button data-url="{% url 'patrocinador-edit' liga.pk patrocinador.pk %}?modal=1"
+                                class="open-modal btn-accion">
+                            <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+                            </svg>
+                            Editar
+                        </button>
+                        <button data-url="{% url 'patrocinador-delete' liga.pk patrocinador.pk %}?modal=1"
+                                class="open-modal btn-accion btn-accion-peligro">Eliminar</button>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="aliados-vacio">
+            <p class="aliados-vacio-titulo">Todavía no hay patrocinadores</p>
+            <p>
+                Carga el primero con el botón de arriba. Puedes agregar los que quieras
+                y quitarlos cuando termine el aliado.
+            </p>
+        </div>
+    {% endif %}
+</div>
+
+{% endblock %}

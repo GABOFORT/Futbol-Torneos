@@ -21,6 +21,9 @@
                 <button data-url="{% url 'torneo-edit' torneo.pk %}?modal=1" class="open-modal boton-claro boton-chico">
                     <svg class="ico ico-sm"><use href="#ico-lapiz"></use></svg> Editar
                 </button>
+                <a href="{% url 'patrocinadores' torneo.liga_id %}" class="boton-claro boton-chico">
+                    <svg class="ico ico-sm"><use href="#ico-pin"></use></svg> Patrocinadores
+                </a>
             {% else %}
                 <a href="{% url 'torneo-list' %}" class="boton-claro boton-chico">
                     <svg class="ico ico-sm"><use href="#ico-flecha"></use></svg> Todos los torneos

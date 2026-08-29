@@ -306,7 +306,7 @@ class TorneoEquipoForm(StyledFormMixin, forms.Form):
         self.torneo = torneo
         self.categoria = categoria
         self.instancia = instancia
-        if instancia is not None and not kwargs.get('data'):
+        if instancia is not None:
             kwargs.setdefault('initial', {
                 'nombre': instancia.nombre,
                 'entrenador': instancia.entrenador_id,
@@ -331,6 +331,12 @@ class TorneoEquipoForm(StyledFormMixin, forms.Form):
         ]
         campo.help_text = 'Cada grupo juega su propio todos contra todos.'
 
+        if instancia is not None and categoria.partidos.exists():
+            campo.disabled = True
+            campo.initial = instancia.grupo
+            campo.help_text = ('El calendario ya está generado: moverlo de grupo '
+                               'dejaría sus partidos sin rival.')
+
     def clean_nombre(self):
         nombre = self.cleaned_data['nombre']
         hermanos = self.categoria.equipos.filter(nombre__iexact=nombre)
@@ -342,12 +348,27 @@ class TorneoEquipoForm(StyledFormMixin, forms.Form):
         return nombre
 
     def clean(self):
+        """Los cupos cierran el alta, nunca la edicion.
+
+        Un equipo ya inscrito se sigue corrigiendo con el calendario generado:
+        el nombre, el escudo y el entrenador no mueven un solo cruce, porque el
+        partido apunta al equipo por su id. Lo unico que si lo moveria es el
+        grupo, y ese viaja `disabled` desde __init__.
+
+        Cuando estos dos cortes valian tambien al editar, cambiarle el nombre a
+        un equipo era imposible desde el torneo, y el admin terminaba en
+        `/equipos/<pk>/editar/`, que es la pantalla que no comprueba nombres
+        repetidos.
+        """
         datos = super().clean()
+        if self.instancia is not None:
+            return datos
+
         if self.categoria.partidos.exists():
             raise forms.ValidationError(
                 f'{self.categoria.nombre} ya tiene partidos generados: no se '
                 f'pueden inscribir más equipos.')
-        if not self.torneo.es_por_grupos and self.torneo.completo and self.instancia is None:
+        if not self.torneo.es_por_grupos and self.torneo.completo:
             raise forms.ValidationError(
                 f'El torneo ya tiene sus {self.torneo.equipos} equipos.')
         return datos

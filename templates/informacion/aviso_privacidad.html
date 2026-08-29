@@ -1,30 +1,71 @@
 {% extends 'base.html' %}
-{% block titulo %}Aviso de privacidad - BUHO Sports League{% endblock %}
+
+{% block titulo %}Aviso de privacidad{% endblock %}
+
+{% block descripcion %}Qué datos trata BUHO Sports League, para qué los usa, qué se publica de forma abierta y cuáles son los límites de responsabilidad.{% endblock %}
+
 {% block contenido %}
-<section class="max-w-4xl mx-auto px-6 py-12">
-    <div class="text-center mb-10">
-        <h1 class="text-4xl font-bold text-green-800">Aviso de privacidad</h1>
-        <div class="mt-3 h-1 w-24 bg-green-600 mx-auto rounded"></div>
-    </div>
-    <div class="bg-white rounded-2xl shadow-md p-8 text-gray-700 leading-relaxed space-y-4">
-        <p>
-            En <strong class="text-green-800">BUHO SPORT</strong> recopilamos únicamente los datos necesarios para operar
-            la plataforma: información de cuenta (usuario, correo, teléfono), datos de equipos y jugadores registrados
-            por entrenadores, y resultados deportivos capturados por los administradores de liga.
+<div class="legal">
+    <header class="legal-portada">
+        <p class="kicker">Información</p>
+        <h1 class="legal-titulo">Aviso de privacidad</h1>
+        <p class="legal-bajada">
+            Cómo tratamos la información dentro de {{ responsable }}, qué se publica
+            de forma abierta y hasta dónde llega nuestra responsabilidad.
         </p>
-        <p>
-            Esta información se utiliza exclusivamente para el funcionamiento del sistema: gestión de ligas, torneos,
-            equipos, jugadores, calendarios y estadísticas. No compartimos datos personales con terceros salvo
-            obligación legal.
-        </p>
-        <p>
-            Cada usuario puede solicitar la actualización o eliminación de sus datos personales contactando al
-            administrador de la plataforma. Los datos de menores de edad registrados como jugadores son responsabilidad
-            del entrenador o tutor que los da de alta.
-        </p>
-        <p>
-            Este aviso puede actualizarse cuando sea necesario para mejorar el servicio o cumplir disposiciones legales.
-        </p>
-    </div>
-</section>
+        <p class="legal-fecha">Última actualización: {{ actualizado }}</p>
+    </header>
+
+    <nav class="legal-indice" aria-label="Contenido del aviso">
+        <p class="legal-indice-titulo">Contenido</p>
+        <ol>
+            {% for seccion in secciones %}
+                <li><a href="#seccion-{{ forloop.counter }}">{{ seccion.titulo }}</a></li>
+            {% endfor %}
+        </ol>
+    </nav>
+
+    {% for seccion in secciones %}
+        <section class="legal-seccion" id="seccion-{{ forloop.counter }}">
+            <h2 class="legal-seccion-titulo">
+                <span class="legal-numero">{{ forloop.counter }}</span>
+                {{ seccion.titulo }}
+            </h2>
+            {% for parrafo in seccion.parrafos %}
+                <p>{{ parrafo }}</p>
+            {% endfor %}
+            {% if seccion.lista %}
+                <ul class="legal-lista">
+                    {% for punto in seccion.lista %}
+                        <li>{{ punto }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            {% if seccion.cierre %}
+                <p class="legal-cierre">{{ seccion.cierre }}</p>
+            {% endif %}
+        </section>
+    {% endfor %}
+
+    <section class="legal-contacto" id="contacto">
+        <h2>Contacto</h2>
+        <p>Para ejercer tus derechos o hacer cualquier consulta sobre este aviso:</p>
+        <dl>
+            <div>
+                <dt>Domicilio</dt>
+                <dd>{{ domicilio }}</dd>
+            </div>
+            <div>
+                <dt>Teléfono</dt>
+                <dd><a href="tel:{{ telefono|cut:' ' }}">{{ telefono }}</a></dd>
+            </div>
+            {% if correo %}
+                <div>
+                    <dt>Correo</dt>
+                    <dd><a href="mailto:{{ correo }}">{{ correo }}</a></dd>
+                </div>
+            {% endif %}
+        </dl>
+    </section>
+</div>
 {% endblock %}

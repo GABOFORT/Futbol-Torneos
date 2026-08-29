@@ -1,14 +1,16 @@
 import datetime
+from urllib.parse import quote
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
 
 from apps.usuarios import rutas
 from apps.usuarios.imagenes import TOPE_PANTALLA_PX, achicar_imagen
-from apps.usuarios.monograma import iniciales_de
+from apps.usuarios.monograma import iniciales_de, monograma
 
 
 class Liga(models.Model):
@@ -903,3 +905,122 @@ class Palmares(models.Model):
     @property
     def lista_vallas(self):
         return [n for n in self.vallas.split(' / ') if n]
+
+
+class Patrocinador(models.Model):
+    """Quien pone dinero en una liga o en un torneo.
+
+    Cuelga de `Liga` y no de cada pantalla porque el patrocinio se contrata una
+    vez y vale para todo lo que hay debajo: sus categorias, sus equipos, sus
+    jugadores y sus partidos. Un torneo relampago se apoya en una Liga, asi que
+    con esta sola relacion quedan cubiertos los dos apartados.
+
+    Las coordenadas son opcionales. Muchos negocios se ubican por su direccion
+    escrita y nada mas, y exigir un pin obligaria al admin a inventar uno: sin
+    coordenadas la ficha muestra la direccion y manda a buscarla por texto, que
+    es lo que haria cualquiera.
+    """
+
+    liga = models.ForeignKey(
+        Liga, on_delete=models.CASCADE, related_name='patrocinadores')
+    nombre = models.CharField('Nombre del patrocinador', max_length=140)
+    logo = models.ImageField(
+        'Logo', upload_to='aliados/', blank=True, null=True,
+        help_text='Opcional. Si lo dejas vacío se muestran sus iniciales.',
+    )
+    giro = models.CharField(
+        'Giro o actividad', max_length=120, blank=True,
+        help_text='Taquería, refaccionaria, farmacia… Se muestra debajo del nombre.',
+    )
+    direccion = models.CharField('Dirección', max_length=255, blank=True)
+    latitud = models.DecimalField(
+        'Latitud', max_digits=9, decimal_places=6, null=True, blank=True)
+    longitud = models.DecimalField(
+        'Longitud', max_digits=9, decimal_places=6, null=True, blank=True)
+    telefono = models.CharField(
+        'Teléfono', max_length=10, blank=True,
+        validators=[RegexValidator(
+            r'^\d{10}$',
+            'El teléfono debe tener exactamente 10 dígitos, sin letras ni signos.',
+        )],
+    )
+    enlace = models.URLField(
+        'Sitio web o red social', max_length=300, blank=True,
+        help_text='Opcional. Aparece como un botón dentro de su ficha.',
+    )
+    orden = models.PositiveSmallIntegerField(
+        'Orden', default=0,
+        help_text='Los más chicos se muestran primero. Con el mismo número manda el nombre.',
+    )
+    activo = models.BooleanField(
+        'Visible', default=True,
+        help_text='Desmárcalo para esconderlo sin perder sus datos.',
+    )
+
+    class Meta:
+        verbose_name = 'Patrocinador'
+        verbose_name_plural = 'Patrocinadores'
+        ordering = ['orden', 'nombre']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['liga', 'nombre'],
+                name='patrocinador_unico_por_liga',
+                violation_error_message='Esa liga ya tiene un patrocinador con ese nombre.',
+            ),
+        ]
+
+    def __str__(self):
+        return self.nombre
+
+    def save(self, *args, **kwargs):
+        achicar_imagen(self.logo)
+        super().save(*args, **kwargs)
+
+    def clean(self):
+        if (self.latitud is None) != (self.longitud is None):
+            raise ValidationError(
+                'Marca el punto en el mapa o déjalo sin marcar, pero no a medias.')
+
+    @property
+    def logo_url(self):
+        """Su logo, o un monograma con sus iniciales si no cargó ninguno."""
+        if self.logo:
+            return self.logo.url
+        return monograma(self.nombre)
+
+    @property
+    def iniciales(self):
+        return iniciales_de(self.nombre)
+
+    @property
+    def ubicado(self):
+        return self.latitud is not None and self.longitud is not None
+
+    @property
+    def punto(self):
+        return f'{self.latitud},{self.longitud}'
+
+    @property
+    def _consulta_de_mapa(self):
+        """Lo que se le pide a Google Maps: la coordenada, o la direccion escrita."""
+        if self.ubicado:
+            return self.punto
+        return quote(self.direccion) if self.direccion else ''
+
+    @property
+    def url_mapa(self):
+        """Mapa incrustable, el mismo truco que la ficha de partido y '¿Donde estamos?'.
+
+        `output=embed` no necesita llave de API ni cuenta de Google, a diferencia
+        de la Maps JavaScript API. Por eso el visitante ve Google en todo el
+        sitio, y el mapa donde el administrador arrastra el pin —lo unico que si
+        se cobraria— se queda con OpenStreetMap.
+        """
+        consulta = self._consulta_de_mapa
+        return f'https://maps.google.com/maps?q={consulta}&z=16&output=embed' if consulta else ''
+
+    @property
+    def url_como_llegar(self):
+        """Abre la navegacion en el celular o Google Maps en la computadora."""
+        consulta = self._consulta_de_mapa
+        return f'https://www.google.com/maps/search/?api=1&query={consulta}' if consulta else ''

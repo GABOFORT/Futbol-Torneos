@@ -68,7 +68,11 @@
         {% endblock %}
     </main>
 
+    {% include '_patrocinadores.html' %}
+
     {% include 'footer.html' %}
+
+    {% include '_modal.html' %}
 
     {% if user.is_authenticated %}{% include '_aviso_sesion.html' %}{% endif %}
 

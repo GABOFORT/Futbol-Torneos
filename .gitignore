@@ -25,3 +25,12 @@ waitress-*.log
 # Bitacoras de seguridad y de errores (ver LOGGING en futbol/settings.py).
 # Nunca al repositorio: llevan nombres de usuario, IPs y trazas de error.
 logs/
+
+# Manuales de usuario y sus capturas. No van al repositorio: se entregan
+# aparte, y las capturas llevan nombres de jugadores y de entrenadores
+# reales sacados de la base de produccion.
+# Los documentos tecnicos que ya estaban versionados (avisos-tecnicos.md,
+# seguridad-agosto-2026.md, web.config.referencia) siguen igual: esto solo
+# cubre los manuales y su carpeta de imagenes.
+docs/manual-*.md
+docs/images/

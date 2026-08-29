@@ -82,6 +82,12 @@
                                     </svg>
                                     Editar
                                 </button>
+                                <a href="{% url 'patrocinadores' liga.pk %}" class="btn-accion">
+                                    <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18zm0-13.5a2.25 2.25 0 013.182 3.182L12 15.75l-3.182-5.068A2.25 2.25 0 0112 7.5z" />
+                                    </svg>
+                                    Patrocinadores
+                                </a>
                                 {% if es_superadmin %}
                                 <button data-url="{% url 'liga-delete' liga.pk %}?modal=1" class="open-modal btn-accion btn-accion-peligro">
                                     <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
@@ -103,5 +109,4 @@
     </div>
 </div>
 
-{% include '_modal.html' %}
 {% endblock %}

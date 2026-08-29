@@ -3,7 +3,7 @@ from django.urls import path
 
 from apps.usuarios.rutas import canonica
 
-from . import torneos, views
+from . import patrocinadores, torneos, views
 from .models import Categoria, Torneo
 
 urlpatterns = [
@@ -33,6 +33,11 @@ urlpatterns = [
     path('torneos/<int:pk>/categorias/<int:categoria_pk>/equipos/<int:equipo_pk>/editar/', torneos.torneo_equipo_edit, name='torneo-equipo-edit'),
     path('torneos/<slug:torneo>/', torneos.torneo_detalle, name='torneo-detalle'),
     path('torneos/<slug:torneo>/<slug:categoria>/', torneos.torneo_categoria, name='torneo-categoria'),
+    path('aliados/<int:pk>/', patrocinadores.ficha, name='patrocinador-ficha'),
+    path('ligas/<int:pk>/aliados/', patrocinadores.lista, name='patrocinadores'),
+    path('ligas/<int:pk>/aliados/crear/', patrocinadores.crear, name='patrocinador-create'),
+    path('ligas/<int:pk>/aliados/<int:patrocinador_pk>/editar/', patrocinadores.editar, name='patrocinador-edit'),
+    path('ligas/<int:pk>/aliados/<int:patrocinador_pk>/eliminar/', patrocinadores.eliminar, name='patrocinador-delete'),
     path('roles/', views.roles, name='roles'),
     path('buscar/', views.buscar_vista, name='buscar'),
     path('sedes/', views.sedes_vista, name='sedes'),
