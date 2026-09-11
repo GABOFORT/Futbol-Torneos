@@ -1,0 +1,22 @@
+{% if form.campos_de_titulos %}
+    <section class="titulos-campos">
+        <header class="titulos-campos-cabecera">
+            <h3>Palmarés que trae</h3>
+            <p>Opcional. Títulos que el equipo ganó antes de entrar a esta liga.</p>
+        </header>
+
+        <div class="titulos-filas">
+            {% for fila in form.campos_de_titulos %}
+                <label class="titulo-fila" for="{{ fila.campo.id_for_label }}">
+                    <img src="{{ fila.imagen }}" alt="" class="titulo-insignia" loading="lazy" decoding="async">
+                    <span class="titulo-nombre">{{ fila.etiqueta }}</span>
+                    <span class="titulo-control">
+                        {{ fila.campo }}
+                        <span class="titulo-unidad">veces</span>
+                    </span>
+                </label>
+                {% for error in fila.campo.errors %}<p class="error-campo">{{ error }}</p>{% endfor %}
+            {% endfor %}
+        </div>
+    </section>
+{% endif %}

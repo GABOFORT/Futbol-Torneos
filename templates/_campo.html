@@ -1,4 +1,5 @@
-{% if field.is_hidden %}
+{% if 'titulos_' in field.name %}
+{% elif field.is_hidden %}
     {{ field }}
 {% elif field.name == 'categorias' %}
     {% include 'equipos/_categorias_checkboxes.html' %}

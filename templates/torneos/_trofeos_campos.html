@@ -1,0 +1,88 @@
+{% load estaticos %}
+<section class="trofeos-campos" data-trofeos data-trofeos-tope="{{ form.trofeos_tope }}">
+    <header class="trofeos-campos-cabecera">
+        <div>
+            <h3>Trofeos a entregar</h3>
+            <p>Opcional. Se muestran a quien entre, con su nombre y su descripción.</p>
+        </div>
+        <span class="trofeos-cuenta" data-trofeos-cuenta aria-live="polite"></span>
+    </header>
+
+    <div class="trofeos-filas" data-trofeos-filas>
+        {% for fila in form.trofeos %}
+            <div class="trofeo-fila{% if fila.error %} trofeo-fila-invalida{% endif %}" data-trofeo-fila>
+                <input type="hidden" name="trofeo_indice" value="{{ fila.indice }}">
+                <input type="hidden" name="trofeo_id" value="{{ fila.id|default_if_none:'' }}">
+                <input type="hidden" name="trofeo_sin_imagen_{{ fila.indice }}" value="" data-trofeo-sin-imagen>
+
+                <div class="trofeo-foto-caja">
+                    <label class="trofeo-foto{% if fila.vista_previa %} trofeo-foto-cargada{% endif %}" data-trofeo-foto>
+                        <input type="file" name="trofeo_imagen_{{ fila.indice }}" accept="image/*" data-trofeo-archivo>
+                        <img src="{% if fila.vista_previa %}{{ fila.vista_previa }}{% else %}{% static_v 'img/copa-transparente.png' %}{% endif %}"
+                             data-trofeo-neutra="{% static_v 'img/copa-transparente.png' %}"
+                             alt="" data-trofeo-vista loading="lazy" decoding="async">
+                        <span class="trofeo-foto-texto" data-trofeo-foto-texto>{% if fila.vista_previa %}Cambiar{% else %}Subir foto{% endif %}</span>
+                    </label>
+                    <button type="button" class="trofeo-foto-quitar" data-trofeo-foto-quitar
+                            {% if not fila.vista_previa %}hidden{% endif %}
+                            title="Quitar la foto" aria-label="Quitar la foto">&times;</button>
+                </div>
+
+                <div class="trofeo-datos">
+                    <input type="text" name="trofeo_titulo" value="{{ fila.titulo }}" maxlength="140"
+                           class="trofeo-titulo{% if fila.error %} campo-invalido{% endif %}"
+                           placeholder="Campeón Copa Buho" aria-label="Nombre del trofeo"
+                           data-mensaje-error="Ponle un nombre a este trofeo o quita la fila con la ✕."
+                           {% if fila.error %}aria-invalid="true"{% endif %}>
+                    {% if fila.error %}<p class="error-campo">{{ fila.error }}</p>{% endif %}
+                    <input type="text" name="trofeo_descripcion" value="{{ fila.descripcion }}" maxlength="255"
+                           class="trofeo-descripcion" placeholder="Trofeo de 60 cm para el equipo ganador" aria-label="Descripción del trofeo">
+                    {% if fila.nombre_archivo %}
+                        <p class="trofeo-aviso">Vuelve a elegir la foto «{{ fila.nombre_archivo }}»: no se conserva al corregir el formulario.</p>
+                    {% endif %}
+                </div>
+
+                <button type="button" class="trofeo-quitar" data-trofeo-quitar
+                        title="Quitar este trofeo" aria-label="Quitar este trofeo">✕</button>
+            </div>
+        {% endfor %}
+    </div>
+
+    <p class="trofeos-vacio" data-trofeos-vacio {% if form.trofeos %}hidden{% endif %}>
+        Todavía no cargaste ninguno. Si no agregas trofeos, esta sección no se muestra.
+    </p>
+
+    <button type="button" class="trofeos-agregar" data-trofeos-agregar>+ Agregar trofeo</button>
+    <p class="trofeos-lleno" data-trofeos-lleno hidden>Llegaste al máximo de {{ form.trofeos_tope }} trofeos.</p>
+
+    <template data-trofeos-plantilla>
+        <div class="trofeo-fila" data-trofeo-fila>
+            <input type="hidden" name="trofeo_indice" value="__I__">
+            <input type="hidden" name="trofeo_id" value="">
+            <input type="hidden" name="trofeo_sin_imagen___I__" value="" data-trofeo-sin-imagen>
+
+            <div class="trofeo-foto-caja">
+                <label class="trofeo-foto" data-trofeo-foto>
+                    <input type="file" name="trofeo_imagen___I__" accept="image/*" data-trofeo-archivo>
+                    <img src="{% static_v 'img/copa-transparente.png' %}"
+                         data-trofeo-neutra="{% static_v 'img/copa-transparente.png' %}"
+                         alt="" data-trofeo-vista decoding="async">
+                    <span class="trofeo-foto-texto" data-trofeo-foto-texto>Subir foto</span>
+                </label>
+                <button type="button" class="trofeo-foto-quitar" data-trofeo-foto-quitar hidden
+                        title="Quitar la foto" aria-label="Quitar la foto">&times;</button>
+            </div>
+
+            <div class="trofeo-datos">
+                <input type="text" name="trofeo_titulo" value="" maxlength="140"
+                       class="trofeo-titulo" placeholder="Campeón Copa Buho" aria-label="Nombre del trofeo"
+                       data-mensaje-error="Ponle un nombre a este trofeo o quita la fila con la ✕.">
+                <input type="text" name="trofeo_descripcion" value="" maxlength="255"
+                       class="trofeo-descripcion" placeholder="Trofeo de 60 cm para el equipo ganador" aria-label="Descripción del trofeo">
+            </div>
+
+            <button type="button" class="trofeo-quitar" data-trofeo-quitar
+                    title="Quitar este trofeo" aria-label="Quitar este trofeo">✕</button>
+        </div>
+    </template>
+</section>

@@ -98,7 +98,9 @@ def _directorio(request, solo_propias):
     liga_id = request.GET.get('liga', '')
     categoria_id = request.GET.get('categoria', '')
 
-    directorio = Equipo.objects.filter(liga__in=ambito).select_related('liga', 'categoria', 'entrenador')
+    directorio = (Equipo.objects.filter(liga__in=ambito)
+                  .select_related('liga', 'categoria', 'entrenador')
+                  .prefetch_related('liga__trofeos', 'liga__patrocinadores'))
     directorio = buscar(directorio, termino, [
         'nombre', 'entrenador__first_name', 'entrenador__last_name', 'entrenador__username',
     ])
@@ -146,6 +148,7 @@ def equipo_create(request):
             entrenador = form.cleaned_data['entrenador']
             observaciones = form.cleaned_data['observaciones']
             categorias = form.cleaned_data['categorias']
+            titulos = form.titulos_limpios()
             avisos = []
             for categoria in categorias:
                 equipo = Equipo.objects.create(
@@ -155,6 +158,7 @@ def equipo_create(request):
                     categoria=categoria,
                     entrenador=entrenador,
                     observaciones=observaciones,
+                    **titulos,
                 )
                 if altas.hay_calendario(categoria):
                     aviso = altas.resumen(altas.agregar(categoria, equipo))

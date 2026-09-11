@@ -33,10 +33,16 @@ CAMINOS = (
 )
 
 
+def _paso(objeto, clave):
+    if isinstance(objeto, dict):
+        return objeto.get(clave)
+    return getattr(objeto, clave, None)
+
+
 def _seguir(objeto, camino):
     """Recorre `camino` a partir de `objeto`. None si algo por el medio falta."""
     for paso in camino:
-        objeto = getattr(objeto, paso, None)
+        objeto = _paso(objeto, paso)
         if objeto is None:
             return None
     return objeto
@@ -178,6 +184,54 @@ def portada_de_liga(context):
             return liga.portada_url
 
     return ''
+
+
+@register.simple_tag(takes_context=True)
+def patrocinadores_en_cabecera(context):
+    """Deja constancia de que el patrocinio ya se dibujo en la cabecera.
+
+    La franja del pie lo consulta para no repetirlo. Se anota en el request y no
+    en el contexto de cada vista porque la cabecera es la que sabe si los
+    mostro: obligar a cada vista a declararlo dejaria el sistema esperando que
+    alguien se acuerde, y la que se olvide sacaria el patrocinio dos veces sin
+    que nada lo avise.
+    """
+    peticion = context.get('request')
+    if peticion is not None:
+        peticion.patrocinadores_arriba = True
+    return ''
+
+
+@register.simple_tag
+def vitrina_de(liga):
+    """Los trofeos y los patrocinadores de una liga concreta.
+
+    Lo piden los listados que ya vienen agrupados por liga: ahi la pregunta no
+    es de que liga es la pantalla —hay varias— sino que tiene esta. Las vistas
+    precargan las dos relaciones, asi que la tira de cada grupo no suma
+    consultas.
+    """
+    trofeos = list(liga.trofeos.all())
+    aliados = [uno for uno in liga.patrocinadores.all() if uno.activo]
+    if not trofeos and not aliados:
+        return None
+    return {'liga': liga, 'trofeos': trofeos, 'lista': aliados}
+
+
+@register.simple_tag(takes_context=True)
+def trofeos_de_la_pantalla(context):
+    """Los trofeos que entrega la liga o el torneo al que pertenece esta pantalla.
+
+    Baja por la misma escalera que la portada y el patrocinio: la pregunta es la
+    misma, de que liga es esto. Asi la vitrina sale sola en las categorias, los
+    equipos y las tablas, y se dibuja siempre justo encima de los patrocinadores
+    sin que ninguna vista tenga que acordarse.
+    """
+    for liga in _ligas_del_contexto(context):
+        trofeos = list(liga.trofeos.all())
+        if trofeos:
+            return {'liga': liga, 'lista': trofeos}
+    return None
 
 
 @register.simple_tag(takes_context=True)

@@ -1,0 +1,29 @@
+{% load liga_actual %}{% vitrina_de liga as vitrina %}
+<div class="torneo-ui banner-liga">
+    {% include 'torneos/_iconos.html' %}
+
+    <header class="portada-torneo portada-torneo-compacta">
+        <div class="portada-torneo-fila">
+            <div class="portada-torneo-marca">
+                {% include 'usuarios/_logo_liga.html' with liga=liga clase='logo-liga-lg' %}
+                <div class="min-w-0">
+                    <p class="kicker kicker-claro">{% if kicker %}{{ kicker }}{% elif liga.torneo %}Torneo{% else %}Liga{% endif %}</p>
+                    <h2>{{ titulo|default:liga.nombre }}</h2>
+                    {% if resumen %}<p class="portada-torneo-datos"><span>{{ resumen }}</span></p>{% endif %}
+                </div>
+            </div>
+
+            <a href="{{ liga.get_absolute_url }}" class="boton-claro boton-chico">
+                <svg class="ico ico-sm"><use href="#ico-flecha"></use></svg> Abrir
+            </a>
+        </div>
+
+        {% if vitrina.lista %}
+            {% patrocinadores_en_cabecera %}<div class="portada-torneo-aliados">
+                <p class="portada-torneo-aliados-rotulo">Patrocinan</p>
+                {% include '_patrocinadores_tira.html' with aliado=vitrina %}
+            </div>
+        {% endif %}
+
+    </header>
+</div>

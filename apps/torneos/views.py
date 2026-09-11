@@ -120,7 +120,8 @@ def categoria_list(request):
     if inscripcion in ('1', '0'):
         categorias = categorias.filter(inscripcion_abierta=(inscripcion == '1'))
 
-    categorias = categorias.select_related('liga').annotate(
+    categorias = categorias.select_related('liga').prefetch_related(
+        'liga__trofeos', 'liga__patrocinadores').annotate(
         n_regulares=Count('partidos', filter=Q(partidos__fase=Partido.FASE_REGULAR)),
         n_pendientes=Count('partidos', filter=Q(partidos__fase=Partido.FASE_REGULAR) & ~Q(
             partidos__estado__in=[Partido.ESTADO_FINALIZADO, Partido.ESTADO_CANCELADO]

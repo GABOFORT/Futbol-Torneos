@@ -30,7 +30,8 @@ def estadisticas_ligas(request):
     `panorama` resuelve todas las ligas juntas, en una cantidad fija de
     consultas.
     """
-    ligas = ligas_visibles(request.user).order_by('nombre')
+    ligas = ligas_visibles(request.user).prefetch_related(
+        'trofeos', 'patrocinadores').order_by('nombre')
     return render(request, 'estadisticas/estadisticas_ligas.html', {
         'fichas': resumen.panorama(ligas),
         'titulo_pagina': 'Estadísticas',
@@ -77,11 +78,15 @@ def estadisticas_liga_categorias(request, liga):
     publico a las activas. Antes usaba `get_object_or_404(Liga, ...)` a secas y
     se llegaba a cualquier liga escribiendo su id en la URL.
     """
-    liga = get_object_or_404(ligas_visibles(request.user), slug=liga)
+    liga = get_object_or_404(
+        ligas_visibles(request.user).prefetch_related('trofeos'), slug=liga)
     return render(request, 'estadisticas/estadisticas_liga_categorias.html', {
         'liga': liga,
         'panel': resumen.panel(liga),
         'tarjetas': resumen.tarjetas(liga),
+        'puede_administrar': (request.user.is_authenticated
+                              and ligas_administradas(request.user)
+                              .filter(pk=liga.pk).exists()),
     })
 
 

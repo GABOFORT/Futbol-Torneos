@@ -113,7 +113,7 @@
     var ancla = anclaDe(campo);
     var aviso = document.createElement('p');
     aviso.className = 'error-campo';
-    aviso.textContent = mensaje || 'Este campo es obligatorio.';
+    aviso.textContent = mensaje || campo.dataset.mensajeError || 'Este campo es obligatorio.';
     ancla.parentNode.insertBefore(aviso, ancla.nextSibling);
   }
 

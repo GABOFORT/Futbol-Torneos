@@ -28,6 +28,7 @@ from apps.usuarios.permissions import (
 )
 
 from .models import Categoria, Liga, Palmares, Torneo
+from .trofeos import TrofeosMixin
 
 CATEGORIA_UNICA = 'General'
 
@@ -51,7 +52,7 @@ def aplicar_imagen(objeto, campo, valor):
         setattr(objeto, campo, valor)
 
 
-class TorneoForm(StyledFormMixin, forms.Form):
+class TorneoForm(TrofeosMixin, StyledFormMixin, forms.Form):
     CAMPOS_OBLIGATORIOS = ('nombre', 'fecha', 'modalidad')
     CAMPOS_CAPITALIZAR = ('nombre',)
 
@@ -109,6 +110,10 @@ class TorneoForm(StyledFormMixin, forms.Form):
                 self.fields[nombre].disabled = True
                 self.fields[nombre].help_text = (
                     'No se puede cambiar: el torneo ya tiene partidos.')
+
+    @property
+    def liga_de_trofeos(self):
+        return self.instancia.liga if self.instancia is not None else None
 
     def clean_modalidad(self):
         clave = self.cleaned_data['modalidad']
@@ -169,6 +174,7 @@ class TorneoForm(StyledFormMixin, forms.Form):
                     liga=liga, nombre=CATEGORIA_UNICA, cupo_equipos=equipos,
                     libre=True, vueltas=Categoria.VUELTA_UNICA,
                     empate_define_penales=penales, mini_liguilla=False)
+            self.guardar_trofeos(liga)
             return Torneo.objects.create(
                 liga=liga, fecha=inicio,
                 equipos=equipos if equipos is not None else Torneo.EQUIPOS_OCHO,
@@ -182,6 +188,7 @@ class TorneoForm(StyledFormMixin, forms.Form):
         aplicar_imagen(liga, 'portada', datos['portada'])
         liga.fecha_inicio, liga.fecha_final = inicio, fin
         liga.save()
+        self.guardar_trofeos(liga)
 
         torneo.fecha = inicio
         if equipos is not None:
@@ -579,14 +586,14 @@ def _tarjetas_de_categoria(torneo):
 def torneo_detalle(request, torneo):
     """La portada del torneo: su cuadro, o sus categorías si va por grupos."""
     torneo = get_object_or_404(
-        torneos_visibles(request.user).select_related('liga'), liga__slug=torneo)
+        torneos_visibles(request.user).select_related('liga')
+        .prefetch_related('liga__trofeos'), liga__slug=torneo)
     puede_administrar = _puede_administrar(request.user, torneo)
 
     contexto = {
         'torneo': torneo,
         'puede_administrar': puede_administrar,
         'es_superadmin': request.user.is_authenticated and request.user.es_super_admin(),
-
     }
 
     if torneo.es_por_grupos:

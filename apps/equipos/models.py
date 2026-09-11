@@ -1,8 +1,10 @@
 from django.conf import settings
+from django.core.validators import MaxValueValidator
 from django.db import models
 from django.urls import reverse
 
 from apps.usuarios import rutas
+from apps.usuarios.estaticos import url_estatico
 from apps.usuarios.imagenes import achicar_imagen
 from apps.usuarios.monograma import color_de, iniciales_de, monograma
 
@@ -57,6 +59,27 @@ class Equipo(models.Model):
         default='',
         help_text='Solo en las categorías de torneo que se juegan por grupos.',
     )
+    INSIGNIAS = [
+        ('titulos_campeon', 'Campeón', 'img/insignias/titulo-oro.png'),
+        ('titulos_subcampeon', 'Subcampeón', 'img/insignias/titulo-plata.png'),
+        ('titulos_tercero', 'Tercer lugar', 'img/insignias/titulo-bronce.png'),
+    ]
+
+    TOPE_TITULOS = 50
+
+    titulos_campeon = models.PositiveSmallIntegerField(
+        'Veces campeón', default=0,
+        validators=[MaxValueValidator(TOPE_TITULOS)],
+    )
+    titulos_subcampeon = models.PositiveSmallIntegerField(
+        'Veces subcampeón', default=0,
+        validators=[MaxValueValidator(TOPE_TITULOS)],
+    )
+    titulos_tercero = models.PositiveSmallIntegerField(
+        'Veces tercer lugar', default=0,
+        validators=[MaxValueValidator(TOPE_TITULOS)],
+    )
+
     formacion = models.CharField('Formación', max_length=20, choices=FORMACION_CHOICES, blank=True)
     observaciones = models.TextField('Observaciones', blank=True)
 
@@ -90,6 +113,31 @@ class Equipo(models.Model):
     def color(self):
         """El color propio del club, derivado de su nombre. Siempre el mismo."""
         return color_de(self.nombre)
+
+    @property
+    def insignias(self):
+        """Los titulos que el equipo traia antes de entrar a la liga.
+
+        Salen del propio equipo y no del palmares: ese guarda lo que se gano
+        aqui dentro y se calcula solo al cerrar una categoria. Estos los carga
+        el administrador al dar de alta al equipo, y son la unica forma de
+        reconocer lo que ganó en otro lado.
+
+        Se resuelve como propiedad para que cualquier pantalla que ya tenga el
+        equipo pueda pintarlas sin que su vista tenga que prepararlas.
+        """
+        salida = []
+        for campo, etiqueta, imagen in self.INSIGNIAS:
+            veces = getattr(self, campo)
+            if veces:
+                salida.append({
+                    'imagen': url_estatico(imagen),
+                    'etiqueta': etiqueta,
+                    'veces': veces,
+                    'titulo': f'{etiqueta} · {veces} vez' if veces == 1
+                              else f'{etiqueta} · {veces} veces',
+                })
+        return salida
 
     @property
     def escudo_url(self):

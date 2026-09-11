@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load liga_actual %}
 
 {% block titulo %}{{ titulo_pagina }}{% endblock %}
 
@@ -17,22 +18,12 @@
         {% endif %}
     </div>
 
-    <div class="rejilla-ligas">
+    <div class="bloques-ligas">
         {% for ficha in fichas %}
-            <a href="{{ ficha.liga.get_absolute_url }}" class="tarjeta-liga">
-                <header class="tarjeta-liga-cabecera">
-                    {% include 'usuarios/_logo_liga.html' with liga=ficha.liga clase='logo-liga-md' %}
-                    <div class="tarjeta-liga-titulo">
-                        <h2 class="tarjeta-liga-nombre">{{ ficha.liga.nombre }}</h2>
-                        <p class="tarjeta-liga-meta">
-                            {{ ficha.categorias }} categoría{{ ficha.categorias|pluralize:"s" }}
-                        </p>
-                    </div>
-                    <span class="estado-categoria estado-{{ ficha.estado.clave }}">{{ ficha.estado.texto }}</span>
-                </header>
+            <article class="bloque-liga">
+                {% include 'torneos/_banner_liga.html' with liga=ficha.liga resumen=ficha.categorias|stringformat:"s"|add:" categoría(s)" titulo=None kicker=None %}
 
-                <div class="tarjeta-liga-cuerpo">
-
+                <div class="bloque-liga-cuerpo">
                     <div class="anillo" role="img" aria-label="{{ ficha.avance }}% del calendario jugado">
                         <svg viewBox="0 0 64 64" class="anillo-svg" aria-hidden="true">
                             <circle class="anillo-fondo" cx="32" cy="32" r="{{ ficha.anillo.radio }}"></circle>
@@ -61,11 +52,12 @@
                             <dd>{{ ficha.goles }}{% if ficha.goles_por_partido %}<span>· {{ ficha.goles_por_partido }}/pj</span>{% endif %}</dd>
                         </div>
                     </dl>
+
+                    <span class="estado-categoria estado-{{ ficha.estado.clave }}">{{ ficha.estado.texto }}</span>
                 </div>
 
                 {% if ficha.campeones %}
-                    <footer class="tarjeta-liga-pie tarjeta-liga-pie-campeones">
-
+                    <div class="bloque-liga-pie bloque-liga-pie-campeones">
                         <p class="campeones-titulo">Campeones</p>
                         {% for premio in ficha.campeones %}
                             <span class="campeon-chip">
@@ -73,19 +65,21 @@
                                 <b>{{ premio.campeon }}</b>
                             </span>
                         {% endfor %}
-                    </footer>
+                    </div>
                 {% elif ficha.pendiente %}
-                    <footer class="tarjeta-liga-pie">
+                    <div class="bloque-liga-pie">
                         <span class="tarjeta-liga-pendiente">{{ ficha.pendiente }}</span>
-                    </footer>
+                    </div>
                 {% elif ficha.sin_fecha %}
-                    <footer class="tarjeta-liga-pie">
+                    <div class="bloque-liga-pie">
                         <span class="tarjeta-liga-pendiente">
                             {{ ficha.sin_fecha }} partido{{ ficha.sin_fecha|pluralize:"s" }} sin fecha asignada
                         </span>
-                    </footer>
+                    </div>
                 {% endif %}
-            </a>
+
+                {% include 'torneos/_trofeos_liga.html' with liga=ficha.liga %}
+            </article>
         {% empty %}
             <div class="rounded-3xl border border-green-100 bg-white p-10 text-center">
                 <p class="text-gray-500">{{ vacio }}</p>

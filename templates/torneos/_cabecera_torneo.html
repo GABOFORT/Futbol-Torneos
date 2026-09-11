@@ -1,3 +1,4 @@
+{% load liga_actual %}{% patrocinadores_de_la_pantalla as aliado %}
 <header class="portada-torneo">
     <div class="portada-torneo-fila">
         <div class="portada-torneo-marca">
@@ -31,4 +32,11 @@
             {% endif %}
         </div>
     </div>
+
+    {% if aliado %}
+        {% patrocinadores_en_cabecera %}<div class="portada-torneo-aliados">
+            <p class="portada-torneo-aliados-rotulo">Patrocinan</p>
+            {% include '_patrocinadores_tira.html' %}
+        </div>
+    {% endif %}
 </header>

@@ -39,8 +39,53 @@ class EntrenadorChoiceField(forms.ModelChoiceField):
         return usuario.nombre_visible
 
 
-class EquipoCreateForm(StyledFormMixin, forms.Form):
+class TitulosMixin:
+    """El palmares que un equipo trae de afuera, compartido por los dos formularios.
+
+    El alta y la edicion son formularios distintos —uno crea el equipo en varias
+    categorias de golpe y el otro trabaja sobre uno solo—, pero la pregunta es la
+    misma. Vive aca para que el dia que cambie una insignia no haya que
+    acordarse de tocar los dos.
+    """
+
+    CAMPOS_DE_TITULOS = tuple(campo for campo, _, _ in Equipo.INSIGNIAS)
+
+    def _preparar_titulos(self):
+        for nombre, etiqueta, _ in Equipo.INSIGNIAS:
+            campo = self.fields.get(nombre)
+            if campo is None:
+                continue
+            campo.required = False
+            campo.label = etiqueta
+            campo.widget.attrs.update({'min': 0, 'max': Equipo.TOPE_TITULOS})
+
+    def _quitar_titulos(self):
+        for nombre in self.CAMPOS_DE_TITULOS:
+            self.fields.pop(nombre, None)
+
+    @property
+    def campos_de_titulos(self):
+        from apps.usuarios.estaticos import url_estatico
+
+        return [{'campo': self[nombre], 'imagen': url_estatico(imagen), 'etiqueta': etiqueta}
+                for nombre, etiqueta, imagen in Equipo.INSIGNIAS
+                if nombre in self.fields]
+
+    def titulos_limpios(self):
+        return {nombre: self.cleaned_data.get(nombre) or 0
+                for nombre in self.CAMPOS_DE_TITULOS if nombre in self.fields}
+
+
+def campo_de_titulos():
+    return forms.IntegerField(required=False, min_value=0, max_value=Equipo.TOPE_TITULOS)
+
+
+class EquipoCreateForm(TitulosMixin, StyledFormMixin, forms.Form):
     CAMPOS_CAPITALIZAR = ('nombre',)
+
+    titulos_campeon = campo_de_titulos()
+    titulos_subcampeon = campo_de_titulos()
+    titulos_tercero = campo_de_titulos()
 
     nombre = forms.CharField(max_length=140, label='Nombre del equipo')
     escudo = forms.ImageField(
@@ -76,6 +121,7 @@ class EquipoCreateForm(StyledFormMixin, forms.Form):
         self.fields['entrenador'].queryset = Usuario.objects.entrenadores(user).order_by(
             'first_name', 'last_name', 'username'
         )
+        self._preparar_titulos()
 
     def clean_categorias(self):
         categorias = self.cleaned_data['categorias']
@@ -100,7 +146,7 @@ class EquipoCreateForm(StyledFormMixin, forms.Form):
         return datos
 
 
-class EquipoForm(StyledFormMixin, forms.ModelForm):
+class EquipoForm(TitulosMixin, StyledFormMixin, forms.ModelForm):
     CAMPOS_CAPITALIZAR = ('nombre',)
 
     categoria = forms.ModelChoiceField(
@@ -114,7 +160,8 @@ class EquipoForm(StyledFormMixin, forms.ModelForm):
 
     class Meta:
         model = Equipo
-        fields = ['nombre', 'escudo', 'liga', 'categoria', 'entrenador', 'observaciones']
+        fields = ['nombre', 'escudo', 'liga', 'categoria', 'entrenador', 'observaciones',
+                  'titulos_campeon', 'titulos_subcampeon', 'titulos_tercero']
         widgets = {
             'observaciones': forms.Textarea(attrs={'rows': 3}),
         }
@@ -128,6 +175,8 @@ class EquipoForm(StyledFormMixin, forms.ModelForm):
             self._fijar_categoria_del_torneo()
         else:
             self._ofrecer_ligas_de(user)
+
+        self._quitar_titulos() if self.torneo else self._preparar_titulos()
 
         entrenadores = Usuario.objects.entrenadores(user)
         if self.instance.pk and self.instance.entrenador_id:
@@ -181,6 +230,8 @@ class EquipoForm(StyledFormMixin, forms.ModelForm):
             motivo = categoria.motivo_para_no_recibir_equipos()
             if motivo:
                 self.add_error('categoria', motivo)
+
+        cleaned_data.update(self.titulos_limpios())
 
         nombre = cleaned_data.get('nombre')
         if nombre and categoria:

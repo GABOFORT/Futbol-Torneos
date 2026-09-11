@@ -1,0 +1,51 @@
+{% load liga_actual %}{% patrocinadores_de_la_pantalla as aliado %}
+<div class="torneo-ui mb-8">
+    {% include 'torneos/_iconos.html' %}
+
+    <header class="portada-torneo">
+        <div class="portada-torneo-fila">
+            <div class="portada-torneo-marca">
+                {% include 'usuarios/_logo_liga.html' with liga=liga clase='logo-liga-lg' %}
+                <div class="min-w-0">
+                    <p class="kicker kicker-claro">Liga</p>
+                    <h1>{{ liga.nombre }}</h1>
+                    <p class="portada-torneo-datos">
+                        {% if liga.fechas_texto %}
+                            <span><svg class="ico ico-sm"><use href="#ico-calendario"></use></svg>{{ liga.fechas_texto }}</span>
+                        {% endif %}
+                        <span><svg class="ico ico-sm"><use href="#ico-grupos"></use></svg>{{ tarjetas|length }} categoría{{ tarjetas|length|pluralize:"s" }}</span>
+                        {% if liga.cerrada %}
+                            <span><svg class="ico ico-sm"><use href="#ico-copa"></use></svg>Temporada concluida</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+
+            <div class="portada-torneo-acciones">
+                {% include '_boton_compartir.html' with titulo=liga.nombre url=compartir_url clase='compartir-claro compartir-chico' %}
+                {% if puede_administrar %}
+                    <a href="{% url 'ligas-list' %}" class="boton-claro boton-chico">
+                        <svg class="ico ico-sm"><use href="#ico-flecha"></use></svg> Mis ligas
+                    </a>
+                    <button data-url="{% url 'liga-edit' liga.pk %}?modal=1" class="open-modal boton-claro boton-chico">
+                        <svg class="ico ico-sm"><use href="#ico-lapiz"></use></svg> Editar
+                    </button>
+                    <a href="{% url 'patrocinadores' liga.pk %}" class="boton-claro boton-chico">
+                        <svg class="ico ico-sm"><use href="#ico-pin"></use></svg> Patrocinadores
+                    </a>
+                {% else %}
+                    <a href="{% url 'estadisticas-ligas' %}" class="boton-claro boton-chico">
+                        <svg class="ico ico-sm"><use href="#ico-flecha"></use></svg> Todas las ligas
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if aliado %}
+            {% patrocinadores_en_cabecera %}<div class="portada-torneo-aliados">
+                <p class="portada-torneo-aliados-rotulo">Patrocinan</p>
+                {% include '_patrocinadores_tira.html' %}
+            </div>
+        {% endif %}
+    </header>
+</div>

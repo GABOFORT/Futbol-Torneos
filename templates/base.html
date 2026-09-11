@@ -20,6 +20,12 @@
     <meta name="twitter:card" content="summary_large_image">
     <link rel="canonical" href="{{ compartir_url }}">
 
+    <link rel="icon" href="{% static_v 'img/icono/favicon.ico' %}" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static_v 'img/icono/favicon-32.png' %}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{% static_v 'img/icono/favicon-16.png' %}">
+    <link rel="apple-touch-icon" href="{% static_v 'img/icono/apple-touch-icon.png' %}">
+    <link rel="manifest" href="{% static_v 'site.webmanifest' %}">
+
     <link rel="stylesheet" href="{% static_v 'css/tokens.css' %}">
     <link rel="stylesheet" href="{% static_v 'css/tailwind.css' %}">
     <link rel="stylesheet" href="{% static_v 'css/portada.css' %}">
@@ -35,6 +41,7 @@
     <script defer src="{% static_v 'js/seguir.js' %}"></script>
     <script defer src="{% static_v 'js/toasts.js' %}"></script>
     <script defer src="{% static_v 'js/compartir.js' %}"></script>
+    <script defer src="{% static_v 'js/trofeos.js' %}"></script>
 
     {% if user.is_authenticated %}<script defer src="{% static_v 'js/sesion.js' %}"></script>{% endif %}
     {% block cabecera_extra %}{% endblock %}
@@ -67,6 +74,8 @@
         {% block contenido %}
         {% endblock %}
     </main>
+
+    {% include 'torneos/_trofeos_vitrina.html' %}
 
     {% include '_patrocinadores.html' %}
 

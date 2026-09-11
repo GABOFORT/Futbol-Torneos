@@ -12,6 +12,7 @@
 
                         {% include 'torneos/_trofeos.html' with trofeos=trofeos tam='lg' %}
                     </h2>
+                    {% include 'equipos/_insignias_equipo.html' %}
                     <p class="perfil-entrenador">
                         {% if equipo.entrenador %}
                             <span class="perfil-etiqueta-dt">DT</span> {{ equipo.entrenador.nombre_visible }}

@@ -31,6 +31,8 @@
                 {% include '_campo.html' %}
             {% endfor %}
 
+            {% include 'torneos/_trofeos_campos.html' %}
+
             <div class="pie-formulario">
                 <a href="{% url 'torneo-list' %}" class="boton-fantasma">Cancelar</a>
                 <button type="submit" class="boton-primario">Guardar</button>

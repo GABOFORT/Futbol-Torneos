@@ -1,0 +1,12 @@
+<ul class="trofeos-rejilla">
+    {% for trofeo in trofeos %}
+        <li class="trofeo-carta{% if not trofeo.propia %} trofeo-carta-neutra{% endif %}">
+            <img class="trofeo-carta-copa" src="{{ trofeo.imagen_url }}"
+                 alt="{{ trofeo.titulo }}" loading="lazy" decoding="async">
+            <h3 class="trofeo-carta-nombre">{{ trofeo.titulo }}</h3>
+            {% if trofeo.descripcion %}
+                <p class="trofeo-carta-nota">{{ trofeo.descripcion }}</p>
+            {% endif %}
+        </li>
+    {% endfor %}
+</ul>

@@ -15,6 +15,7 @@
                 <div>
                     <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">Equipo</p>
                     <h1 class="mt-1 text-3xl font-bold text-green-900">{{ equipo.nombre }}</h1>
+                    {% include 'equipos/_insignias_equipo.html' with tam='lg' %}
                 </div>
 
                 {% include 'torneos/_trofeos.html' with trofeos=trofeos_equipo tam='xl' %}

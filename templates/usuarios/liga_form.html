@@ -24,6 +24,8 @@
                     {% endfor %}
                 </div>
             {% endfor %}
+            {% include 'torneos/_trofeos_campos.html' %}
+
             <div class="flex items-center gap-3">
                 <button type="submit" class="inline-flex items-center justify-center rounded-full bg-green-800 px-6 py-3 text-sm font-semibold text-white hover:bg-green-700">Guardar</button>
                 <a href="{% url 'ligas-list' %}" class="text-sm font-semibold text-green-700 hover:text-green-900">Cancelar</a>

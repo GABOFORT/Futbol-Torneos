@@ -7,17 +7,9 @@
 
 {% block contenido %}
 <div class="max-w-[100rem] mx-auto p-6">
-    <div class="mb-8 flex items-center gap-4">
-        {% include 'usuarios/_logo_liga.html' with liga=liga clase='logo-liga-lg' %}
-        <div>
-            <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">Estadísticas</p>
-            <h1 class="text-3xl font-bold text-green-900">{{ liga.nombre }}</h1>
-            {% if liga.cerrada %}
-                <span class="insignia insignia-final mt-2 inline-flex">Temporada concluida</span>
-            {% endif %}
-        </div>
-    </div>
+    {% include 'estadisticas/_cabecera_liga.html' %}
 
+    <div class="hoja-liga">
     <section class="panel-cifras">
         <div class="cifra">
             <p class="cifra-numero">{{ panel.equipos }}<span class="cifra-de">/{{ panel.cupo }}</span></p>
@@ -67,7 +59,7 @@
         <a href="{% url 'estadisticas-porteros' %}?liga={{ liga.pk }}" class="btn-accion">Porterías menos vencidas</a>
     </div>
 
-    <div class="rejilla-ligas">
+    <div class="rejilla-cats">
         {% for ficha in tarjetas %}
             <a href="{{ ficha.categoria.get_absolute_url }}" class="tarjeta-categoria">
                 <header class="tarjeta-categoria-cabecera">
@@ -134,7 +126,7 @@
             </div>
         {% endfor %}
     </div>
+    </div>
 
-    <a href="{% url 'estadisticas-ligas' %}" class="mt-6 inline-flex items-center text-sm font-semibold text-green-700 hover:text-green-900">← Volver a ligas</a>
 </div>
 {% endblock %}

@@ -3,6 +3,7 @@ from django.contrib.auth.password_validation import validate_password
 
 from .models import Usuario
 from apps.torneos.models import Liga
+from apps.torneos.trofeos import TrofeosMixin
 
 
 def a_titulo(texto):
@@ -242,7 +243,7 @@ class UsuarioUpdateForm(PasswordValidadoMixin, CuotaSegunRolMixin, StyledFormMix
         return usuario
 
 
-class LigaForm(StyledFormMixin, forms.ModelForm):
+class LigaForm(TrofeosMixin, StyledFormMixin, forms.ModelForm):
     CAMPOS_OBLIGATORIOS = ('nombre', 'fecha_inicio', 'fecha_final')
     CAMPOS_CAPITALIZAR = ()
 
@@ -255,3 +256,13 @@ class LigaForm(StyledFormMixin, forms.ModelForm):
             'fecha_final': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
             'activa': forms.CheckboxInput(),
         }
+
+    @property
+    def liga_de_trofeos(self):
+        return self.instance
+
+    def save(self, commit=True):
+        liga = super().save(commit=commit)
+        if commit:
+            self.guardar_trofeos(liga)
+        return liga

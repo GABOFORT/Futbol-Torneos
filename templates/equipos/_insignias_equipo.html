@@ -1,0 +1,11 @@
+{% if equipo.insignias %}
+    <span class="insignias-equipo{% if tam %} insignias-equipo-{{ tam }}{% endif %}"
+          aria-label="Palmarés anterior de {{ equipo.nombre }}">
+        {% for insignia in equipo.insignias %}
+            <span class="insignia-equipo" title="{{ insignia.titulo }}">
+                <img src="{{ insignia.imagen }}" alt="{{ insignia.etiqueta }}" loading="lazy" decoding="async">
+                {% if insignia.veces > 1 %}<b class="insignia-veces">{{ insignia.veces }}</b>{% endif %}
+            </span>
+        {% endfor %}
+    </span>
+{% endif %}

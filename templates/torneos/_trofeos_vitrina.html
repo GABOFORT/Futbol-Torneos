@@ -1,0 +1,10 @@
+{% load liga_actual %}{% trofeos_de_la_pantalla as premio %}
+{% if premio %}
+    <section class="trofeos-vitrina" aria-labelledby="trofeos-titulo">
+        <div class="trofeos-interior">
+            <p class="trofeos-rotulo">En juego</p>
+            <h2 class="trofeos-titulo" id="trofeos-titulo">Trofeos a entregar</h2>
+            {% include 'torneos/_trofeos_tarjetas.html' with trofeos=premio.lista %}
+        </div>
+    </section>
+{% endif %}

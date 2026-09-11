@@ -1,0 +1,10 @@
+{% load liga_actual %}{% vitrina_de liga as vitrina %}
+{% if vitrina.trofeos %}
+    <section class="trofeos-vitrina trofeos-vitrina-bloque" aria-label="Trofeos de {{ liga.nombre }}">
+        <div class="trofeos-interior">
+            <p class="trofeos-rotulo">En juego</p>
+            <h2 class="trofeos-titulo">Trofeos a entregar</h2>
+            {% include 'torneos/_trofeos_tarjetas.html' with trofeos=vitrina.trofeos %}
+        </div>
+    </section>
+{% endif %}

@@ -9,6 +9,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.usuarios import rutas
+from apps.usuarios.estaticos import url_estatico
 from apps.usuarios.imagenes import TOPE_PANTALLA_PX, achicar_imagen
 from apps.usuarios.monograma import iniciales_de, monograma
 
@@ -78,6 +79,18 @@ class Liga(models.Model):
         un club sin imagen no se abrevien con reglas distintas.
         """
         return iniciales_de(self.nombre)
+
+    @property
+    def fechas_texto(self):
+        inicio, fin = self.fecha_inicio, self.fecha_final
+        if not inicio and not fin:
+            return ''
+        if inicio and fin:
+            if inicio == fin:
+                return f'{inicio:%d/%m/%Y}'
+            return f'del {inicio:%d/%m/%Y} al {fin:%d/%m/%Y}'
+        unica = inicio or fin
+        return f'desde el {unica:%d/%m/%Y}' if inicio else f'hasta el {unica:%d/%m/%Y}'
 
     @property
     def fecha_vencimiento(self):
@@ -1024,3 +1037,47 @@ class Patrocinador(models.Model):
         """Abre la navegacion en el celular o Google Maps en la computadora."""
         consulta = self._consulta_de_mapa
         return f'https://www.google.com/maps/search/?api=1&query={consulta}' if consulta else ''
+
+
+class Trofeo(models.Model):
+    IMAGEN_POR_DEFECTO = 'img/copa-transparente.png'
+
+    TOPE_POR_LIGA = 20
+
+    liga = models.ForeignKey(
+        Liga, on_delete=models.CASCADE, related_name='trofeos')
+    titulo = models.CharField('Trofeo', max_length=140)
+    descripcion = models.CharField('Descripción', max_length=255, blank=True)
+    imagen = models.ImageField(
+        'Imagen del trofeo', upload_to='trofeos/', blank=True, null=True)
+    orden = models.PositiveSmallIntegerField('Orden', default=0)
+
+    class Meta:
+        verbose_name = 'Trofeo'
+        verbose_name_plural = 'Trofeos'
+        ordering = ['orden', 'id']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['liga', 'titulo'],
+                name='trofeo_unico_por_liga',
+                deferrable=models.Deferrable.DEFERRED,
+                violation_error_message='Ya cargaste un trofeo con ese nombre.',
+            ),
+        ]
+
+    def __str__(self):
+        return self.titulo
+
+    def save(self, *args, **kwargs):
+        achicar_imagen(self.imagen)
+        super().save(*args, **kwargs)
+
+    @property
+    def imagen_url(self):
+        if self.imagen:
+            return self.imagen.url
+        return url_estatico(self.IMAGEN_POR_DEFECTO)
+
+    @property
+    def propia(self):
+        return bool(self.imagen)

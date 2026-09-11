@@ -5,13 +5,7 @@
 {% block contenido %}
 <div class="max-w-[100rem] mx-auto p-6">
 
-    <div class="mb-8 flex items-center gap-4">
-        {% include 'usuarios/_logo_liga.html' with liga=categoria.liga clase='logo-liga-lg' %}
-        <div>
-            <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">{{ categoria.liga.nombre }}</p>
-            <h1 class="text-3xl font-bold text-green-900">{{ categoria.nombre }}</h1>
-        </div>
-    </div>
+    {% include 'torneos/_banner_liga.html' with liga=categoria.liga kicker=categoria.liga.nombre titulo=categoria.nombre resumen=categoria.restricciones_texto %}
 
     <div class="tablero-categoria">
     <div class="overflow-x-auto rounded-3xl bg-white border border-green-100 shadow-sm">

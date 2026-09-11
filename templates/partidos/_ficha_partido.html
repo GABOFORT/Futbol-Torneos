@@ -27,6 +27,7 @@
                 </button>
                 <p class="ficha-localia">Local</p>
                 {% include 'torneos/_trofeos.html' with trofeos=lados.0.trofeos tam='md' %}
+                {% include 'equipos/_insignias_equipo.html' with equipo=partido.equipo_local %}
 
                 {% if partido.ganador_penales_id == partido.equipo_local_id %}
                     <span class="chip-penales">{% if partido.es_liguilla %}Ganó penales{% else %}+1 penales{% endif %}</span>
@@ -68,6 +69,7 @@
                 </button>
                 <p class="ficha-localia">Visitante</p>
                 {% include 'torneos/_trofeos.html' with trofeos=lados.1.trofeos tam='md' %}
+                {% include 'equipos/_insignias_equipo.html' with equipo=partido.equipo_visitante %}
                 {% if partido.ganador_penales_id == partido.equipo_visitante_id %}
                     <span class="chip-penales">{% if partido.es_liguilla %}Ganó penales{% else %}+1 penales{% endif %}</span>
                 {% endif %}
