@@ -201,8 +201,24 @@ class ResultadoForm(StyledFormMixin, forms.ModelForm):
         este marcador porque la liguilla es a ida y vuelta: una vuelta 1-1 con
         una ida 2-0 no define nada, y una vuelta 2-1 puede estar cerrando una
         serie empatada.
+
+        En el torneo regular NO hay serie que sumar: cada jornada se juega una
+        sola vez, asi que el marcador que se esta cargando ya es el resultado
+        final. Hay que cortar aca, ANTES de la consulta de abajo: esa busca "el
+        otro partido de la llave" por (categoria, fase, orden), y en el torneo
+        regular la fase siempre esta vacia y el orden solo dice la posicion
+        dentro de su jornada. Sin filtrar por jornada terminaba agarrando un
+        partido de OTRA fecha con el mismo orden y sumandoselo.
+
+        Paso el 04/09/2026 en la Jornada 2 de un torneo: Cart 2-2 Pejelagartos
+        se cruzo con un Pejelagartos 0-4 Santos de la Jornada 1 (los dos con
+        orden=1), el global daba 6-2 y el formulario se negaba a registrar los
+        penales de un empate real. Habia 14 partidos asi.
         """
         partido = self.instance
+        if not partido.es_liguilla:
+            return locales == visitantes
+
         propios, ajenos = locales, visitantes
         ida = Partido.objects.filter(
             categoria_id=partido.categoria_id, fase=partido.fase,
@@ -240,13 +256,39 @@ class ResultadoForm(StyledFormMixin, forms.ModelForm):
         hay_marcador = locales is not None and visitantes is not None
         empate = hay_marcador and self._global_empatado(locales, visitantes)
 
-        define_ronda = self.instance.cierra_la_llave and (
-            self.instance.fase == Partido.FASE_FINAL or self.instance.es_de_torneo)
-        if define_ronda and empate:
+        partido = self.instance
+        define_ronda = partido.cierra_la_llave and (
+            partido.fase == Partido.FASE_FINAL or partido.es_de_torneo)
+
+        # En la fase de grupos de un TORNEO el empate tambien obliga a cargar la
+        # tanda, pero solo si la categoria se creo con el punto extra activado.
+        # Ese ajuste (empate_define_penales, en torneos.models) decide si un
+        # empate reparte 1 punto a cada uno y ahi se acaba, o si ademas el que
+        # gana los penales se lleva uno mas: el punto extra lo suma tabla.py
+        # leyendo ganador_penales, asi que un empate guardado sin tanda deja la
+        # tabla incompleta y sin forma de notarlo. En un torneo que se juega y
+        # se premia el mismo dia no hay margen para descubrirlo despues.
+        #
+        # Se exige SOLO en torneos (es_de_torneo) y no en las ligas de
+        # temporada: el torneo se configura entero antes de arrancar y no
+        # cambia, mientras que una liga corre meses y obligar a la tanda
+        # frenaria la captura de jornadas que ya estan cerradas sin ella.
+        #
+        # Se mira ademas la configuracion de la categoria porque cuando el
+        # punto extra esta apagado el __init__ ya borro los tres campos: aca no
+        # habria donde poner el error.
+        jornada_con_punto_extra = (
+            not partido.es_liguilla
+            and partido.es_de_torneo
+            and partido.categoria.empate_define_penales)
+
+        if empate and (define_ronda or jornada_con_punto_extra):
             if not ganador:
                 self.add_error(
                     'ganador_penales',
-                    'La final terminó empatada: indica quién ganó la tanda de penales.',
+                    'La final terminó empatada: indica quién ganó la tanda de penales.'
+                    if define_ronda else
+                    'El partido terminó empatado: indica quién ganó la tanda de penales.',
                 )
             uno, otro = datos.get('penales_local'), datos.get('penales_visitante')
             if uno is None or otro is None:
@@ -260,7 +302,7 @@ class ResultadoForm(StyledFormMixin, forms.ModelForm):
                     'Una tanda no puede terminar igualada: se patea hasta que alguien queda arriba.',
                 )
             elif ganador:
-                arriba = self.instance.equipo_local if uno > otro else self.instance.equipo_visitante
+                arriba = partido.equipo_local if uno > otro else partido.equipo_visitante
                 if ganador.id != arriba.id:
                     self.add_error(
                         'ganador_penales',
@@ -268,8 +310,12 @@ class ResultadoForm(StyledFormMixin, forms.ModelForm):
                     )
 
         if ganador and hay_marcador and not empate:
+            # El mensaje se adapta: hablar del "global de la serie" en un partido
+            # de jornada mandaba a buscar un partido de ida que no existe.
             self.add_error(
                 'ganador_penales',
-                'Los penales solo se patean cuando el global de la serie termina empatado.',
+                'Los penales solo se patean cuando el global de la serie termina empatado.'
+                if partido.es_liguilla else
+                'Los penales solo se patean cuando el partido termina empatado.',
             )
         return datos
