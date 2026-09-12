@@ -26,6 +26,11 @@ waitress-*.log
 # Nunca al repositorio: llevan nombres de usuario, IPs y trazas de error.
 logs/
 
+# Respaldos de la base de datos (ver `manage.py respaldar_bd`).
+# NUNCA al repositorio: son la base de produccion entera, con los datos de
+# todos los jugadores y las contrasenas cifradas de las cuentas adentro.
+respaldos/
+
 # La carpeta de documentacion no va al repositorio. Adentro viven los manuales
 # de usuario y sus capturas, que llevan nombres de entrenadores y de jugadores
 # menores de edad sacados de la base de produccion, y las notas tecnicas de
