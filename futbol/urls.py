@@ -18,12 +18,17 @@ from decouple import config
 from django.contrib import admin
 from django.urls import path, include, re_path
 from django.conf import settings
+from django.views.generic import TemplateView
 from django.views.static import serve as servir_estatico
 
 RUTA_ADMIN = config('RUTA_ADMIN', default='admin').strip('/')
 
 urlpatterns = [
     path(f'{RUTA_ADMIN}/', admin.site.urls),
+    path('favicon.ico', servir_estatico,
+         {'path': 'img/icono/favicon.ico', 'document_root': settings.STATIC_ROOT}),
+    path('robots.txt', TemplateView.as_view(
+        template_name='robots.txt', content_type='text/plain')),
     path('', include('apps.torneos.urls')),
     path('usuarios/', include('apps.usuarios.urls')),
     path('equipos/', include('apps.equipos.urls')),

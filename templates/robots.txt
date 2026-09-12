@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /usuarios/
+Disallow: /buscar/
+Disallow: /jugadores/
+Disallow: /media/jugadores/
