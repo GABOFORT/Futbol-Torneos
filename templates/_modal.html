@@ -1,17 +1,83 @@
-<div id="modal-root" class="fixed inset-0 hidden items-center justify-center bg-black/40 p-4 z-50"></div>
+<div id="modal-root" class="fixed inset-0 hidden items-center justify-center bg-black/40 p-4 z-50"
+     role="dialog" aria-modal="true" tabindex="-1"></div>
 
 <script>
 (function () {
+  const root = document.getElementById('modal-root');
+  const ENFOCABLES = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]),' +
+                     ' select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  let focoPrevio = null;
+
+  function estaAbierto() {
+    return !root.classList.contains('hidden');
+  }
+
+  function enfocablesDelModal() {
+    return Array.prototype.filter.call(
+      root.querySelectorAll(ENFOCABLES),
+      function (el) { return el.offsetWidth > 0 || el.offsetHeight > 0; }
+    );
+  }
+
+  function rotularModal() {
+    const titulo = root.querySelector('h2, h3');
+    if (!titulo) {
+      root.removeAttribute('aria-labelledby');
+      return;
+    }
+    if (!titulo.id) titulo.id = 'modal-titulo';
+    root.setAttribute('aria-labelledby', titulo.id);
+  }
+
+  function atraparFoco(event) {
+    const elementos = enfocablesDelModal();
+    if (!elementos.length) {
+      event.preventDefault();
+      root.focus();
+      return;
+    }
+    const primero = elementos[0];
+    const ultimo = elementos[elementos.length - 1];
+    const actual = document.activeElement;
+    if (!root.contains(actual)) {
+      event.preventDefault();
+      (event.shiftKey ? ultimo : primero).focus();
+      return;
+    }
+    if (event.shiftKey && actual === primero) {
+      event.preventDefault();
+      ultimo.focus();
+    } else if (!event.shiftKey && actual === ultimo) {
+      event.preventDefault();
+      primero.focus();
+    }
+  }
+
   function closeModal() {
-    const root = document.getElementById('modal-root');
     root.classList.add('hidden');
     root.classList.remove('flex');
     root.innerHTML = '';
+    root.removeAttribute('aria-labelledby');
+    document.body.classList.remove('modal-abierto');
+    if (focoPrevio && focoPrevio.isConnected) focoPrevio.focus();
+    focoPrevio = null;
+  }
+
+  function avisarFalloEnvio(form) {
+    if (window.liberarFormulario) window.liberarFormulario(form);
+    let aviso = form.querySelector('[data-error-envio]');
+    if (!aviso) {
+      aviso = document.createElement('p');
+      aviso.className = 'error-campo';
+      aviso.setAttribute('role', 'alert');
+      aviso.dataset.errorEnvio = '1';
+      form.insertBefore(aviso, form.firstChild);
+    }
+    aviso.textContent = 'No se pudo guardar. Revisa tu conexión e inténtalo de nuevo.';
+    aviso.scrollIntoView({ block: 'nearest' });
   }
 
   function bindModal(url) {
-    const root = document.getElementById('modal-root');
-
     const cerrar = document.getElementById('modal-close');
     const cancelar = document.getElementById('modal-cancel');
     if (cerrar) cerrar.onclick = closeModal;
@@ -24,6 +90,9 @@
     if (window.initAliado) window.initAliado(root);
 
     if (window.initTrofeos) window.initTrofeos(root);
+
+    rotularModal();
+    root.focus();
 
     const form = document.getElementById('modal-form');
     if (!form) return;
@@ -42,20 +111,24 @@
             root.innerHTML = text;
             bindModal(url);
           }
+        })
+        .catch(function () {
+          avisarFalloEnvio(form);
         });
     });
   }
 
   function abrirCargando() {
-    const root = document.getElementById('modal-root');
     root.innerHTML = '<div class="modal-cargando" role="status" aria-live="polite">' +
                      '<span class="modal-girador"></span>' +
                      '<span class="modal-cargando-texto">Cargando…</span></div>';
     root.classList.remove('hidden');
     root.classList.add('flex');
+    document.body.classList.add('modal-abierto');
   }
 
   function openModal(url) {
+    if (!estaAbierto()) focoPrevio = document.activeElement;
     abrirCargando();
 
     fetch(url, { cache: 'no-store' })
@@ -63,15 +136,14 @@
       .then(html => {
 
         if (recargarSiCorresponde(html)) { closeModal(); return; }
-        const root = document.getElementById('modal-root');
         root.innerHTML = html;
         bindModal(url);
       })
       .catch(function () {
 
-        const root = document.getElementById('modal-root');
         root.innerHTML = '<div class="modal-cargando" role="alert">' +
                          '<span class="modal-cargando-texto">No se pudo cargar. Revisa tu conexión e inténtalo de nuevo.</span></div>';
+        root.focus();
       });
   }
 
@@ -104,10 +176,12 @@
   });
 
   document.addEventListener('keydown', function (event) {
+    if (!estaAbierto()) return;
     if (event.key === 'Escape') closeModal();
+    else if (event.key === 'Tab') atraparFoco(event);
   });
 
-  document.getElementById('modal-root').addEventListener('click', function (event) {
+  root.addEventListener('click', function (event) {
     if (event.target === this) closeModal();
   });
 })();

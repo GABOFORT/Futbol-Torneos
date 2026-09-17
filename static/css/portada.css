@@ -1417,7 +1417,8 @@ main:focus { outline: none; }
 
 .sesion-fondo[hidden] { display: none; }
 
-body.sesion-quieta { overflow: hidden; }
+body.sesion-quieta,
+body.modal-abierto { overflow: hidden; }
 
 .sesion-tarjeta {
     width: 100%;

@@ -141,15 +141,26 @@
     form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(function (boton) {
       boton.classList.add('enviando');
       boton.setAttribute('aria-busy', 'true');
-      if (boton.dataset.textoEnviando) boton.textContent = boton.dataset.textoEnviando;
+      if (boton.dataset.textoEnviando) {
+        boton.dataset.textoOriginal = boton.textContent;
+        boton.textContent = boton.dataset.textoEnviando;
+      }
     });
 
     window.addEventListener('pageshow', function () {
-      delete form.dataset.enviando;
-      form.querySelectorAll('.enviando').forEach(function (boton) {
-        boton.classList.remove('enviando');
-        boton.removeAttribute('aria-busy');
-      });
+      liberarEnvio(form);
+    });
+  }
+
+  function liberarEnvio(form) {
+    delete form.dataset.enviando;
+    form.querySelectorAll('.enviando').forEach(function (boton) {
+      boton.classList.remove('enviando');
+      boton.removeAttribute('aria-busy');
+      if (boton.dataset.textoOriginal) {
+        boton.textContent = boton.dataset.textoOriginal;
+        delete boton.dataset.textoOriginal;
+      }
     });
   }
 
@@ -194,6 +205,8 @@
       });
     });
   }
+
+  window.liberarFormulario = liberarEnvio;
 
   window.initFormulario = function (raiz) {
     raiz = raiz || document;
