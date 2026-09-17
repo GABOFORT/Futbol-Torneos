@@ -8,8 +8,10 @@ from apps.usuarios.estaticos import url_estatico
 from apps.usuarios.imagenes import achicar_imagen
 from apps.usuarios.monograma import color_de, iniciales_de, monograma
 
+from .redes import ConRedesSociales, url_de_red
 
-class Equipo(models.Model):
+
+class Equipo(ConRedesSociales, models.Model):
     FORMACION_CHOICES = [
         ('4-4-2', '4-4-2'),
         ('4-3-3', '4-3-3'),
@@ -57,7 +59,7 @@ class Equipo(models.Model):
         choices=GRUPO_CHOICES,
         blank=True,
         default='',
-        help_text='Solo en las categorías de torneo que se juegan por grupos.',
+        help_text='Solo en las categorías que se juegan por grupos.',
     )
     INSIGNIAS = [
         ('titulos_campeon', 'Campeón', 'img/insignias/titulo-oro.png'),
@@ -82,6 +84,11 @@ class Equipo(models.Model):
 
     formacion = models.CharField('Formación', max_length=20, choices=FORMACION_CHOICES, blank=True)
     observaciones = models.TextField('Observaciones', blank=True)
+
+    red_instagram = url_de_red('red_instagram')
+    red_facebook = url_de_red('red_facebook')
+    red_twitter = url_de_red('red_twitter')
+    red_tiktok = url_de_red('red_tiktok')
 
     class Meta:
         verbose_name = 'Equipo'

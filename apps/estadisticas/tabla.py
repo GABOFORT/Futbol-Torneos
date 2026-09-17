@@ -27,9 +27,8 @@ def calcular(categoria, grupo=None):
     entran igual, pero solo suman para el equipo que pertenece a este grupo: el
     rival ya los sumo en la tabla del suyo.
     """
-    equipos = Equipo.objects.filter(categoria=categoria)
-    if grupo:
-        equipos = equipos.filter(grupo=grupo)
+    equipos = (categoria.equipos_del_grupo(grupo) if grupo
+               else Equipo.objects.filter(categoria=categoria)).order_by('id')
     tabla = {equipo.id: fila_vacia(equipo) for equipo in equipos}
 
     partidos = Partido.objects.filter(
@@ -83,7 +82,24 @@ def calcular(categoria, grupo=None):
     for fila in tabla.values():
         fila['dg'] = fila['gf'] - fila['gc']
 
-    return sorted(tabla.values(), key=lambda fila: (-fila['pts'], -fila['dg'], -fila['gf']))
+    return sorted(tabla.values(), key=_orden)
+
+
+def _orden(fila):
+    """Puntos, diferencia, goles a favor y, al final, quien se inscribio antes.
+
+    Los tres primeros son la regla deportiva. El cuarto existe porque sin el la
+    tabla quedaba a merced de Postgres: con todo empatado —y al arrancar la
+    temporada TODOS empatan en cero— el orden era el que devolviera la consulta,
+    que no esta garantizado y cambia al editar cualquier equipo. Un padre podia
+    ver a su hijo tercero y al recargar verlo noveno sin que se jugara nada.
+
+    Se desempata por antiguedad y no por nombre para que la tabla en blanco
+    cuente algo cierto: el orden en que se fueron inscribiendo. El `id` es el
+    orden de alta real; `fecha_creacion` solo guarda el dia y no distingue entre
+    los que entraron el mismo.
+    """
+    return -fila['pts'], -fila['dg'], -fila['gf'], fila['equipo'].id
 
 
 def puesto_de(posiciones, equipo_id):

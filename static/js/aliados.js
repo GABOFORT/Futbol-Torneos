@@ -30,6 +30,7 @@
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '© colaboradores de OpenStreetMap',
+      referrerPolicy: 'strict-origin-when-cross-origin',
     }).addTo(mapa);
 
     var pin = null;
@@ -44,7 +45,8 @@
       if (campoDireccion.dataset.tocado) return;
       texto(estado, 'Buscando la dirección del punto…');
       fetch('https://nominatim.openstreetmap.org/reverse?format=json&zoom=18&lat=' +
-            punto.lat.toFixed(6) + '&lon=' + punto.lng.toFixed(6))
+            punto.lat.toFixed(6) + '&lon=' + punto.lng.toFixed(6),
+            { referrerPolicy: 'strict-origin-when-cross-origin' })
         .then(function (r) { return r.json(); })
         .then(function (datos) {
           texto(estado, '');
@@ -92,7 +94,8 @@
       if (!consulta) return;
       texto(estado, 'Buscando…');
       fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' +
-            encodeURIComponent(consulta))
+            encodeURIComponent(consulta),
+            { referrerPolicy: 'strict-origin-when-cross-origin' })
         .then(function (r) { return r.json(); })
         .then(function (resultados) {
           if (!resultados.length) {

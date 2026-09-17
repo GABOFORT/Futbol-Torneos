@@ -5,8 +5,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.equipos.models import Equipo
 from apps.jugadores.models import Jugador
-from apps.partidos import altas, liguilla
-from apps.partidos.calendario import armar_jornadas
+from apps.partidos import altas, grupos, liguilla
+from apps.partidos.calendario import MINIMO_EQUIPOS, armar_jornadas
 from apps.partidos.models import Partido
 from apps.usuarios.eliminar import vista_eliminar
 from apps.usuarios.filtros import buscar, campo_texto, campo_opciones, hay_filtros
@@ -15,6 +15,7 @@ from apps.usuarios.permissions import (
 )
 
 from . import busqueda, portada
+from .torneos import SiembraForm
 from .forms import CategoriaForm
 from .models import Categoria, Liga, Sede
 
@@ -144,16 +145,17 @@ def categoria_list(request):
             and equipos_por_categoria.get(categoria.id, 0) >= 2
         )
         categoria.tiene_calendario = categoria.n_regulares > 0
+        categoria.cupo_lleno = (
+            equipos_por_categoria.get(categoria.id, 0) >= categoria.cupo_equipos
+        )
         categoria.alta_abierta = (
             categoria.tiene_calendario
             and not categoria.liguilla_iniciada
+            and not categoria.cupo_lleno
             and altas.puede_agregar(categoria)
         )
         categoria.jornada_de_alta = (
             altas.jornada_de_ingreso(categoria) if categoria.alta_abierta else None
-        )
-        categoria.cupo_lleno = (
-            equipos_por_categoria.get(categoria.id, 0) >= categoria.cupo_equipos
         )
 
     ligas = (ligas_administradas(user) if puede_administrar
@@ -291,6 +293,8 @@ def categoria_iniciar_liguilla(request, pk):
     """
     categoria = get_object_or_404(Categoria, pk=pk, liga__in=ligas_administradas(request.user))
     if request.method == 'POST':
+        if categoria.juega_por_grupos:
+            return redirect('categoria-sembrar', pk=categoria.pk)
         motivo = liguilla.motivo_para_no_iniciar(categoria)
         if motivo:
             messages.error(request, motivo)
@@ -305,31 +309,121 @@ def categoria_iniciar_liguilla(request, pk):
     return redirect('categoria-list')
 
 
+def _reparto_en_texto(reparto):
+    return ', '.join(f'{letra} con {cuantos}' for letra, cuantos in sorted(reparto.items()))
+
+
+@admin_liga_required
+def categoria_sembrar(request, pk):
+    """Arma a mano la primera ronda de liguilla de una categoria por grupos.
+
+    Con grupos no hay una tabla unica de donde salga la siembra: cada grupo
+    lleva la suya y la regla de quien pasa —los dos primeros de cada uno, el
+    mejor tercero, el ganador del A contra el del C— cambia de una liga a otra.
+    La elige el administrador; de ahi en adelante los ganadores avanzan solos.
+
+    Es la misma pantalla del torneo: mismo formulario, mismo motor y mismo
+    dibujo del cuadro.
+    """
+    categoria = get_object_or_404(
+        Categoria.objects.select_related('liga'),
+        pk=pk, liga__in=ligas_administradas(request.user))
+
+    motivo = grupos.motivo_para_no_sembrar(categoria)
+    if motivo:
+        messages.error(request, motivo)
+        return redirect('categoria-list')
+
+    form = SiembraForm(categoria, request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        creados = grupos.sembrar(categoria, form.fase, form.cruces)
+        etiqueta = creados[0].get_fase_display().lower() if creados else 'la ronda'
+        messages.success(request, (
+            f'{categoria.nombre}: quedaron armadas {len(creados)} llave(s) de '
+            f'{etiqueta}. De aquí en adelante los ganadores avanzan solos.'))
+        return redirect('categoria-liguilla', categoria_id=categoria.pk)
+
+    return render(request, 'torneos/torneo_siembra.html', {
+        'form': form,
+        'title': f'Armar la liguilla · {categoria.nombre}',
+        'kicker': categoria.liga.nombre,
+        'categoria': categoria,
+        'grupos': grupos.posiciones(categoria),
+        'llaves_por_ronda': grupos.LLAVES_POR_RONDA,
+    })
+
+
 @admin_liga_required
 def categoria_generar_partidos(request, pk):
     categoria = get_object_or_404(Categoria, pk=pk, liga__in=ligas_administradas(request.user))
-    if request.method == 'POST':
-        if categoria.inscripcion_abierta:
-            messages.error(request, 'Primero cierra la inscripción de equipos para poder generar los partidos.')
-        elif Partido.objects.filter(categoria=categoria).exists():
-            messages.error(request, 'Ya se generaron los partidos de esta categoría.')
-        else:
-            equipos = list(Equipo.objects.filter(categoria=categoria).order_by('nombre'))
-            if len(equipos) < 2:
-                messages.error(request, 'Necesitas al menos 2 equipos inscritos para generar partidos.')
-            else:
-                jornadas = armar_jornadas(equipos, vueltas=categoria.vueltas)
-                partidos = [
-                    Partido(categoria=categoria, jornada=numero, equipo_local=local, equipo_visitante=visitante)
-                    for numero, encuentros in enumerate(jornadas, start=1)
-                    for local, visitante in encuentros
-                ]
-                Partido.objects.bulk_create(partidos)
-                aviso = f'Se generaron {len(partidos)} partidos en {len(jornadas)} jornadas.'
-                if categoria.vueltas == Categoria.VUELTA_IDA_Y_VUELTA:
-                    aviso += ' Se juega a ida y vuelta: cada par se enfrenta dos veces, una en cada cancha.'
-                if len(equipos) % 2:
-                    aviso += ' Al ser una cantidad impar de equipos, uno descansa por jornada.'
-                aviso += ' Desde ahora ya no se puede cambiar el formato de la categoría.'
-                messages.success(request, aviso + ' Ahora asígnales fecha y hora.')
+    if request.method != 'POST':
+        return redirect('categoria-list')
+
+    if categoria.inscripcion_abierta:
+        messages.error(request, 'Primero cierra la inscripción de equipos para poder generar los partidos.')
+    elif Partido.objects.filter(categoria=categoria).exists():
+        messages.error(request, 'Ya se generaron los partidos de esta categoría.')
+    elif categoria.juega_por_grupos:
+        _generar_por_grupos(request, categoria)
+    else:
+        _generar_corrido(request, categoria)
     return redirect('categoria-list')
+
+
+def _generar_corrido(request, categoria):
+    """Todos contra todos en una sola rueda, con una tabla unica."""
+    equipos = list(Equipo.objects.filter(categoria=categoria).order_by('nombre'))
+    if len(equipos) < MINIMO_EQUIPOS:
+        messages.error(request, f'Necesitas al menos {MINIMO_EQUIPOS} equipos '
+                                f'inscritos para generar partidos.')
+        return
+
+    jornadas = armar_jornadas(equipos, vueltas=categoria.vueltas)
+    Partido.objects.bulk_create([
+        Partido(categoria=categoria, jornada=numero,
+                equipo_local=local, equipo_visitante=visitante)
+        for numero, encuentros in enumerate(jornadas, start=1)
+        for local, visitante in encuentros
+    ])
+
+    partidos = sum(len(encuentros) for encuentros in jornadas)
+    extras = []
+    if len(equipos) % 2:
+        extras.append('al ser una cantidad impar de equipos, uno descansa por jornada')
+    messages.success(request, _aviso(categoria, partidos, len(jornadas), extras))
+
+
+def _generar_por_grupos(request, categoria):
+    """Una rueda por grupo, repartiendo antes a los equipos.
+
+    El reparto va aca y no en una pantalla aparte porque en una liga sale de la
+    cuenta: los equipos se acomodan parejo por orden de inscripcion y no hay
+    nada que el administrador tenga que decidir. Un torneo relampago si los
+    elige a mano, y por eso pide el grupo al inscribir cada equipo.
+    """
+    reparto = grupos.repartir(categoria)
+
+    motivo = grupos.motivo_para_no_generar(categoria)
+    if motivo:
+        messages.error(request, motivo)
+        return
+
+    creados = grupos.generar(categoria)
+    jornadas = len({partido.jornada for partido in creados})
+    extras = [f'{categoria.grupos} grupos con su propia tabla '
+              f'({_reparto_en_texto(reparto)})']
+    if categoria.cruces_entre_grupos:
+        extras.append('los que descansan se emparejan con otro grupo')
+    messages.success(request, _aviso(categoria, len(creados), jornadas, extras) +
+                     ' Cuando terminen, arma la liguilla con los que pasen.')
+
+
+def _aviso(categoria, partidos, jornadas, extras=()):
+    detalles = list(extras)
+    if categoria.vueltas == Categoria.VUELTA_IDA_Y_VUELTA:
+        detalles.insert(0, 'se juega a ida y vuelta, una vez en cada cancha')
+    texto = f'Se generaron {partidos} partidos en {jornadas} jornadas'
+    if detalles:
+        texto += ': ' + '; '.join(detalles)
+    return (f'{texto}. Ahora asígnales fecha y cancha. Desde ahora ya no se '
+            f'puede cambiar el formato de la categoría.')

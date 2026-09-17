@@ -10,6 +10,7 @@
                     <p class="kicker kicker-claro">{% if kicker %}{{ kicker }}{% elif liga.torneo %}Torneo{% else %}Liga{% endif %}</p>
                     <h2>{{ titulo|default:liga.nombre }}</h2>
                     {% if resumen %}<p class="portada-torneo-datos"><span>{{ resumen }}</span></p>{% endif %}
+                    {% include '_redes.html' with redes=liga.redes_sociales de=liga.nombre %}
                 </div>
             </div>
 

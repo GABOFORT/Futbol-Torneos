@@ -1,4 +1,4 @@
-{% if 'titulos_' in field.name %}
+{% if 'titulos_' in field.name or field.name|slice:':4' == 'red_' %}
 {% elif field.is_hidden %}
     {{ field }}
 {% elif field.name == 'categorias' %}

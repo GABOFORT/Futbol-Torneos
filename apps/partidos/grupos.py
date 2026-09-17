@@ -1,4 +1,11 @@
-"""Fase de grupos de una categoría de torneo.
+"""Fase de grupos: cada grupo juega su propio todos contra todos.
+
+Lo usan las dos competencias. Un torneo relampago corre una sola vuelta y en un
+dia, asi que empareja entre grupos a los que descansan para que nadie viaje en
+balde; una liga suele ir a ida y vuelta y deja descansar de verdad, porque ese
+partido cruzado suma puntos y dejaria a unos equipos con mas jornadas jugadas
+que otros. Las dos cosas salen de la categoria (`vueltas` y
+`cruces_entre_grupos`), no de saber cual competencia es.
 
 Los equipos de la categoria se reparten en los grupos que el administrador
 declare —de la A a la Z— y cada grupo juega su propio todos contra todos. Los
@@ -14,12 +21,48 @@ Los partidos salen sin fecha: un torneo por grupos dura varios dias y se juega
 en varias canchas, asi que la agenda la pone el administrador partido por
 partido.
 """
+from apps.equipos.models import Equipo
 from apps.estadisticas import tabla
 
 from . import calendario, relampago
 from .models import Partido
 
-MINIMO_POR_GRUPO = 2
+
+def repartir(categoria):
+    """Acomoda a los equipos en sus grupos y devuelve como quedo el reparto.
+
+    Por bloques y en orden de inscripcion: los primeros que se dieron de alta
+    forman el grupo A, los siguientes el B. Cuando la division no es exacta, los
+    primeros grupos se llevan el equipo de mas —trece equipos en dos grupos son
+    siete y seis; en tres, cinco, cuatro y cuatro—.
+
+    Lo hace el sistema y no el administrador porque en una liga el reparto sale
+    de la cuenta y no de un criterio: no hay nada que decidir que la division no
+    resuelva sola. Un torneo relampago si lo elige a mano —ahi los grupos se
+    sortean o se acomodan— y por eso pide el grupo al inscribir cada equipo.
+
+    Con un solo grupo no escribe nada: ahi la pertenencia es implicita
+    (ver `Categoria.equipos_del_grupo`).
+    """
+    if not categoria.varios_grupos:
+        return categoria.reparto
+
+    letras = categoria.letras_de_grupo
+    equipos = list(categoria.equipos.order_by('id'))
+    por_grupo, sobrantes = divmod(len(equipos), len(letras))
+
+    cambiados, desde = [], 0
+    for numero, letra in enumerate(letras):
+        cuantos = por_grupo + (1 if numero < sobrantes else 0)
+        for equipo in equipos[desde:desde + cuantos]:
+            if equipo.grupo != letra:
+                equipo.grupo = letra
+                cambiados.append(equipo)
+        desde += cuantos
+
+    if cambiados:
+        Equipo.objects.bulk_update(cambiados, ['grupo'])
+    return categoria.reparto
 
 
 def motivo_para_no_generar(categoria):
@@ -29,11 +72,11 @@ def motivo_para_no_generar(categoria):
     if categoria.partidos.exists():
         return 'Los partidos de esta categoría ya están generados.'
 
-    reparto = categoria.reparto
+    minimo = categoria.MINIMO_POR_GRUPO
     flacos = [f'grupo {letra} ({cuantos})'
-              for letra, cuantos in reparto.items() if cuantos < MINIMO_POR_GRUPO]
+              for letra, cuantos in categoria.reparto.items() if cuantos < minimo]
     if flacos:
-        return (f'Cada grupo necesita al menos {MINIMO_POR_GRUPO} equipos. '
+        return (f'Cada grupo necesita al menos {minimo} equipos. '
                 f'Falta llenar: {", ".join(flacos)}.')
 
     sueltos = categoria.equipos_sin_grupo
@@ -54,15 +97,17 @@ def generar(categoria):
 
     por_jornada, descansan = {}, {}
     for letra in categoria.letras_de_grupo:
-        equipos = list(categoria.equipos.filter(grupo=letra).order_by('id'))
-        for numero, jornada in enumerate(calendario.armar_jornadas(equipos), start=1):
+        equipos = list(categoria.equipos_del_grupo(letra).order_by('id'))
+        rueda = calendario.armar_jornadas(equipos, vueltas=categoria.vueltas)
+        for numero, jornada in enumerate(rueda, start=1):
             por_jornada.setdefault(numero, []).extend(jornada)
             libre = _el_que_descansa(equipos, jornada)
             if libre is not None:
                 descansan.setdefault(numero, []).append(libre)
 
-    for numero, libres in descansan.items():
-        por_jornada.setdefault(numero, []).extend(_cruces(libres))
+    if categoria.cruces_entre_grupos:
+        for numero, libres in descansan.items():
+            por_jornada.setdefault(numero, []).extend(_cruces(libres))
 
     partidos = []
     for numero in sorted(por_jornada):

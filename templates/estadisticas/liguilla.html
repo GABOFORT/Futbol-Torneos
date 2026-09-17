@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load estaticos %}
 
 {% block titulo %}Liguilla - {{ categoria.nombre }}{% endblock %}
 
@@ -41,5 +41,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{% static 'js/bracket.js' %}" defer></script>
+<script src="{% static_v 'js/bracket.js' %}" defer></script>
 {% endblock %}

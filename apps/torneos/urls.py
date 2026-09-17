@@ -50,4 +50,5 @@ urlpatterns = [
     path('categorias/<int:pk>/reabrir-inscripcion/', views.categoria_reabrir_inscripcion, name='categoria-reabrir-inscripcion'),
     path('categorias/<int:pk>/generar-partidos/', views.categoria_generar_partidos, name='categoria-generar-partidos'),
     path('categorias/<int:pk>/iniciar-liguilla/', views.categoria_iniciar_liguilla, name='categoria-iniciar-liguilla'),
+    path('categorias/<int:pk>/sembrar/', views.categoria_sembrar, name='categoria-sembrar'),
 ]

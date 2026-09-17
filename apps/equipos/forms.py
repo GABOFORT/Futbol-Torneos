@@ -7,6 +7,7 @@ from apps.usuarios.permissions import ligas_administradas
 from apps.torneos.models import Categoria
 
 from .models import Equipo
+from .redes import RedesSocialesMixin, campo_de_red
 
 
 def categorias_que_ya_tienen(nombre, categorias, excluir=None):
@@ -80,12 +81,17 @@ def campo_de_titulos():
     return forms.IntegerField(required=False, min_value=0, max_value=Equipo.TOPE_TITULOS)
 
 
-class EquipoCreateForm(TitulosMixin, StyledFormMixin, forms.Form):
+class EquipoCreateForm(RedesSocialesMixin, TitulosMixin, StyledFormMixin, forms.Form):
     CAMPOS_CAPITALIZAR = ('nombre',)
 
     titulos_campeon = campo_de_titulos()
     titulos_subcampeon = campo_de_titulos()
     titulos_tercero = campo_de_titulos()
+
+    red_instagram = campo_de_red(Equipo, 'red_instagram')
+    red_facebook = campo_de_red(Equipo, 'red_facebook')
+    red_twitter = campo_de_red(Equipo, 'red_twitter')
+    red_tiktok = campo_de_red(Equipo, 'red_tiktok')
 
     nombre = forms.CharField(max_length=140, label='Nombre del equipo')
     escudo = forms.ImageField(
@@ -122,6 +128,7 @@ class EquipoCreateForm(TitulosMixin, StyledFormMixin, forms.Form):
             'first_name', 'last_name', 'username'
         )
         self._preparar_titulos()
+        self._preparar_redes()
 
     def clean_categorias(self):
         categorias = self.cleaned_data['categorias']
@@ -146,7 +153,7 @@ class EquipoCreateForm(TitulosMixin, StyledFormMixin, forms.Form):
         return datos
 
 
-class EquipoForm(TitulosMixin, StyledFormMixin, forms.ModelForm):
+class EquipoForm(RedesSocialesMixin, TitulosMixin, StyledFormMixin, forms.ModelForm):
     CAMPOS_CAPITALIZAR = ('nombre',)
 
     categoria = forms.ModelChoiceField(
@@ -161,7 +168,8 @@ class EquipoForm(TitulosMixin, StyledFormMixin, forms.ModelForm):
     class Meta:
         model = Equipo
         fields = ['nombre', 'escudo', 'liga', 'categoria', 'entrenador', 'observaciones',
-                  'titulos_campeon', 'titulos_subcampeon', 'titulos_tercero']
+                  'titulos_campeon', 'titulos_subcampeon', 'titulos_tercero',
+                  *RedesSocialesMixin.CAMPOS_DE_REDES]
         widgets = {
             'observaciones': forms.Textarea(attrs={'rows': 3}),
         }
@@ -177,6 +185,7 @@ class EquipoForm(TitulosMixin, StyledFormMixin, forms.ModelForm):
             self._ofrecer_ligas_de(user)
 
         self._quitar_titulos() if self.torneo else self._preparar_titulos()
+        self._preparar_redes()
 
         entrenadores = Usuario.objects.entrenadores(user)
         if self.instance.pk and self.instance.entrenador_id:

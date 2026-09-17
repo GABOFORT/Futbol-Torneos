@@ -9,8 +9,10 @@
             {% for field in seccion.campos %}
                 {% if field.name == 'limite_edad' %}<div class="restricciones" data-restricciones>{% endif %}
                 {% if field.name == 'edad_minima' %}<div class="restricciones" data-minimos>{% endif %}
+                {% if field.name == 'grupos' %}<div class="restricciones" data-solo-grupos{% if not form.muestra_grupos %} hidden{% endif %}>{% endif %}
                 {% include '_campo.html' %}
                 {% if field.name == 'peso_minimo' %}</div></div>{% endif %}
+                {% if field.name == 'cruces_entre_grupos' %}</div>{% endif %}
             {% endfor %}
         </div>
     </fieldset>

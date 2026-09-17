@@ -1,0 +1,14 @@
+{% if redes %}
+    <ul class="redes-equipo" aria-label="Redes sociales de {{ de }}">
+        {% for red in redes %}
+            <li>
+                <a href="{{ red.url }}" target="_blank" rel="noopener noreferrer nofollow"
+                   class="red-enlace red-{{ red.icono }}"
+                   title="{{ red.etiqueta }}"
+                   aria-label="{{ red.etiqueta }} de {{ de }} (se abre en otra pestaña)">
+                    {% include '_icono_red.html' with icono=red.icono %}
+                </a>
+            </li>
+        {% endfor %}
+    </ul>
+{% endif %}

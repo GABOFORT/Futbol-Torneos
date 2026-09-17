@@ -7514,3 +7514,112 @@ a.ficha-dato-valor { color: var(--verde-700); font-weight: 700; }
         flex: 1 1 6rem;
     }
 }
+
+.grupos-de-liga {
+    margin-top: 1.5rem;
+}
+
+.grupos-rejilla {
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+}
+
+.redes-filas {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.red-fila {
+    display: grid;
+    gap: 0.375rem;
+}
+
+.red-fila-nombre {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: var(--texto-sm);
+    font-weight: 600;
+    color: var(--gris-700);
+}
+
+.red-fila .red-fila-nombre + input {
+    margin-top: 0;
+}
+
+.red-marca {
+    display: inline-grid;
+    place-items: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 999px;
+    color: var(--blanco);
+}
+
+.red-marca .red-icono {
+    width: 1rem;
+    height: 1rem;
+}
+
+.redes-equipo {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0.625rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.red-enlace {
+    display: inline-grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 999px;
+    color: var(--blanco);
+    transition: transform var(--paso-normal), box-shadow var(--paso-normal);
+}
+
+.red-enlace .red-icono {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.red-enlace:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
+}
+
+.red-enlace:focus-visible {
+    outline: 3px solid var(--verde-300);
+    outline-offset: 2px;
+}
+
+.red-instagram {
+    background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fd5949 45%, #d6249f 60%, #285aeb 90%);
+}
+
+.red-facebook {
+    background: #1877f2;
+}
+
+.red-x {
+    background: #0f1419;
+}
+
+.red-tiktok {
+    background: #010101;
+    box-shadow: inset 2px 0 0 #25f4ee, inset -2px 0 0 #fe2c55;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .red-enlace {
+        transition: none;
+    }
+
+    .red-enlace:hover {
+        transform: none;
+    }
+}

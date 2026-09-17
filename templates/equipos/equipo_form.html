@@ -13,7 +13,7 @@
             {% csrf_token %}
             {{ form.non_field_errors }}
             {% for field in form %}
-                {% if 'titulos_' in field.name %}
+                {% if 'titulos_' in field.name or field.name|slice:':4' == 'red_' %}
                 {% elif field.name == 'categorias' %}
                     {% include 'equipos/_categorias_checkboxes.html' %}
                 {% else %}
@@ -30,6 +30,7 @@
                 {% endif %}
             {% endfor %}
             {% include 'equipos/_titulos_campos.html' %}
+            {% include 'equipos/_redes_campos.html' %}
 
             <div class="flex items-center gap-3">
                 <button type="submit" class="inline-flex items-center justify-center rounded-full bg-green-800 px-6 py-3 text-sm font-semibold text-white hover:bg-green-700">Guardar</button>

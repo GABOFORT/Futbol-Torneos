@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth.password_validation import validate_password
 
 from .models import Usuario
+from apps.equipos.redes import RedesSocialesMixin
 from apps.torneos.models import Liga
 from apps.torneos.trofeos import TrofeosMixin
 
@@ -243,19 +244,24 @@ class UsuarioUpdateForm(PasswordValidadoMixin, CuotaSegunRolMixin, StyledFormMix
         return usuario
 
 
-class LigaForm(TrofeosMixin, StyledFormMixin, forms.ModelForm):
+class LigaForm(RedesSocialesMixin, TrofeosMixin, StyledFormMixin, forms.ModelForm):
     CAMPOS_OBLIGATORIOS = ('nombre', 'fecha_inicio', 'fecha_final')
     CAMPOS_CAPITALIZAR = ()
 
     class Meta:
         model = Liga
-        fields = ['nombre', 'logo', 'portada', 'descripcion', 'fecha_inicio', 'fecha_final', 'activa']
+        fields = ['nombre', 'logo', 'portada', 'descripcion', 'fecha_inicio', 'fecha_final',
+                  'activa', *RedesSocialesMixin.CAMPOS_DE_REDES]
         widgets = {
             'descripcion': forms.Textarea(attrs={'rows': 3}),
             'fecha_inicio': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
             'fecha_final': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
             'activa': forms.CheckboxInput(),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._preparar_redes()
 
     @property
     def liga_de_trofeos(self):

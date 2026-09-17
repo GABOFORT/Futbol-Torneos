@@ -1,5 +1,4 @@
 {% extends 'base.html' %}
-{% load static %}
 {% load estaticos %}
 
 {% block titulo %}{{ categoria.nombre }} - {{ torneo.nombre }}{% endblock %}
@@ -123,12 +122,14 @@
                 {% endfor %}
             </div>
 
-            <details class="tabla-general">
-                <summary>Ver la tabla general de {{ categoria.nombre }}</summary>
-                <div class="tabla-general-cuerpo">
-                    {% include 'torneos/_tabla_grupo.html' with etiqueta='Tabla general' letra='' posiciones=general clasifican=0 mostrar_grupo=1 %}
-                </div>
-            </details>
+            {% if categoria.varios_grupos %}
+                <details class="tabla-general">
+                    <summary>Ver la tabla general de {{ categoria.nombre }}</summary>
+                    <div class="tabla-general-cuerpo">
+                        {% include 'torneos/_tabla_grupo.html' with etiqueta='Tabla general' letra='' posiciones=general clasifican=0 mostrar_grupo=1 %}
+                    </div>
+                </details>
+            {% endif %}
         </section>
 
         <section class="panel" id="partidos">
@@ -275,6 +276,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{% static 'js/bracket.js' %}" defer></script>
-<script src="{% static 'js/siembra.js' %}" defer></script>
+<script src="{% static_v 'js/bracket.js' %}" defer></script>
+<script src="{% static_v 'js/siembra.js' %}" defer></script>
 {% endblock %}

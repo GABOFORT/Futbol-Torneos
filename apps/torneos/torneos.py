@@ -15,6 +15,7 @@ from django.db.models import Count
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
+from apps.equipos.redes import RedesSocialesMixin, campo_de_red
 from apps.equipos.models import Equipo
 from apps.estadisticas import tabla
 from apps.jugadores.models import Jugador
@@ -52,7 +53,7 @@ def aplicar_imagen(objeto, campo, valor):
         setattr(objeto, campo, valor)
 
 
-class TorneoForm(TrofeosMixin, StyledFormMixin, forms.Form):
+class TorneoForm(RedesSocialesMixin, TrofeosMixin, StyledFormMixin, forms.Form):
     CAMPOS_OBLIGATORIOS = ('nombre', 'fecha', 'modalidad')
     CAMPOS_CAPITALIZAR = ('nombre',)
 
@@ -83,6 +84,11 @@ class TorneoForm(TrofeosMixin, StyledFormMixin, forms.Form):
         help_text='En la fase de grupos suma un punto extra al que gane la tanda. '
                   'Si lo desmarcas, el empate vale un punto para cada uno.')
 
+    red_instagram = campo_de_red(Liga, 'red_instagram')
+    red_facebook = campo_de_red(Liga, 'red_facebook')
+    red_twitter = campo_de_red(Liga, 'red_twitter')
+    red_tiktok = campo_de_red(Liga, 'red_tiktok')
+
     def __init__(self, *args, instancia=None, **kwargs):
         self.instancia = instancia
         if instancia is not None and not kwargs.get('data'):
@@ -97,8 +103,10 @@ class TorneoForm(TrofeosMixin, StyledFormMixin, forms.Form):
                 'portada': instancia.liga.portada or None,
                 'empate_define_penales': (primera.empate_define_penales
                                           if primera else True),
+                **{campo: getattr(instancia.liga, campo) for campo in self.CAMPOS_DE_REDES},
             })
         super().__init__(*args, **kwargs)
+        self._preparar_redes()
 
         self.fields['modalidad'].widget.attrs['data-modalidad'] = '1'
         for nombre in ('fecha_fin', 'empate_define_penales'):
@@ -162,11 +170,13 @@ class TorneoForm(TrofeosMixin, StyledFormMixin, forms.Form):
         penales = bool(datos['empate_define_penales']) if con_grupos else True
         inicio, fin = datos['fecha'], datos['fecha_fin']
 
+        redes = self.redes_limpias()
+
         if self.instancia is None:
             liga = Liga.objects.create(
                 nombre=datos['nombre'], descripcion=datos['descripcion'],
                 logo=datos['logo'] or None, portada=datos['portada'] or None,
-                fecha_inicio=inicio, fecha_final=fin)
+                fecha_inicio=inicio, fecha_final=fin, **redes)
             if usuario.role == Usuario.ROLE_ADMIN_LIGA:
                 liga.administradores.add(usuario)
             if not con_grupos:
@@ -187,6 +197,8 @@ class TorneoForm(TrofeosMixin, StyledFormMixin, forms.Form):
         aplicar_imagen(liga, 'logo', datos['logo'])
         aplicar_imagen(liga, 'portada', datos['portada'])
         liga.fecha_inicio, liga.fecha_final = inicio, fin
+        for campo, enlace in redes.items():
+            setattr(liga, campo, enlace)
         liga.save()
         self.guardar_trofeos(liga)
 
@@ -233,10 +245,7 @@ class TorneoCategoriaForm(StyledFormMixin, forms.Form):
             })
         super().__init__(*args, **kwargs)
 
-        self.fields['grupos'].choices = [
-            (cuantos, f'{cuantos} grupo(s) · {", ".join(Equipo.LETRAS_GRUPO[:cuantos])}')
-            for cuantos in range(1, 9)
-        ]
+        self.fields['grupos'].choices = Categoria.opciones_de_grupos()
 
         if instancia is not None and instancia.partidos.exists():
             campo = self.fields['grupos']
@@ -257,6 +266,9 @@ class TorneoCategoriaForm(StyledFormMixin, forms.Form):
     def clean_grupos(self):
         cuantos = self.cleaned_data['grupos']
         if self.instancia is None:
+            return cuantos
+
+        if cuantos <= Categoria.MINIMO_GRUPOS:
             return cuantos
 
         letras = set(Equipo.LETRAS_GRUPO[:cuantos])
@@ -288,6 +300,7 @@ class TorneoCategoriaForm(StyledFormMixin, forms.Form):
             nombre=datos['nombre'],
             descripcion=datos['descripcion'],
             grupos=datos['grupos'],
+            cruces_entre_grupos=True,
             cupo_equipos=self.CUPO_ABIERTO,
             libre=True,
             vueltas=Categoria.VUELTA_UNICA,
@@ -296,7 +309,7 @@ class TorneoCategoriaForm(StyledFormMixin, forms.Form):
         )
 
 
-class TorneoEquipoForm(StyledFormMixin, forms.Form):
+class TorneoEquipoForm(RedesSocialesMixin, StyledFormMixin, forms.Form):
     CAMPOS_OBLIGATORIOS = ('nombre', 'entrenador')
     CAMPOS_CAPITALIZAR = ('nombre',)
 
@@ -309,6 +322,11 @@ class TorneoEquipoForm(StyledFormMixin, forms.Form):
         choices=Equipo.GRUPO_CHOICES, label='Grupo', widget=forms.RadioSelect,
         required=False)
 
+    red_instagram = campo_de_red(Equipo, 'red_instagram')
+    red_facebook = campo_de_red(Equipo, 'red_facebook')
+    red_twitter = campo_de_red(Equipo, 'red_twitter')
+    red_tiktok = campo_de_red(Equipo, 'red_tiktok')
+
     def __init__(self, torneo, categoria, usuario, *args, instancia=None, **kwargs):
         self.torneo = torneo
         self.categoria = categoria
@@ -319,12 +337,14 @@ class TorneoEquipoForm(StyledFormMixin, forms.Form):
                 'entrenador': instancia.entrenador_id,
                 'grupo': instancia.grupo,
                 'escudo': instancia.escudo or None,
+                **{campo: getattr(instancia, campo) for campo in self.CAMPOS_DE_REDES},
             })
         super().__init__(*args, **kwargs)
         self.fields['entrenador'].queryset = Usuario.objects.entrenadores(usuario).order_by(
             'first_name', 'last_name', 'username')
+        self._preparar_redes()
 
-        if not categoria.juega_por_grupos:
+        if not categoria.varios_grupos:
             del self.fields['grupo']
             return
 
@@ -384,11 +404,15 @@ class TorneoEquipoForm(StyledFormMixin, forms.Form):
         datos = self.cleaned_data
         grupo = datos.get('grupo', '')
 
+        redes = self.redes_limpias()
+
         if self.instancia is not None:
             equipo = self.instancia
             equipo.nombre = datos['nombre']
             equipo.entrenador = datos['entrenador']
             equipo.grupo = grupo
+            for campo, enlace in redes.items():
+                setattr(equipo, campo, enlace)
             aplicar_imagen(equipo, 'escudo', datos['escudo'])
             equipo.save()
             return equipo
@@ -399,7 +423,8 @@ class TorneoEquipoForm(StyledFormMixin, forms.Form):
             liga=self.torneo.liga,
             categoria=self.categoria,
             grupo=grupo,
-            entrenador=datos['entrenador'])
+            entrenador=datos['entrenador'],
+            **redes)
 
 
 class SiembraForm(forms.Form):
@@ -637,7 +662,8 @@ def torneo_categoria(request, torneo, categoria):
         'plantillas': [
             {'letra': letra,
              'etiqueta': f'Grupo {letra}',
-             'equipos': [e for e in equipos if e.grupo == letra]}
+             'equipos': [e for e in equipos
+                         if not categoria.varios_grupos or e.grupo == letra]}
             for letra in categoria.letras_de_grupo
         ],
         'eliminacion': list(categoria.partidos
@@ -825,6 +851,7 @@ def torneo_categoria_sembrar(request, pk, categoria_pk):
     contexto = {
         'form': form,
         'title': f'Armar la liguilla · {categoria.nombre}',
+        'kicker': torneo.nombre,
         'torneo': torneo,
         'categoria': categoria,
         'grupos': grupos.posiciones(categoria),

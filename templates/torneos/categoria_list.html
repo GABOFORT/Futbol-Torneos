@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load estaticos %}
 
 {% block titulo %}Categorías{% endblock %}
 
@@ -88,6 +88,12 @@
                                     {% endif %}
                                                                         {% if categoria.liguilla_iniciada %}
                                         <a href="{% url 'categoria-liguilla' categoria.pk %}" class="text-sm font-semibold text-green-700 hover:text-green-900">Ver Liguilla </a>
+                                    {% elif categoria.juega_por_grupos %}
+                                        {% if categoria.puede_iniciar_liguilla %}
+                                            <a href="{% url 'categoria-sembrar' categoria.pk %}" class="btn-liguilla">Armar Liguilla</a>
+                                        {% elif categoria.n_pendientes %}
+                                            <span class="sin-dato">Faltan {{ categoria.n_pendientes }} partido(s) para la liguilla</span>
+                                        {% endif %}
                                     {% elif categoria.puede_iniciar_liguilla %}
                                         <form action="{% url 'categoria-iniciar-liguilla' categoria.pk %}" method="post">
                                             {% csrf_token %}
@@ -114,6 +120,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{% static 'js/categoria_form.js' %}" defer></script>
-<script src="{% static 'js/desplegable.js' %}" defer></script>
+<script src="{% static_v 'js/categoria_form.js' %}" defer></script>
+<script src="{% static_v 'js/desplegable.js' %}" defer></script>
 {% endblock %}

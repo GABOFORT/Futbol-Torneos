@@ -1,0 +1,21 @@
+{% if form.campos_de_redes %}
+    <section class="titulos-campos redes-campos">
+        <header class="titulos-campos-cabecera">
+            <h3>Redes sociales</h3>
+            <p>Opcional. Aparecen como iconos en el perfil del equipo.</p>
+        </header>
+
+        <div class="redes-filas">
+            {% for fila in form.campos_de_redes %}
+                <div class="red-fila">
+                    <label class="red-fila-nombre" for="{{ fila.campo.id_for_label }}">
+                        <span class="red-marca red-{{ fila.icono }}">{% include '_icono_red.html' with icono=fila.icono %}</span>
+                        {{ fila.etiqueta }}
+                    </label>
+                    {{ fila.campo }}
+                    {% for error in fila.campo.errors %}<p class="error-campo">{{ error }}</p>{% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+{% endif %}

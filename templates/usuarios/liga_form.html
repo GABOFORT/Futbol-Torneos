@@ -13,6 +13,7 @@
             {% csrf_token %}
             {{ form.non_field_errors }}
             {% for field in form %}
+                {% if field.name|slice:':4' == 'red_' %}{% else %}
                 <div>
                     <label class="block text-sm font-medium text-gray-700">{{ field.label }}</label>
                     {{ field }}
@@ -23,7 +24,9 @@
                         <p class="mt-1 text-sm text-red-600">{{ error }}</p>
                     {% endfor %}
                 </div>
+                {% endif %}
             {% endfor %}
+            {% include 'equipos/_redes_campos.html' %}
             {% include 'torneos/_trofeos_campos.html' %}
 
             <div class="flex items-center gap-3">

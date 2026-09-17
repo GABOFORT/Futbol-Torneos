@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load estaticos %}
 
 {% block titulo %}{{ title }} - Categorías{% endblock %}
 
@@ -58,6 +58,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{% static 'js/categoria_form.js' %}" defer></script>
-<script src="{% static 'js/desplegable.js' %}" defer></script>
+<script src="{% static_v 'js/categoria_form.js' %}" defer></script>
+<script src="{% static_v 'js/desplegable.js' %}" defer></script>
 {% endblock %}

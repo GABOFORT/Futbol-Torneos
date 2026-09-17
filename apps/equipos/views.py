@@ -149,6 +149,7 @@ def equipo_create(request):
             observaciones = form.cleaned_data['observaciones']
             categorias = form.cleaned_data['categorias']
             titulos = form.titulos_limpios()
+            redes = form.redes_limpias()
             avisos = []
             for categoria in categorias:
                 equipo = Equipo.objects.create(
@@ -159,6 +160,7 @@ def equipo_create(request):
                     entrenador=entrenador,
                     observaciones=observaciones,
                     **titulos,
+                    **redes,
                 )
                 if altas.hay_calendario(categoria):
                     aviso = altas.resumen(altas.agregar(categoria, equipo))

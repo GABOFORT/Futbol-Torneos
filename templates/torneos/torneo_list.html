@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load estaticos %}
 
 {% block titulo %}{{ titulo_pagina }}{% endblock %}
 
@@ -122,5 +122,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{% static 'js/torneo_form.js' %}" defer></script>
+<script src="{% static_v 'js/torneo_form.js' %}" defer></script>
 {% endblock %}

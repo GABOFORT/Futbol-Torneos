@@ -1,5 +1,4 @@
 {% extends 'base.html' %}
-{% load static %}
 {% load estaticos %}
 
 {% block titulo %}{{ torneo.nombre }} - Torneo{% endblock %}
@@ -122,6 +121,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{% static 'js/bracket.js' %}" defer></script>
-<script src="{% static 'js/torneo_form.js' %}" defer></script>
+<script src="{% static_v 'js/bracket.js' %}" defer></script>
+<script src="{% static_v 'js/torneo_form.js' %}" defer></script>
 {% endblock %}

@@ -10,6 +10,7 @@
                     <span><svg class="ico ico-sm"><use href="#ico-calendario"></use></svg>{{ torneo.fechas_texto }}</span>
                     <span><svg class="ico ico-sm"><use href="#ico-llaves"></use></svg>{{ torneo.formato_texto }}</span>
                 </p>
+                {% include '_redes.html' with redes=torneo.liga.redes_sociales de=torneo.nombre %}
             </div>
         </div>
 

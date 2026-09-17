@@ -7,6 +7,17 @@
 
     {% include 'torneos/_banner_liga.html' with liga=categoria.liga kicker=categoria.liga.nombre titulo=categoria.nombre resumen=categoria.restricciones_texto %}
 
+    {% if grupos %}
+        <div class="torneo-ui grupos-de-liga">
+            <div class="grupos-rejilla">
+                {% for bloque in grupos %}
+                    {% include 'torneos/_tabla_grupo.html' with etiqueta=bloque.etiqueta letra=bloque.grupo posiciones=bloque.posiciones clasifican=0 %}
+                {% endfor %}
+            </div>
+        </div>
+        <h2 class="mt-8 mb-4 text-lg font-bold text-green-900">Tabla general</h2>
+    {% endif %}
+
     <div class="tablero-categoria">
     <div class="overflow-x-auto rounded-3xl bg-white border border-green-100 shadow-sm">
         <table class="min-w-full divide-y divide-gray-200">

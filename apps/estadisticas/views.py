@@ -2,7 +2,7 @@ from django.db.models import Count, Sum
 from django.shortcuts import get_object_or_404, render
 
 from apps.equipos.models import Equipo
-from apps.partidos import liguilla
+from apps.partidos import grupos, liguilla
 from apps.partidos.models import Actuacion, Partido
 from apps.torneos import palmares
 from apps.torneos.models import Categoria, Liga
@@ -103,6 +103,7 @@ def tabla_posiciones(request, liga, categoria):
     return render(request, 'estadisticas/tabla_posiciones.html', {
         'categoria': categoria,
         'posiciones': posiciones,
+        'grupos': grupos.posiciones(categoria) if categoria.varios_grupos else None,
         'rankings': resumen.rankings(categoria, tope=5),
         'icono_goleador': url_estatico(palmares.TROFEO_GOLEADOR[1]),
         'icono_asistidor': url_estatico(palmares.TROFEO_ASISTIDOR[1]),

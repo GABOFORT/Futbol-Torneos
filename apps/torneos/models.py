@@ -8,13 +8,14 @@ from django.db import models
 from django.urls import reverse
 from django.utils import timezone
 
+from apps.equipos.redes import ConRedesSociales, url_de_red
 from apps.usuarios import rutas
 from apps.usuarios.estaticos import url_estatico
 from apps.usuarios.imagenes import TOPE_PANTALLA_PX, achicar_imagen
 from apps.usuarios.monograma import iniciales_de, monograma
 
 
-class Liga(models.Model):
+class Liga(ConRedesSociales, models.Model):
     nombre = models.CharField('Nombre de la liga', max_length=150)
     slug = models.SlugField('Nombre en la dirección', max_length=120, blank=True)
     logo = models.ImageField(
@@ -41,6 +42,11 @@ class Liga(models.Model):
 
     cerrada = models.BooleanField('Liga concluida', default=False)
     fecha_cierre = models.DateTimeField('Concluida el', null=True, blank=True)
+
+    red_instagram = url_de_red('red_instagram')
+    red_facebook = url_de_red('red_facebook')
+    red_twitter = url_de_red('red_twitter')
+    red_tiktok = url_de_red('red_tiktok')
 
     class Meta:
         verbose_name = 'Liga'
@@ -210,10 +216,22 @@ class Categoria(models.Model):
     MAXIMO_GRUPOS = 26
     SIN_GRUPOS = 0
 
+    MINIMO_GRUPOS = 1
+    MAXIMO_GRUPOS_ELEGIBLES = 8
+    MINIMO_POR_GRUPO = 2
+
     grupos = models.PositiveSmallIntegerField(
         'Grupos',
         default=SIN_GRUPOS,
         help_text='En cuántos grupos se reparten los equipos. Cero es sin grupos.',
+    )
+
+    cruces_entre_grupos = models.BooleanField(
+        'Los que descansan juegan contra otro grupo',
+        default=False,
+        help_text='Solo aplica a los grupos con una cantidad impar de equipos. '
+                  'Evita que alguien se quede sin jugar, pero deja las tablas '
+                  'con distinta cantidad de partidos jugados.',
     )
 
     limite_edad = models.CharField(
@@ -322,7 +340,58 @@ class Categoria(models.Model):
         return list(Equipo.LETRAS_GRUPO[:self.grupos])
 
     @property
+    def varios_grupos(self):
+        """Si hay mas de un grupo, y por lo tanto mas de una tabla.
+
+        Con un solo grupo la tabla del grupo y la general son la misma, asi que
+        la pantalla no debe mostrar las dos: se veria dos veces lo mismo.
+        """
+        return self.grupos > 1
+
+    @classmethod
+    def opciones_de_grupos(cls):
+        """Las opciones del selector, iguales para una liga y para un torneo.
+
+        Un solo grupo no es lo mismo que no tener grupos: el calendario sale
+        identico, pero la liguilla deja de sembrarse sola desde la tabla y pasa
+        a armarla el administrador. Por eso se ofrece, y por eso se explica.
+        """
+        from apps.equipos.models import Equipo
+
+        etiquetas = []
+        for cuantos in range(cls.MINIMO_GRUPOS, cls.MAXIMO_GRUPOS_ELEGIBLES + 1):
+            letras = ', '.join(Equipo.LETRAS_GRUPO[:cuantos])
+            if cuantos == 1:
+                etiquetas.append((cuantos, f'1 grupo · {letras} — todos juntos, '
+                                           f'la liguilla la armas tú'))
+            else:
+                etiquetas.append((cuantos, f'{cuantos} grupos · {letras}'))
+        return etiquetas
+
+    def equipos_del_grupo(self, letra):
+        """Los equipos que juegan en ese grupo.
+
+        Con un solo grupo son TODOS, lleven o no la letra escrita. No hay nada
+        que repartir cuando existe un unico destino, asi que el sistema no la
+        pide ni la guarda: pedir doce veces "Grupo A" cuando A es la unica
+        opcion es trabajo inutil, y dejaba la categoria trabada avisando que el
+        grupo A tenia cero equipos.
+
+        Es implicito y no un valor guardado a proposito: asi no hay un momento
+        en el que haya que acordarse de escribirlo —al crear la categoria, al
+        inscribir un equipo, al admitir uno a mitad de temporada— ni un estado
+        que pueda quedar desincronizado. Y si la categoria pasa de tres grupos a
+        uno, las letras viejas dejan de estorbar solas.
+        """
+        if not self.varios_grupos:
+            return self.equipos.all()
+        return self.equipos.filter(grupo=letra)
+
+    @property
     def reparto(self):
+        if not self.varios_grupos:
+            return {letra: self.equipos.count() for letra in self.letras_de_grupo}
+
         conteo = {letra: 0 for letra in self.letras_de_grupo}
         for equipo in self.equipos.all():
             if equipo.grupo in conteo:
@@ -331,6 +400,8 @@ class Categoria(models.Model):
 
     @property
     def equipos_sin_grupo(self):
+        if not self.varios_grupos:
+            return 0
         return self.equipos.exclude(grupo__in=self.letras_de_grupo).count()
 
     def motivo_para_no_recibir_equipos(self):
@@ -529,9 +600,38 @@ class Categoria(models.Model):
 
         errores = {}
         errores.update(self._error_de_cupo())
+        errores.update(self._error_de_grupos())
         errores.update(self._error_de_restricciones())
         if errores:
             raise ValidationError(errores)
+
+    def _error_de_grupos(self):
+        """Lo que no cabe cuando la categoria se reparte en grupos.
+
+        La mini-liguilla juega los puestos 9 a 12 de UNA tabla, y con grupos no
+        hay una sola tabla que los defina. Y el cupo tiene que alcanzar para dos
+        equipos por grupo, que es el minimo para que un grupo tenga partidos.
+        """
+        if not self.juega_por_grupos:
+            self.cruces_entre_grupos = False
+            return {}
+
+        errores = {}
+        if self.mini_liguilla:
+            errores['mini_liguilla'] = (
+                'La mini-liguilla sale de los puestos 9 a 12 de la tabla general, '
+                'y al jugar por grupos cada grupo lleva la suya. Desmárcala o '
+                'quita los grupos.'
+            )
+
+        minimo = self.grupos * self.MINIMO_POR_GRUPO
+        if self.cupo_equipos is not None and self.cupo_equipos < minimo:
+            errores['cupo_equipos'] = (
+                f'Con {self.grupos} grupos hacen falta al menos {minimo} equipos '
+                f'({self.MINIMO_POR_GRUPO} por grupo) y el cupo es {self.cupo_equipos}. '
+                f'Sube el cupo o baja la cantidad de grupos.'
+            )
+        return errores
 
     def _error_de_cupo(self):
         """El cupo tiene que dar para los puestos 9 a 12 si hay mini-liguilla."""
