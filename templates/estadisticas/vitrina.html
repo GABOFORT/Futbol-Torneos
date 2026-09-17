@@ -130,7 +130,7 @@
                             <tbody class="divide-y divide-gray-100">
                                 {% for fila in registro.tabla_final %}
                                     <tr>
-                                        <td class="px-3 py-2 text-gray-400">{{ fila.puesto }}</td>
+                                        <td class="px-3 py-2 text-gray-500">{{ fila.puesto }}</td>
                                         <td class="px-3 py-2 font-medium text-gray-900">{{ fila.equipo }}</td>
                                         <td class="px-3 py-2 text-center">{{ fila.pj }}</td>
                                         <td class="px-3 py-2 text-center">{{ fila.pg }}</td>
@@ -151,7 +151,7 @@
     {% empty %}
         <div class="rounded-3xl border border-green-100 bg-white p-10 text-center">
             <p class="text-gray-500">Todavía no terminó ninguna temporada.</p>
-            <p class="mt-2 text-sm text-gray-400">
+            <p class="mt-2 text-sm text-gray-500">
                 Cuando se cargue el resultado de la final de una categoría, su palmarés aparecerá aquí.
             </p>
         </div>

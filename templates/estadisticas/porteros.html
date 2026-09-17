@@ -48,7 +48,7 @@
                     <tbody class="divide-y divide-gray-100 bg-white">
                         {% for fila in bloque.filas %}
                             <tr {% if forloop.counter <= 3 and fila.pj %}class="bg-green-50/40"{% endif %}>
-                                <td class="col-numero px-4 py-4 text-sm {% if forloop.counter <= 3 and fila.pj %}font-bold text-green-800{% else %}text-gray-400{% endif %}">{{ forloop.counter }}</td>
+                                <td class="col-numero px-4 py-4 text-sm {% if forloop.counter <= 3 and fila.pj %}font-bold text-green-800{% else %}text-gray-500{% endif %}">{{ forloop.counter }}</td>
                                 <td class="px-4 py-4">
 
                                     <div class="celda-equipo">
@@ -89,7 +89,7 @@
     {% empty %}
         <div class="rounded-3xl border border-green-100 bg-white p-10 text-center">
             <p class="text-gray-500">No hay equipos que coincidan con la búsqueda.</p>
-            <p class="mt-2 text-sm text-gray-400">La tabla se llena con los resultados de los partidos finalizados.</p>
+            <p class="mt-2 text-sm text-gray-500">La tabla se llena con los resultados de los partidos finalizados.</p>
         </div>
     {% endfor %}
     </div>

@@ -20,11 +20,11 @@
 
     <div class="tablero-categoria">
     <div class="overflow-x-auto rounded-3xl bg-white border border-green-100 shadow-sm">
-        <table class="min-w-full divide-y divide-gray-200">
+        <table class="tabla-posiciones min-w-full divide-y divide-gray-200">
             <thead class="bg-green-50">
                 <tr>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">#</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Equipo</th>
+                    <th class="pos-num px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">#</th>
+                    <th class="pos-equipo px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Equipo</th>
                     <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-600">PJ</th>
                     <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-600">PG</th>
                     <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-600">PE</th>
@@ -33,14 +33,14 @@
                     <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-600">GC</th>
                     <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-600">DG</th>
                     <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-600" title="Puntos extra ganados en penales">PEX</th>
-                    <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-600">Pts</th>
+                    <th class="pos-pts px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-600">Pts</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 bg-white">
                 {% for fila in posiciones %}
                     <tr>
-                        <td class="px-4 py-3 text-sm text-gray-500">{{ forloop.counter }}</td>
-                        <td class="px-4 py-3 text-sm font-semibold text-gray-900">
+                        <td class="pos-num px-4 py-3 text-sm text-gray-500">{{ forloop.counter }}</td>
+                        <td class="pos-equipo px-4 py-3 text-sm font-semibold text-gray-900">
 
                             <div class="celda-equipo">
                                 <button type="button" class="open-modal equipo-enlace"
@@ -57,7 +57,7 @@
                         <td class="px-4 py-3 text-center text-sm text-gray-800">{{ fila.gc }}</td>
                         <td class="px-4 py-3 text-center text-sm text-gray-800">{{ fila.dg }}</td>
                         <td class="px-4 py-3 text-center text-sm text-gray-800">{% if fila.pen %}<span class="chip-penales">+{{ fila.pen }}</span>{% else %}<span class="text-gray-300">0</span>{% endif %}</td>
-                        <td class="px-4 py-3 text-center text-sm font-bold text-green-800">{{ fila.pts }}</td>
+                        <td class="pos-pts px-4 py-3 text-center text-sm font-bold text-green-800">{{ fila.pts }}</td>
                     </tr>
                 {% empty %}
                     <tr>

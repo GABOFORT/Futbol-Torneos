@@ -31,7 +31,7 @@
             <tbody class="divide-y divide-gray-100 bg-white">
                 {% for fila in filas %}
                     <tr {% if forloop.counter <= 3 %}class="bg-green-50/40"{% endif %}>
-                        <td class="col-numero px-4 py-4 text-sm {% if forloop.counter <= 3 %}font-bold text-green-800{% else %}text-gray-400{% endif %}">{{ forloop.counter }}</td>
+                        <td class="col-numero px-4 py-4 text-sm {% if forloop.counter <= 3 %}font-bold text-green-800{% else %}text-gray-500{% endif %}">{{ forloop.counter }}</td>
                         <td class="px-4 py-4 text-sm font-semibold text-gray-900">
                             <div class="celda-equipo">
                                 <span>{{ fila.jugador }}</span>
@@ -59,7 +59,7 @@
                     <tr>
                         <td colspan="8" class="px-4 py-10 text-center">
                             <p class="text-sm text-gray-500">Todavía no hay {{ etiqueta|lower }} registrados.</p>
-                            <p class="mt-2 text-sm text-gray-400">Se cargan junto con el resultado de cada partido.</p>
+                            <p class="mt-2 text-sm text-gray-500">Se cargan junto con el resultado de cada partido.</p>
                         </td>
                     </tr>
                 {% endfor %}

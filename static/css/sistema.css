@@ -624,8 +624,18 @@ textarea.campo-invalido {
     display: flex;
     gap: 0.375rem;
     overflow-x: auto;
+    overscroll-behavior-x: contain;
     padding-bottom: 0.25rem;
     scrollbar-width: thin;
+}
+
+@media (max-width: 40rem) {
+    .selector-jornadas { flex-wrap: wrap; }
+
+    .tira-jornadas {
+        order: 3;
+        flex-basis: 100%;
+    }
 }
 
 .pastilla-jornada {
@@ -3848,7 +3858,7 @@ body.con-portada {
     --t-arena: #fdfbf6;
     --t-tinta: #10231a;
     --t-tinta-suave: #4c6459;
-    --t-tinta-debil: #7d918a;
+    --t-tinta-debil: #5d726a;
     --t-linea: #e3ece7;
     --t-linea-fuerte: #cfded6;
     --t-nieve: #ffffff;
@@ -4514,7 +4524,7 @@ body.con-portada {
 .torneo-ui .rejilla-tablas {
     display: grid;
     gap: 1rem;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 25rem), 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 28rem), 1fr));
 }
 
 .torneo-ui .tabla-grupo {
@@ -4617,6 +4627,33 @@ body.con-portada {
     color: var(--t-pasto-800);
     background-color: var(--t-lima-suave);
 }
+
+.torneo-ui .tabla-grupo-datos .col-puesto,
+.torneo-ui .tabla-grupo-datos .col-equipo,
+.torneo-ui .tabla-grupo-datos .col-puntos {
+    position: sticky;
+    z-index: 1;
+    background-color: var(--t-nieve);
+}
+
+.torneo-ui .tabla-grupo-datos .col-puesto { left: 0; }
+.torneo-ui .tabla-grupo-datos .col-equipo { left: 2.4rem; }
+
+.torneo-ui .tabla-grupo-datos .col-puntos {
+    right: 0;
+    background-color: var(--t-lima-suave);
+    box-shadow: -6px 0 6px -6px rgba(6, 52, 26, 0.22);
+}
+
+.torneo-ui .tabla-grupo-datos .col-equipo { box-shadow: 6px 0 6px -6px rgba(6, 52, 26, 0.22); }
+
+.torneo-ui .tabla-grupo-datos thead .col-puesto,
+.torneo-ui .tabla-grupo-datos thead .col-equipo { background-color: var(--t-humo); }
+
+.torneo-ui .tabla-grupo-datos tbody tr:hover .col-puesto,
+.torneo-ui .tabla-grupo-datos tbody tr:hover .col-equipo,
+.torneo-ui .fila-clasifica .col-puesto,
+.torneo-ui .fila-clasifica .col-equipo { background-color: var(--t-lima-suave); }
 
 .torneo-ui .td-gana { color: var(--t-pasto-600); font-weight: 700; }
 .torneo-ui .td-pierde { color: #b07b74; }
@@ -7522,7 +7559,7 @@ a.ficha-dato-valor { color: var(--verde-700); font-weight: 700; }
 .grupos-rejilla {
     display: grid;
     gap: 1.25rem;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 28rem), 1fr));
 }
 
 .redes-filas {
@@ -7623,3 +7660,28 @@ a.ficha-dato-valor { color: var(--verde-700); font-weight: 700; }
         transform: none;
     }
 }
+
+.tabla-posiciones .pos-num,
+.tabla-posiciones .pos-equipo,
+.tabla-posiciones .pos-pts {
+    position: sticky;
+    z-index: 1;
+    background-color: var(--blanco);
+}
+
+.tabla-posiciones .pos-num { left: 0; }
+
+.tabla-posiciones .pos-equipo {
+    left: 3.25rem;
+    max-width: 11rem;
+    box-shadow: 6px 0 6px -6px rgba(20, 83, 45, 0.22);
+}
+
+.tabla-posiciones .pos-pts {
+    right: 0;
+    box-shadow: -6px 0 6px -6px rgba(20, 83, 45, 0.22);
+}
+
+.tabla-posiciones thead .pos-num,
+.tabla-posiciones thead .pos-equipo,
+.tabla-posiciones thead .pos-pts { background-color: var(--verde-50); }
