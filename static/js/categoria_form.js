@@ -5,7 +5,6 @@
   var LIMITE = '[data-restriccion="limite_edad"]';
   var FORMATO = '[data-formato]';
   var BLOQUE_GRUPOS = '[data-solo-grupos]';
-  var MINI_LIGUILLA = '[name="mini_liguilla"]';
   var POR_GRUPOS = 'grupos';
 
   function tapar(bloque, tapado) {
@@ -38,12 +37,6 @@
 
     var porGrupos = juegaPorGrupos(contenedor);
     tapar(contenedor.querySelector(BLOQUE_GRUPOS), !porGrupos);
-
-    var mini = contenedor.querySelector(MINI_LIGUILLA);
-    if (mini) {
-      if (porGrupos) mini.checked = false;
-      tapar(mini.closest('.ajuste') || mini.parentElement, porGrupos);
-    }
   }
 
   function actualizarTodos() {

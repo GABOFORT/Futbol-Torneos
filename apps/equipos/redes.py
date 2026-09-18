@@ -101,9 +101,9 @@ def campo_de_red(modelo, campo):
 
     `formfield()` no copia los validadores del modelo al formulario: en un
     `ModelForm` igual corren, porque Django valida la instancia antes de
-    guardar, pero el alta de equipos y los formularios del torneo son `Form`
-    normales y guardan con `objects.create()`, que no valida nada. Sin pasarlo
-    aca, el candado de dominio quedaba solo en la edicion.
+    guardar, pero el formulario del torneo es un `Form` normal y guarda con
+    `objects.create()`, que no valida nada. Sin pasarlo aca, el candado de
+    dominio quedaba solo en la edicion.
     """
     del_modelo = modelo._meta.get_field(campo)
     de_dominio = [v for v in del_modelo.validators if isinstance(v, EnlaceDeRed)]

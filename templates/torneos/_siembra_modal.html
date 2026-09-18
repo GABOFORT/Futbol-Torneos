@@ -7,7 +7,7 @@
         </span>
         <div class="min-w-0">
             <p class="siembra-kicker">{{ kicker }}</p>
-            <h2>Armar la liguilla</h2>
+            <h2>Armar {{ que_se_arma|default:'la liguilla' }}</h2>
             <p class="siembra-sub">{{ categoria.nombre }}</p>
         </div>
         <button type="button" id="modal-close" class="siembra-cerrar" aria-label="Cerrar">✕</button>
@@ -22,7 +22,7 @@
             <button type="button" id="modal-cancel" class="boton-fantasma">Cancelar</button>
             <button type="submit" class="boton-oro">
                 <svg class="ico ico-sm"><use href="#ico-listo"></use></svg>
-                Guardar la liguilla
+                Guardar {{ que_se_arma|default:'la liguilla' }}
             </button>
         </footer>
     </form>

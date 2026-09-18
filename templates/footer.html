@@ -1,4 +1,5 @@
-{% load static estaticos %}
+{% load static estaticos aliados_oficiales %}
+{% patrocinadores_oficiales as oficiales %}
 
 <footer class="pie">
     <div class="pie-interior">
@@ -39,6 +40,13 @@
             <a href="{% url 'login' %}">Acceso para entrenadores</a>
         </div>
     </div>
+
+    {% if oficiales %}
+        <div class="pie-aliados">
+            <p class="pie-titulo">Patrocinadores oficiales</p>
+            {% include 'informacion/_aliados_oficiales_tira.html' with lista=oficiales %}
+        </div>
+    {% endif %}
 
     <div class="pie-abajo">
         <p>&copy; {% now "Y" %} BUHO Sports League</p>

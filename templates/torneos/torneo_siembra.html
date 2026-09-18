@@ -4,21 +4,21 @@
 {% block titulo %}{{ title }}{% endblock %}
 
 {% block contenido %}
-<div class="torneo-ui hoja-formulario">
+<div class="torneo-ui hoja-formulario{% if tabla_general %} hoja-siembra-ancha{% endif %}">
     {% include 'torneos/_iconos.html' %}
 
     <a href="{{ categoria.get_absolute_url }}" class="migaja">
         <svg class="ico ico-sm"><use href="#ico-flecha"></use></svg> {{ categoria.nombre }}
     </a>
 
-    <div class="siembra-marco siembra-marco-pagina">
+    <div class="siembra-marco siembra-marco-pagina{% if tabla_general %} siembra-marco-ancho{% endif %}">
         <header class="siembra-cabecera">
             <span class="siembra-copa" aria-hidden="true">
                 <svg class="ico"><use href="#ico-copa"></use></svg>
             </span>
             <div class="min-w-0">
                 <p class="siembra-kicker">{{ kicker }}</p>
-                <h2>Armar la liguilla</h2>
+                <h2>Armar {{ que_se_arma|default:'la liguilla' }}</h2>
                 <p class="siembra-sub">{{ categoria.nombre }}</p>
             </div>
         </header>
@@ -32,7 +32,7 @@
                 <a href="{{ categoria.get_absolute_url }}" class="boton-fantasma">Cancelar</a>
                 <button type="submit" class="boton-oro">
                     <svg class="ico ico-sm"><use href="#ico-listo"></use></svg>
-                    Guardar la liguilla
+                    Guardar {{ que_se_arma|default:'la liguilla' }}
                 </button>
             </footer>
         </form>

@@ -24,7 +24,7 @@ partido.
 from apps.equipos.models import Equipo
 from apps.estadisticas import tabla
 
-from . import calendario, relampago
+from . import calendario, liguilla, relampago
 from .models import Partido
 
 
@@ -200,56 +200,110 @@ RONDAS_INICIALES = [
 
 LLAVES_POR_RONDA = dict(RONDAS_INICIALES)
 
+RONDAS_INICIALES_MINI = [
+    (Partido.FASE_CUARTOS, 4),
+    (Partido.FASE_SEMIFINAL, 2),
+]
 
-def rondas_posibles(categoria):
-    """Las rondas con las que se puede arrancar la liguilla de esta categoria.
 
-    Se ofrece la que quepa con los equipos inscritos: no tiene sentido proponer
-    octavos —que pide 16— en una categoria de seis equipos.
+def equipos_en(categoria, cuadro):
+    """Los ids de los equipos que ya juegan ese cuadro de eliminacion."""
+    ids = set()
+    for local, visitante in (categoria.partidos
+                             .filter(cuadro=cuadro, fase__in=Partido.ORDEN_FASES)
+                             .values_list('equipo_local_id', 'equipo_visitante_id')):
+        ids.update((local, visitante))
+    return ids
+
+
+def equipos_para_sembrar(categoria, cuadro=Partido.CUADRO_PRINCIPAL):
+    """Los equipos elegibles para un cuadro: nadie juega los dos a la vez."""
+    otro = (Partido.CUADRO_PRINCIPAL if cuadro == Partido.CUADRO_CONSOLACION
+            else Partido.CUADRO_CONSOLACION)
+    return categoria.equipos.exclude(pk__in=equipos_en(categoria, otro))
+
+
+def rondas_posibles(categoria, cuadro=Partido.CUADRO_PRINCIPAL):
+    """Las rondas con las que se puede arrancar ese cuadro de esta categoria.
+
+    Se ofrece la que quepa con los equipos elegibles: no tiene sentido proponer
+    octavos —que pide 16— en una categoria de seis equipos. En una liga con
+    mini-liguilla la principal no pasa de los puestos que le dejan a la mini.
     """
-    cuantos = categoria.equipos.count()
+    cuantos = equipos_para_sembrar(categoria, cuadro).count()
+    if cuadro == Partido.CUADRO_CONSOLACION:
+        rondas = rondas_de_la_mini(categoria)
+    else:
+        rondas = RONDAS_INICIALES
+        if relampago.torneo_de(categoria) is None and categoria.mini_liguilla:
+            cuantos = min(cuantos, categoria.PUESTOS_ANTES_DE_LA_MINI_LIGUILLA)
+    return [(fase, llaves) for fase, llaves in rondas if llaves * 2 <= cuantos]
+
+
+def rondas_de_la_mini(categoria):
+    """En un torneo la mini es libre; en una liga, hasta el tamano que eligio la categoria."""
+    if relampago.torneo_de(categoria) is not None:
+        return RONDAS_INICIALES_MINI
     return [(fase, llaves) for fase, llaves in RONDAS_INICIALES
-            if llaves * 2 <= cuantos]
+            if llaves * 2 <= categoria.mini_liguilla]
 
 
-def ronda_ya_armada(categoria):
+def ronda_ya_armada(categoria, cuadro=Partido.CUADRO_PRINCIPAL):
     """La primera fase de eliminacion que ya tiene partidos, o None."""
     for fase in Partido.ORDEN_FASES:
-        if categoria.partidos.filter(fase=fase).exists():
+        if categoria.partidos.filter(fase=fase, cuadro=cuadro).exists():
             return fase
     return None
 
 
-def motivo_para_no_sembrar(categoria):
-    """Por que todavia no se puede armar la liguilla, o '' si ya se puede."""
+def motivo_para_no_sembrar(categoria, cuadro=Partido.CUADRO_PRINCIPAL):
+    """Por que todavia no se puede armar ese cuadro, o '' si ya se puede."""
     if not categoria.juega_por_grupos:
         return 'Esta categoría no se juega por grupos.'
     if not categoria.partidos.filter(fase=Partido.FASE_REGULAR).exists():
         return 'Primero genera los partidos de la fase de grupos.'
+    if cuadro == Partido.CUADRO_CONSOLACION:
+        rondas = rondas_de_la_mini(categoria)
+        if not rondas:
+            return 'Esta categoría no juega mini-liguilla. Se elige al editar la categoría.'
+        if relampago.torneo_de(categoria) is None and not categoria.admite_mini_liguilla:
+            return categoria.motivo_sin_mini_liguilla
+        if ronda_ya_armada(categoria) is None:
+            return 'Primero arma la liguilla: la mini-liguilla se arma con los que no pasaron.'
+        if not rondas_posibles(categoria, cuadro):
+            necesarios = min(llaves for _, llaves in rondas) * 2
+            return (f'La mini-liguilla necesita {necesarios} equipos que no jueguen '
+                    f'la liguilla.')
+        return ''
     if not rondas_posibles(categoria):
         return (f'Hacen falta al menos {LLAVES_POR_RONDA[Partido.FASE_FINAL] * 2} '
                 f'equipos para armar una liguilla.')
     return ''
 
 
-def sembrar(categoria, fase, cruces):
-    """Arma a mano la primera ronda de la liguilla.
+def sembrar(categoria, fase, cruces, cuadro=Partido.CUADRO_PRINCIPAL):
+    """Arma a mano la primera ronda de un cuadro de eliminacion.
 
     `cruces` es una lista de pares de Equipo, en el orden del cuadro. De aqui en
     adelante el avance vuelve a ser automatico: los ganadores suben solos, que es
-    lo unico que no necesita criterio.
+    lo unico que no necesita criterio. Rehacer un cuadro no toca el otro.
+
+    Cada competencia arma con su propio motor: el torneo a partido unico y la
+    liga a ida y vuelta, que es con lo que despues la hace avanzar.
     """
     con_siembra = [((local, numero * 2 + 1), (visitante, numero * 2 + 2))
                    for numero, (local, visitante) in enumerate(cruces)]
 
     Partido.objects.filter(
-        categoria=categoria, fase__in=Partido.ORDEN_FASES).delete()
-    return relampago.crear(categoria, fase, con_siembra)
+        categoria=categoria, cuadro=cuadro, fase__in=Partido.ORDEN_FASES).delete()
+    motor = relampago if relampago.torneo_de(categoria) is not None else liguilla
+    return motor.crear(categoria, fase, con_siembra, cuadro=cuadro)
 
 
 def campeon(categoria):
     final = categoria.partidos.filter(
-        fase=Partido.FASE_FINAL, estado=Partido.ESTADO_FINALIZADO).first()
+        fase=Partido.FASE_FINAL, cuadro=Partido.CUADRO_PRINCIPAL,
+        estado=Partido.ESTADO_FINALIZADO).first()
     return final.ganador if final else None
 
 
@@ -263,8 +317,11 @@ def resumen(categoria):
         'cerrados': cerrados(categoria),
         'pendientes': pendientes(categoria),
         'cuadro': relampago.cuadro(categoria),
+        'mini': relampago.mini(categoria),
         'ronda_armada': ronda_ya_armada(categoria),
+        'mini_armada': ronda_ya_armada(categoria, Partido.CUADRO_CONSOLACION),
         'campeon': campeon(categoria),
         'motivo_generar': motivo_para_no_generar(categoria),
         'motivo_sembrar': motivo_para_no_sembrar(categoria),
+        'motivo_sembrar_mini': motivo_para_no_sembrar(categoria, Partido.CUADRO_CONSOLACION),
     }

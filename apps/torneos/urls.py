@@ -29,6 +29,7 @@ urlpatterns = [
     path('torneos/<int:pk>/categorias/<int:categoria_pk>/eliminar/', torneos.torneo_categoria_delete, name='torneo-categoria-delete'),
     path('torneos/<int:pk>/categorias/<int:categoria_pk>/generar/', torneos.torneo_categoria_generar, name='torneo-categoria-generar'),
     path('torneos/<int:pk>/categorias/<int:categoria_pk>/liguilla/', torneos.torneo_categoria_sembrar, name='torneo-categoria-sembrar'),
+    path('torneos/<int:pk>/categorias/<int:categoria_pk>/mini-liguilla/', torneos.torneo_categoria_sembrar_mini, name='torneo-categoria-sembrar-mini'),
     path('torneos/<int:pk>/categorias/<int:categoria_pk>/equipos/crear/', torneos.torneo_equipo_create, name='torneo-categoria-equipo-create'),
     path('torneos/<int:pk>/categorias/<int:categoria_pk>/equipos/<int:equipo_pk>/editar/', torneos.torneo_equipo_edit, name='torneo-equipo-edit'),
     path('torneos/<slug:torneo>/', torneos.torneo_detalle, name='torneo-detalle'),
@@ -51,4 +52,5 @@ urlpatterns = [
     path('categorias/<int:pk>/generar-partidos/', views.categoria_generar_partidos, name='categoria-generar-partidos'),
     path('categorias/<int:pk>/iniciar-liguilla/', views.categoria_iniciar_liguilla, name='categoria-iniciar-liguilla'),
     path('categorias/<int:pk>/sembrar/', views.categoria_sembrar, name='categoria-sembrar'),
+    path('categorias/<int:pk>/sembrar-mini/', views.categoria_sembrar_mini, name='categoria-sembrar-mini'),
 ]

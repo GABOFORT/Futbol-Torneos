@@ -155,6 +155,13 @@ def _ranking(request, campo, titulo, etiqueta):
         set(actuaciones.values_list('jugador__equipo__categoria_id', flat=True))
     )
 
+    escudos = {
+        equipo.id: equipo.escudo_url
+        for equipo in Equipo.objects.filter(
+            id__in=set(actuaciones.values_list('jugador__equipo_id', flat=True))
+        ).only('id', 'nombre', 'escudo')
+    }
+
     filas = []
     for datos in (
         actuaciones.values(
@@ -176,6 +183,7 @@ def _ranking(request, campo, titulo, etiqueta):
             'numero': datos['jugador__numero'],
             'equipo': datos['jugador__equipo__nombre'],
             'equipo_id': datos['jugador__equipo_id'],
+            'escudo': escudos.get(datos['jugador__equipo_id']),
             'categoria': datos['jugador__equipo__categoria__nombre'],
             'liga': datos['jugador__equipo__liga__nombre'],
             'pj': pj,

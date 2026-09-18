@@ -43,9 +43,12 @@
                         <td class="pos-equipo px-4 py-3 text-sm font-semibold text-gray-900">
 
                             <div class="celda-equipo">
-                                <button type="button" class="open-modal equipo-enlace"
+                                <button type="button" class="open-modal equipo-enlace flex items-center gap-2"
                                         data-url="{% url 'equipo-perfil' fila.equipo.pk %}"
-                                        aria-label="Ver el perfil de {{ fila.equipo.nombre }}">{{ fila.equipo.nombre }}</button>
+                                        aria-label="Ver el perfil de {{ fila.equipo.nombre }}">
+                                    <img src="{{ fila.equipo.escudo_url }}" alt="Escudo de {{ fila.equipo.nombre }}" class="escudo-mini" loading="lazy" decoding="async">
+                                    <span>{{ fila.equipo.nombre }}</span>
+                                </button>
                                 {% include 'torneos/_trofeos.html' with trofeos=fila.trofeos %}
                             </div>
                         </td>

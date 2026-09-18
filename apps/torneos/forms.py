@@ -1,5 +1,6 @@
 from django import forms
 
+from apps.partidos import liguilla
 from apps.usuarios.forms import StyledFormMixin
 from apps.usuarios.permissions import ligas_administradas
 
@@ -37,7 +38,7 @@ class CategoriaForm(StyledFormMixin, forms.ModelForm):
     ]
 
     CAMPOS_DE_FORMATO = ('formato', 'grupos', 'cruces_entre_grupos',
-                         'vueltas', 'empate_define_penales', 'mini_liguilla')
+                         'vueltas', 'empate_define_penales')
 
     CAMPOS_DE_RESTRICCION = ('limite_edad', 'edad_minima', 'peso_minimo')
 
@@ -85,6 +86,7 @@ class CategoriaForm(StyledFormMixin, forms.ModelForm):
             'descripcion': forms.Textarea(attrs={'rows': 3}),
             'reglas': forms.Textarea(attrs={'rows': 3}),
             'limite_edad': forms.RadioSelect,
+            'mini_liguilla': forms.RadioSelect,
         }
 
     def __init__(self, user, *args, **kwargs):
@@ -113,6 +115,7 @@ class CategoriaForm(StyledFormMixin, forms.ModelForm):
 
         self._preparar_grupos()
         self._congelar_formato_si_ya_empezo()
+        self._congelar_mini_liguilla_si_ya_empezo()
 
     def _preparar_grupos(self):
         """El selector de grupos: cuantos son y con que letras quedan.
@@ -149,6 +152,14 @@ class CategoriaForm(StyledFormMixin, forms.ModelForm):
                 'No se puede cambiar: la categoría ya tiene partidos generados. '
                 'Cambiarlo ahora dejaría media temporada jugada con otro formato.'
             )
+
+    def _congelar_mini_liguilla_si_ya_empezo(self):
+        """La mini-liguilla no mueve el calendario: se congela recien con la liguilla."""
+        if not self.instance.pk or not liguilla.ya_empezo(self.instance):
+            return
+        campo = self.fields['mini_liguilla']
+        campo.disabled = True
+        campo.help_text = 'No se puede cambiar: la liguilla de esta categoría ya empezó.'
 
     def secciones(self):
         """Los campos ya agrupados y en orden, listos para la plantilla."""

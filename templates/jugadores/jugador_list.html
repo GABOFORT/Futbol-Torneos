@@ -84,7 +84,7 @@
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="6" class="px-6 py-8 text-center text-sm text-gray-500">Sin jugadores registrados todavía.</td>
+                        <td colspan="{% if puede_gestionar %}6{% else %}5{% endif %}" class="px-6 py-8 text-center text-sm text-gray-500">Sin jugadores registrados todavía.</td>
                     </tr>
                 {% endfor %}
             </tbody>

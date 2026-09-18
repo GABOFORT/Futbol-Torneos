@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block titulo %}{{ patrocinador.nombre }}{% endblock %}
+
+{% block descripcion %}{{ patrocinador.nombre }}, patrocinador oficial de BUHO Sports League.{% endblock %}
+{% block og_titulo %}{{ patrocinador.nombre }} · BUHO Sports League{% endblock %}
+{% block og_descripcion %}Patrocinador oficial de BUHO Sports League.{% endblock %}
+
+{% block contenido %}
+<div class="max-w-xl mx-auto p-6">
+    <a href="{% url 'inicio' %}" class="boton-suave mb-6 inline-flex">Volver al inicio</a>
+    {% include 'informacion/_aliado_oficial_ficha.html' %}
+</div>
+{% endblock %}

@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load aliados_oficiales %}
 
 {% block titulo %}BUHO Sports League{% endblock %}
 
@@ -428,6 +429,18 @@
                     <p class="campeon-torneo">{{ p.liga_nombre }} · {{ p.categoria_nombre }}</p>
                 </a>
             {% endfor %}
+        </div>
+    </section>
+{% endif %}
+
+{% patrocinadores_oficiales as oficiales %}
+{% if oficiales %}
+    <section class="ancho-pagina">
+        <div class="seccion-cabecera">
+            <h2 class="seccion-titulo">Patrocinadores oficiales</h2>
+        </div>
+        <div class="portada-aliados">
+            {% include 'informacion/_aliados_oficiales_tira.html' with lista=oficiales %}
         </div>
     </section>
 {% endif %}

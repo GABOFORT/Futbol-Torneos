@@ -4,6 +4,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.equipos.models import Equipo
+from apps.estadisticas import tabla
 from apps.jugadores.models import Jugador
 from apps.partidos import altas, grupos, liguilla
 from apps.partidos.calendario import MINIMO_EQUIPOS, armar_jornadas
@@ -143,6 +144,12 @@ def categoria_list(request):
             and categoria.n_regulares > 0
             and categoria.n_pendientes == 0
             and equipos_por_categoria.get(categoria.id, 0) >= 2
+        )
+        categoria.puede_armar_mini = (
+            categoria.juega_por_grupos
+            and categoria.liguilla_iniciada
+            and grupos.ronda_ya_armada(categoria, Partido.CUADRO_CONSOLACION) is None
+            and not grupos.motivo_para_no_sembrar(categoria, Partido.CUADRO_CONSOLACION)
         )
         categoria.tiene_calendario = categoria.n_regulares > 0
         categoria.cupo_lleno = (
@@ -325,32 +332,67 @@ def categoria_sembrar(request, pk):
     Es la misma pantalla del torneo: mismo formulario, mismo motor y mismo
     dibujo del cuadro.
     """
+    return _armar_cuadro_por_grupos(request, pk, Partido.CUADRO_PRINCIPAL)
+
+
+@admin_liga_required
+def categoria_sembrar_mini(request, pk):
+    """Arma a mano la mini-liguilla, del tamano que eligio la categoria."""
+    return _armar_cuadro_por_grupos(request, pk, Partido.CUADRO_CONSOLACION)
+
+
+def _armar_cuadro_por_grupos(request, pk, cuadro):
     categoria = get_object_or_404(
         Categoria.objects.select_related('liga'),
         pk=pk, liga__in=ligas_administradas(request.user))
+    es_mini = cuadro == Partido.CUADRO_CONSOLACION
+    que_se_arma = 'la mini-liguilla' if es_mini else 'la liguilla'
 
-    motivo = grupos.motivo_para_no_sembrar(categoria)
+    motivo = grupos.motivo_para_no_sembrar(categoria, cuadro)
     if motivo:
         messages.error(request, motivo)
         return redirect('categoria-list')
 
-    form = SiembraForm(categoria, request.POST or None)
+    posiciones = tabla.calcular(categoria)
+    form = SiembraForm(categoria, request.POST or None, cuadro=cuadro, posiciones=posiciones)
     if request.method == 'POST' and form.is_valid():
-        creados = grupos.sembrar(categoria, form.fase, form.cruces)
+        creados = grupos.sembrar(categoria, form.fase, form.cruces, cuadro)
         etiqueta = creados[0].get_fase_display().lower() if creados else 'la ronda'
+        llaves = len({partido.orden for partido in creados})
         messages.success(request, (
-            f'{categoria.nombre}: quedaron armadas {len(creados)} llave(s) de '
-            f'{etiqueta}. De aquí en adelante los ganadores avanzan solos.'))
+            f'{categoria.nombre}: {que_se_arma} quedó armada con {llaves} '
+            f'llave(s) de {etiqueta}. De aquí en adelante los ganadores avanzan solos.'))
         return redirect('categoria-liguilla', categoria_id=categoria.pk)
 
     return render(request, 'torneos/torneo_siembra.html', {
         'form': form,
-        'title': f'Armar la liguilla · {categoria.nombre}',
+        'title': f'Armar {que_se_arma} · {categoria.nombre}',
+        'que_se_arma': que_se_arma,
         'kicker': categoria.liga.nombre,
         'categoria': categoria,
         'grupos': grupos.posiciones(categoria),
         'llaves_por_ronda': grupos.LLAVES_POR_RONDA,
+        'tabla_general': _tabla_para_sembrar(posiciones, form.equipos),
+        'en_el_otro_cuadro': 'En liguilla' if es_mini else 'En mini-liguilla',
+        'propuesta': form.propuesta,
+        'zonas': _zonas_de_la_tabla(categoria, es_mini),
     })
+
+
+def _zonas_de_la_tabla(categoria, es_mini):
+    antes_de_la_mini = categoria.PUESTOS_ANTES_DE_LA_MINI_LIGUILLA
+    return {
+        'mini_desde': antes_de_la_mini + 1 if categoria.mini_liguilla else None,
+        'mini_hasta': categoria.minimo_equipos_mini_liguilla if categoria.mini_liguilla else None,
+        'liguilla_armada': (len(grupos.equipos_en(categoria, Partido.CUADRO_PRINCIPAL))
+                            if es_mini else None),
+    }
+
+
+def _tabla_para_sembrar(posiciones, elegibles):
+    ids = {equipo.pk for equipo in elegibles}
+    return [{'puesto': puesto, 'fila': fila, 'elegible': fila['equipo'].pk in ids}
+            for puesto, fila in enumerate(posiciones, start=1)]
 
 
 @admin_liga_required

@@ -67,6 +67,12 @@
                             {% if ronda_armada %}Rehacer la liguilla{% else %}Armar la liguilla{% endif %}
                         </button>
                     {% endif %}
+                    {% if jornadas and not motivo_sembrar_mini %}
+                        <button class="open-modal boton-claro boton-chico" data-url="{% url 'torneo-categoria-sembrar-mini' torneo.pk categoria.pk %}?modal=1">
+                            <svg class="ico ico-sm"><use href="#ico-llaves"></use></svg>
+                            {% if mini_armada %}Rehacer la mini-liguilla{% else %}Armar la mini-liguilla{% endif %}
+                        </button>
+                    {% endif %}
                     <button class="open-modal boton-claro boton-chico" data-url="{% url 'torneo-categoria-edit' torneo.pk categoria.pk %}?modal=1">
                         <svg class="ico ico-sm"><use href="#ico-lapiz"></use></svg> Editar
                     </button>
@@ -190,6 +196,16 @@
 
             {% if cuadro %}
                 {% include 'estadisticas/_bracket.html' %}
+
+                {% if mini %}
+                    <section class="cuadro-secundario">
+                        <div class="cuadro-secundario-encabezado">
+                            <h2 class="cuadro-secundario-titulo">{{ mini.titulo }}</h2>
+                            <p class="cuadro-secundario-nota">{{ mini.subtitulo }}</p>
+                        </div>
+                        {% include 'estadisticas/_bracket.html' with cuadro=mini %}
+                    </section>
+                {% endif %}
             {% else %}
                 <p class="panel-vacio">
                     Los grupos ya cerraron.

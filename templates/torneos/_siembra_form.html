@@ -37,66 +37,43 @@
     </div>
 </section>
 
-<section class="siembra-paso">
-    <div class="siembra-paso-cabeza">
-        <span class="siembra-paso-numero">2</span>
-        <div class="min-w-0">
-            <h3>¿Desde qué ronda arranca?</h3>
-            <p>De ahí en adelante los ganadores avanzan solos.</p>
-        </div>
-    </div>
-
-    <div class="siembra-rondas">
-        {% for radio in form.ronda %}
-            <label class="siembra-ronda">
-                {{ radio.tag }}
-                <span class="siembra-ronda-marca" aria-hidden="true">
-                    <svg class="ico"><use href="#ico-llaves"></use></svg>
+{% if tabla_general %}
+    <div class="siembra-columnas">
+        <section class="siembra-paso siembra-general" aria-labelledby="siembra-general-titulo" data-zonas{% if zonas.mini_desde %} data-mini-desde="{{ zonas.mini_desde }}" data-mini-hasta="{{ zonas.mini_hasta }}"{% endif %}{% if zonas.liguilla_armada %} data-liguilla-armada="{{ zonas.liguilla_armada }}"{% endif %}>
+            <div class="siembra-paso-cabeza">
+                <span class="siembra-paso-numero" aria-hidden="true">
+                    <svg class="ico ico-sm"><use href="#ico-grupos"></use></svg>
                 </span>
-                <span class="siembra-ronda-texto">{{ radio.choice_label }}</span>
-                <span class="siembra-ronda-tilde" aria-hidden="true">
-                    <svg class="ico ico-sm"><use href="#ico-listo"></use></svg>
-                </span>
-            </label>
-        {% endfor %}
-    </div>
-    {% for error in form.ronda.errors %}
-        <p class="siembra-error-campo">{{ error }}</p>
-    {% endfor %}
-</section>
-
-<section class="siembra-paso" data-siembra-llaves-marco hidden>
-    <div class="siembra-paso-cabeza">
-        <span class="siembra-paso-numero">3</span>
-        <div class="min-w-0">
-            <h3>¿Quién juega contra quién?</h3>
-            <p>Un equipo no puede repetirse en dos llaves.</p>
-        </div>
-    </div>
-
-    <div class="siembra-llaves" data-siembra-llaves>
-        {% for llave in form.llaves %}
-            <div class="siembra-llave" data-llave="{{ llave.numero }}" hidden>
-                <span class="siembra-llave-numero">
-                    <small>Llave</small>{{ llave.numero|add:1 }}
-                </span>
-                <div class="siembra-llave-campos">
-                    <label class="siembra-lado">
-                        <span class="siembra-lado-etiqueta">Local</span>
-                        {{ llave.local }}
-                    </label>
-                    <span class="siembra-vs" aria-hidden="true">VS</span>
-                    <label class="siembra-lado">
-                        <span class="siembra-lado-etiqueta">Visitante</span>
-                        {{ llave.visitante }}
-                    </label>
+                <div class="min-w-0">
+                    <h3 id="siembra-general-titulo">Tabla general</h3>
+                    <p>Al elegir la ronda, las llaves se llenan con este orden. Puedes cambiarlas.</p>
                 </div>
             </div>
-        {% endfor %}
-    </div>
-</section>
 
-<p class="siembra-espera" data-siembra-espera>
-    <svg class="ico"><use href="#ico-llaves"></use></svg>
-    Elige arriba la ronda y aquí aparecerán las llaves para llenar.
-</p>
+            <div class="siembra-tabla">
+                <ol>
+                    {% for renglon in tabla_general %}
+                        <li data-equipo="{{ renglon.fila.equipo.pk }}" data-puesto="{{ renglon.puesto }}"{% if not renglon.elegible %} class="siembra-fuera"{% endif %}>
+                            <span class="siembra-puesto">{{ renglon.puesto }}</span>
+                            <img src="{{ renglon.fila.equipo.escudo_url }}" alt="" class="siembra-escudo" loading="lazy" decoding="async">
+                            <span class="siembra-nombre" title="{{ renglon.fila.equipo.nombre }}">{{ renglon.fila.equipo.nombre }}</span>
+                            {% if not renglon.elegible %}
+                                <span class="siembra-etiqueta-fuera">{{ en_el_otro_cuadro }}</span>
+                            {% elif renglon.fila.equipo.grupo %}
+                                <span class="siembra-grupo" title="Grupo {{ renglon.fila.equipo.grupo }}">{{ renglon.fila.equipo.grupo }}</span>
+                            {% endif %}
+                            <span class="siembra-pts">{{ renglon.fila.pts }}<small>pts</small></span>
+                        </li>
+                    {% endfor %}
+                </ol>
+            </div>
+        </section>
+
+        <div class="siembra-columna-principal">
+            {% include 'torneos/_siembra_rondas_llaves.html' %}
+        </div>
+    </div>
+    {{ propuesta|json_script:'siembra-propuesta' }}
+{% else %}
+    {% include 'torneos/_siembra_rondas_llaves.html' %}
+{% endif %}

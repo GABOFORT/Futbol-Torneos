@@ -24,7 +24,7 @@ class StyledFormMixin:
         for field_name in self.CAMPOS_OBLIGATORIOS:
             self.fields[field_name].required = True
         for field_name, field in self.fields.items():
-            classes = 'mt-2 w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-green-600 focus:ring-2 focus:ring-green-200'
+            classes = 'mt-2 w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-base sm:text-sm text-gray-900 shadow-sm focus:border-green-600 focus:ring-2 focus:ring-green-200'
             if getattr(field.widget, 'input_type', None) == 'checkbox' or isinstance(field.widget, forms.CheckboxSelectMultiple):
                 classes = 'h-4 w-4 rounded border-gray-300 text-green-700 focus:ring-green-500'
             elif isinstance(field.widget, forms.RadioSelect):

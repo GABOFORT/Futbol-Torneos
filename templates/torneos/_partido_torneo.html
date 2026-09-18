@@ -1,7 +1,7 @@
 <article class="partido-torneo {% if partido.jugado %}partido-jugado{% endif %}">
     <p class="partido-torneo-fase">
         {% if partido.es_liguilla %}
-            <svg class="ico ico-sm"><use href="#ico-llaves"></use></svg> {{ partido.get_fase_display }}
+            <svg class="ico ico-sm"><use href="#ico-llaves"></use></svg> {% if partido.es_consolacion %}Mini-liguilla · {% endif %}{{ partido.get_fase_display }}
         {% else %}
             <span class="pastilla-letra {% if partido.cruza_grupos %}pastilla-letra-cruce{% endif %}">{{ partido.etiqueta_grupo }}</span>
             Jornada {{ partido.jornada }}

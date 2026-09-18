@@ -72,6 +72,8 @@ def cerrar_torneo_si_termino(partido):
 
     if partido.fase != Partido.FASE_FINAL or not partido.jugado:
         return None
+    if partido.cuadro != Partido.CUADRO_PRINCIPAL:
+        return None
 
     torneo = getattr(partido.categoria.liga, 'torneo', None)
     if torneo is None:

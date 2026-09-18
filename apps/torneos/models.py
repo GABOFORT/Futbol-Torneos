@@ -290,13 +290,21 @@ class Categoria(models.Model):
                   'no registra el peso de cada jugador.',
     )
 
-    MINIMO_EQUIPOS_MINI_LIGUILLA = 12
-    EQUIPOS_MINI_LIGUILLA = 4
+    PUESTOS_ANTES_DE_LA_MINI_LIGUILLA = 8
+    SIN_MINI_LIGUILLA = 0
+    MINI_LIGUILLA_DE_CUATRO = 4
+    MINI_LIGUILLA_DE_OCHO = 8
+    MINI_LIGUILLA_CHOICES = [
+        (SIN_MINI_LIGUILLA, 'Sin mini-liguilla'),
+        (MINI_LIGUILLA_DE_CUATRO, 'Puestos 9 a 12 · necesita 12 equipos o más'),
+        (MINI_LIGUILLA_DE_OCHO, 'Puestos 9 a 16 · necesita 16 equipos o más'),
+    ]
 
-    mini_liguilla = models.BooleanField(
+    mini_liguilla = models.PositiveSmallIntegerField(
         'Mini-liguilla de consolación',
-        default=False,
-        help_text='Los puestos 9 a 12 juegan su propio cuadro. Necesita 12 equipos o más.',
+        choices=MINI_LIGUILLA_CHOICES,
+        default=SIN_MINI_LIGUILLA,
+        help_text='Los equipos que siguen a los 8 de la liguilla juegan su propio cuadro.',
     )
 
     cerrada = models.BooleanField('Categoría concluida', default=False)
@@ -563,9 +571,18 @@ class Categoria(models.Model):
         return f'hasta {self.edad_maxima} años · {self.edad_maxima_femenino} en mujeres'
 
     @property
+    def minimo_equipos_mini_liguilla(self):
+        return self.PUESTOS_ANTES_DE_LA_MINI_LIGUILLA + self.mini_liguilla
+
+    @property
+    def tramo_mini_liguilla(self):
+        return (f'{self.PUESTOS_ANTES_DE_LA_MINI_LIGUILLA + 1} a '
+                f'{self.minimo_equipos_mini_liguilla}')
+
+    @property
     def admite_mini_liguilla(self):
         """Si hay equipos suficientes para armar el cuadro de consolacion."""
-        return self.equipos.count() >= self.MINIMO_EQUIPOS_MINI_LIGUILLA
+        return self.equipos.count() >= self.minimo_equipos_mini_liguilla
 
     @property
     def juega_mini_liguilla(self):
@@ -577,11 +594,13 @@ class Categoria(models.Model):
         """Por que no habra mini-liguilla aunque este pedida, o '' si si habra."""
         if not self.mini_liguilla:
             return ''
-        faltan = self.MINIMO_EQUIPOS_MINI_LIGUILLA - self.equipos.count()
+        inscritos = self.equipos.count()
+        faltan = self.minimo_equipos_mini_liguilla - inscritos
         if faltan > 0:
             return (
-                f'La mini-liguilla necesita {self.MINIMO_EQUIPOS_MINI_LIGUILLA} equipos '
-                f'y en esta categoría hay {self.equipos.count()}: faltan {faltan}.'
+                f'La mini-liguilla de los puestos {self.tramo_mini_liguilla} necesita '
+                f'{self.minimo_equipos_mini_liguilla} equipos y en esta categoría hay '
+                f'{inscritos}: faltan {faltan}.'
             )
         return ''
 
@@ -608,22 +627,14 @@ class Categoria(models.Model):
     def _error_de_grupos(self):
         """Lo que no cabe cuando la categoria se reparte en grupos.
 
-        La mini-liguilla juega los puestos 9 a 12 de UNA tabla, y con grupos no
-        hay una sola tabla que los defina. Y el cupo tiene que alcanzar para dos
-        equipos por grupo, que es el minimo para que un grupo tenga partidos.
+        El cupo tiene que alcanzar para dos equipos por grupo, que es el minimo
+        para que un grupo tenga partidos.
         """
         if not self.juega_por_grupos:
             self.cruces_entre_grupos = False
             return {}
 
         errores = {}
-        if self.mini_liguilla:
-            errores['mini_liguilla'] = (
-                'La mini-liguilla sale de los puestos 9 a 12 de la tabla general, '
-                'y al jugar por grupos cada grupo lleva la suya. Desmárcala o '
-                'quita los grupos.'
-            )
-
         minimo = self.grupos * self.MINIMO_POR_GRUPO
         if self.cupo_equipos is not None and self.cupo_equipos < minimo:
             errores['cupo_equipos'] = (
@@ -634,16 +645,16 @@ class Categoria(models.Model):
         return errores
 
     def _error_de_cupo(self):
-        """El cupo tiene que dar para los puestos 9 a 12 si hay mini-liguilla."""
+        """El cupo tiene que dar para los puestos de la mini-liguilla elegida."""
         if not self.mini_liguilla:
             return {}
-        if self.cupo_equipos is None or self.cupo_equipos >= self.MINIMO_EQUIPOS_MINI_LIGUILLA:
+        minimo = self.minimo_equipos_mini_liguilla
+        if self.cupo_equipos is None or self.cupo_equipos >= minimo:
             return {}
         return {'cupo_equipos': (
-            f'La mini-liguilla juega los puestos 9 a 12, así que necesita '
-            f'{self.MINIMO_EQUIPOS_MINI_LIGUILLA} equipos y el cupo es '
-            f'{self.cupo_equipos}. Sube el cupo a {self.MINIMO_EQUIPOS_MINI_LIGUILLA} '
-            f'o más, o desmarca la mini-liguilla.'
+            f'La mini-liguilla juega los puestos {self.tramo_mini_liguilla}, así que '
+            f'necesita {minimo} equipos y el cupo es {self.cupo_equipos}. Sube el cupo '
+            f'a {minimo} o más, o elige otra mini-liguilla.'
         )}
 
     def _error_de_restricciones(self):

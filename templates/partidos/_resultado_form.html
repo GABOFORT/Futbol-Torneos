@@ -31,10 +31,10 @@
 
             {% for field in form %}
                 <div data-campo="{{ field.name }}" {% if field.name == 'ganador_penales' or field.name == 'no_se_presento' %}class="sm:col-span-2"{% endif %}>
-                    <label class="block text-sm font-medium text-gray-700">{{ field.label }}</label>
+                    <label class="block text-sm font-medium text-gray-700" for="{{ field.id_for_label }}">{{ field.label }}</label>
                     {{ field }}
                     {% if field.help_text %}<p class="mt-2 text-sm text-gray-500">{{ field.help_text }}</p>{% endif %}
-                    {% for error in field.errors %}<p class="mt-1 text-sm text-red-600">{{ error }}</p>{% endfor %}
+                    {% for error in field.errors %}<p class="error-campo">{{ error }}</p>{% endfor %}
                 </div>
             {% endfor %}
 

@@ -99,10 +99,12 @@ def sortear(torneo, semilla=None):
 
 
 def armar(categoria, fase, orden, local, visitante,
-          siembra_local=None, siembra_visitante=None, jornada=0):
+          siembra_local=None, siembra_visitante=None, jornada=0,
+          cuadro=Partido.CUADRO_PRINCIPAL):
     return Partido(
         categoria=categoria,
         fase=fase,
+        cuadro=cuadro,
         orden=orden,
         vuelta=False,
         jornada=jornada,
@@ -123,10 +125,10 @@ def _programar_seguido(dia, partidos, desde=None):
         partido.fecha_original = momento
 
 
-def series(categoria, fase=None):
-    """Las llaves del cuadro de una categoria, con el ganador ya resuelto."""
+def series(categoria, fase=None, cuadro=Partido.CUADRO_PRINCIPAL):
+    """Las llaves de un cuadro de una categoria, con el ganador ya resuelto."""
     partidos = (Partido.objects
-                .filter(categoria=categoria)
+                .filter(categoria=categoria, cuadro=cuadro)
                 .exclude(fase=Partido.FASE_REGULAR)
                 .select_related('equipo_local', 'equipo_visitante', 'ganador_penales', 'sede'))
     if fase is not None:
@@ -188,7 +190,7 @@ def avanzar(partido):
     if not partido.es_liguilla:
         return sin_cambios()
 
-    ronda = series(categoria, partido.fase)
+    ronda = series(categoria, partido.fase, partido.cuadro)
     if not ronda or any(llave['ganador'] is None for llave in ronda):
         return sin_cambios()
 
@@ -198,7 +200,7 @@ def avanzar(partido):
 
     creados, rehechas = [], []
     for fase, cruces in siguientes.items():
-        parcial = sincronizar(categoria, fase, cruces)
+        parcial = sincronizar(categoria, fase, cruces, partido.cuadro)
         creados += parcial['creados']
         rehechas += parcial['rehechas']
 
@@ -236,41 +238,42 @@ def _cae(llave):
             else llave['partido'].siembra_visitante)
 
 
-def sincronizar(categoria, fase, cruces):
+def sincronizar(categoria, fase, cruces, cuadro=Partido.CUADRO_PRINCIPAL):
     """Crea la ronda, o la rehace si cambio quien la juega."""
     existentes = {p.orden: p for p in Partido.objects.filter(
-        categoria=categoria, fase=fase)}
+        categoria=categoria, fase=fase, cuadro=cuadro)}
 
     if not existentes:
-        return {'creados': crear(categoria, fase, cruces), 'rehechas': []}
+        return {'creados': crear(categoria, fase, cruces, cuadro=cuadro), 'rehechas': []}
 
     creados, cambio = [], False
     for orden, (uno, otro) in enumerate(cruces):
         actual = existentes.get(orden)
         if actual is None:
-            creados += crear(categoria, fase, [(uno, otro)], desde=orden)
+            creados += crear(categoria, fase, [(uno, otro)], desde=orden, cuadro=cuadro)
             continue
         if {actual.equipo_local_id, actual.equipo_visitante_id} == {uno[0].id, otro[0].id}:
             continue
         actual.delete()
-        creados += crear(categoria, fase, [(uno, otro)], desde=orden)
+        creados += crear(categoria, fase, [(uno, otro)], desde=orden, cuadro=cuadro)
         cambio = True
 
     rehechas = []
     if cambio:
         rehechas.append(dict(Partido.FASE_CHOICES)[fase])
         derivadas = Partido.objects.filter(
-            categoria=categoria, fase__in=DERIVADAS.get(fase, []))
+            categoria=categoria, cuadro=cuadro, fase__in=DERIVADAS.get(fase, []))
         rehechas += sorted({p.get_fase_display() for p in derivadas})
         derivadas.delete()
 
     return {'creados': creados, 'rehechas': rehechas}
 
 
-def crear(categoria, fase, cruces, desde=0):
+def crear(categoria, fase, cruces, desde=0, cuadro=Partido.CUADRO_PRINCIPAL):
     partidos = []
     for numero, (uno, otro) in enumerate(cruces, start=desde):
-        partidos.append(armar(categoria, fase, numero, uno[0], otro[0], uno[1], otro[1]))
+        partidos.append(armar(categoria, fase, numero, uno[0], otro[0], uno[1], otro[1],
+                              cuadro=cuadro))
     _programar_siguiente(categoria, partidos)
     Partido.objects.bulk_create(partidos)
     return partidos
@@ -297,9 +300,9 @@ def _programar_siguiente(categoria, partidos):
     _programar_seguido(torneo.fecha, partidos, desde=desde)
 
 
-def cuadro(categoria):
+def cuadro(categoria, cual=Partido.CUADRO_PRINCIPAL):
     """El cuadro completo de una categoria, en dos mitades que convergen."""
-    llaves = series(categoria)
+    llaves = series(categoria, cuadro=cual)
     if not llaves:
         return None
 
@@ -320,6 +323,14 @@ def cuadro(categoria):
     final = next((s for s in llaves if s['fase'] == Partido.FASE_FINAL), None)
     tercero = next((s for s in llaves if s['fase'] == Partido.FASE_TERCERO), None)
 
+    es_mini = cual == Partido.CUADRO_CONSOLACION
+    if es_mini:
+        subtitulo = 'Elegidos por el organizador · el empate se define en penales'
+    elif categoria.juega_por_grupos:
+        subtitulo = 'Clasificados de los grupos · el empate se define en penales'
+    else:
+        subtitulo = 'Eliminación directa · el empate se define en penales'
+
     return {
         'izquierda': izquierda,
         'derecha': list(reversed(derecha)),
@@ -328,9 +339,11 @@ def cuadro(categoria):
         'campeon': final['ganador'] if final else None,
         'subcampeon': final['perdedor'] if final else None,
         'tercer_lugar': tercero['ganador'] if tercero else None,
-        'es_mini': False,
-        'titulo': 'Cuadro del torneo',
-        'subtitulo': ('Clasificados de los grupos · el empate se define en penales'
-                      if categoria.juega_por_grupos
-                      else 'Eliminación directa · el empate se define en penales'),
+        'es_mini': es_mini,
+        'titulo': 'Mini-liguilla' if es_mini else 'Cuadro del torneo',
+        'subtitulo': subtitulo,
     }
+
+
+def mini(categoria):
+    return cuadro(categoria, Partido.CUADRO_CONSOLACION)

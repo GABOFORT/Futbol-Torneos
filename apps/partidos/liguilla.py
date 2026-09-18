@@ -55,7 +55,10 @@ def formato(categoria):
     return None
 
 
-PRIMER_PUESTO_MINI = 8
+FASE_INICIAL_MINI = {
+    4: Partido.FASE_SEMIFINAL,
+    8: Partido.FASE_CUARTOS,
+}
 
 
 def formato_mini(categoria):
@@ -63,9 +66,9 @@ def formato_mini(categoria):
     if not categoria.juega_mini_liguilla:
         return None
     return {
-        'clasifican': categoria.EQUIPOS_MINI_LIGUILLA,
-        'fase': Partido.FASE_SEMIFINAL,
-        'desde': PRIMER_PUESTO_MINI,
+        'clasifican': categoria.mini_liguilla,
+        'fase': FASE_INICIAL_MINI[categoria.mini_liguilla],
+        'desde': categoria.PUESTOS_ANTES_DE_LA_MINI_LIGUILLA,
     }
 
 
@@ -314,7 +317,7 @@ def avanzar(partido):
             existentes.setdefault(p.orden, []).append(p)
 
         if not existentes:
-            creados += _crear(partido.categoria, fase, cruces, cuadro)
+            creados += crear(partido.categoria, fase, cruces, cuadro)
             continue
 
         cambio_alguno = False
@@ -394,7 +397,7 @@ def _con_siembra(llave, equipo):
     return (equipo, llave['siembra_otro'])
 
 
-def _crear(categoria, fase, cruces, cuadro=Partido.CUADRO_PRINCIPAL):
+def crear(categoria, fase, cruces, cuadro=Partido.CUADRO_PRINCIPAL):
     """Crea las llaves de una fase dentro de un cuadro, salvo que ya existan.
 
     Cada cruce llega como ((equipo, siembra), (equipo, siembra)).
@@ -458,6 +461,13 @@ def cuadro(categoria, cual=Partido.CUADRO_PRINCIPAL):
     tercero = next((s for s in llaves if s['fase'] == Partido.FASE_TERCERO), None)
 
     es_mini = cual == Partido.CUADRO_CONSOLACION
+    subtitulo = 'Los mejores del torneo regular'
+    if es_mini and categoria.juega_por_grupos:
+        subtitulo = 'Elegidos por el organizador entre los que no pasaron a la liguilla'
+    elif es_mini:
+        siembras = [siembra for llave in llaves
+                    for siembra in (llave['siembra_uno'], llave['siembra_otro'])]
+        subtitulo = f'Los puestos {min(siembras)} a {max(siembras)} del torneo regular'
     return {
         'izquierda': izquierda,
         'derecha': list(reversed(derecha)),
@@ -468,10 +478,7 @@ def cuadro(categoria, cual=Partido.CUADRO_PRINCIPAL):
         'tercer_lugar': tercero['ganador'] if tercero else None,
         'es_mini': es_mini,
         'titulo': 'Mini-liguilla' if es_mini else 'Liguilla',
-        'subtitulo': (
-            'Los puestos 9 a 12 del torneo regular' if es_mini
-            else 'Los mejores del torneo regular'
-        ),
+        'subtitulo': subtitulo,
     }
 
 

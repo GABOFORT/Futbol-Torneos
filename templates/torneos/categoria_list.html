@@ -88,6 +88,9 @@
                                     {% endif %}
                                                                         {% if categoria.liguilla_iniciada %}
                                         <a href="{% url 'categoria-liguilla' categoria.pk %}" class="text-sm font-semibold text-green-700 hover:text-green-900">Ver Liguilla </a>
+                                        {% if categoria.puede_armar_mini %}
+                                            <a href="{% url 'categoria-sembrar-mini' categoria.pk %}" class="btn-liguilla">Armar Mini-liguilla</a>
+                                        {% endif %}
                                     {% elif categoria.juega_por_grupos %}
                                         {% if categoria.puede_iniciar_liguilla %}
                                             <a href="{% url 'categoria-sembrar' categoria.pk %}" class="btn-liguilla">Armar Liguilla</a>

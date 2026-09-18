@@ -183,7 +183,7 @@ class TorneoForm(RedesSocialesMixin, TrofeosMixin, StyledFormMixin, forms.Form):
                 Categoria.objects.create(
                     liga=liga, nombre=CATEGORIA_UNICA, cupo_equipos=equipos,
                     libre=True, vueltas=Categoria.VUELTA_UNICA,
-                    empate_define_penales=penales, mini_liguilla=False)
+                    empate_define_penales=penales, mini_liguilla=Categoria.SIN_MINI_LIGUILLA)
             self.guardar_trofeos(liga)
             return Torneo.objects.create(
                 liga=liga, fecha=inicio,
@@ -305,11 +305,11 @@ class TorneoCategoriaForm(StyledFormMixin, forms.Form):
             libre=True,
             vueltas=Categoria.VUELTA_UNICA,
             empate_define_penales=penales,
-            mini_liguilla=False,
+            mini_liguilla=Categoria.SIN_MINI_LIGUILLA,
         )
 
 
-class TorneoEquipoForm(RedesSocialesMixin, StyledFormMixin, forms.Form):
+class TorneoEquipoForm(StyledFormMixin, forms.Form):
     CAMPOS_OBLIGATORIOS = ('nombre', 'entrenador')
     CAMPOS_CAPITALIZAR = ('nombre',)
 
@@ -322,11 +322,6 @@ class TorneoEquipoForm(RedesSocialesMixin, StyledFormMixin, forms.Form):
         choices=Equipo.GRUPO_CHOICES, label='Grupo', widget=forms.RadioSelect,
         required=False)
 
-    red_instagram = campo_de_red(Equipo, 'red_instagram')
-    red_facebook = campo_de_red(Equipo, 'red_facebook')
-    red_twitter = campo_de_red(Equipo, 'red_twitter')
-    red_tiktok = campo_de_red(Equipo, 'red_tiktok')
-
     def __init__(self, torneo, categoria, usuario, *args, instancia=None, **kwargs):
         self.torneo = torneo
         self.categoria = categoria
@@ -337,12 +332,10 @@ class TorneoEquipoForm(RedesSocialesMixin, StyledFormMixin, forms.Form):
                 'entrenador': instancia.entrenador_id,
                 'grupo': instancia.grupo,
                 'escudo': instancia.escudo or None,
-                **{campo: getattr(instancia, campo) for campo in self.CAMPOS_DE_REDES},
             })
         super().__init__(*args, **kwargs)
         self.fields['entrenador'].queryset = Usuario.objects.entrenadores(usuario).order_by(
             'first_name', 'last_name', 'username')
-        self._preparar_redes()
 
         if not categoria.varios_grupos:
             del self.fields['grupo']
@@ -404,15 +397,11 @@ class TorneoEquipoForm(RedesSocialesMixin, StyledFormMixin, forms.Form):
         datos = self.cleaned_data
         grupo = datos.get('grupo', '')
 
-        redes = self.redes_limpias()
-
         if self.instancia is not None:
             equipo = self.instancia
             equipo.nombre = datos['nombre']
             equipo.entrenador = datos['entrenador']
             equipo.grupo = grupo
-            for campo, enlace in redes.items():
-                setattr(equipo, campo, enlace)
             aplicar_imagen(equipo, 'escudo', datos['escudo'])
             equipo.save()
             return equipo
@@ -423,22 +412,31 @@ class TorneoEquipoForm(RedesSocialesMixin, StyledFormMixin, forms.Form):
             liga=self.torneo.liga,
             categoria=self.categoria,
             grupo=grupo,
-            entrenador=datos['entrenador'],
-            **redes)
+            entrenador=datos['entrenador'])
 
 
 class SiembraForm(forms.Form):
-    """Los cruces de la primera ronda de liguilla, elegidos a mano."""
+    """Los cruces de la primera ronda de un cuadro de eliminacion, elegidos a mano."""
 
-    def __init__(self, categoria, *args, **kwargs):
+    def __init__(self, categoria, *args, cuadro=Partido.CUADRO_PRINCIPAL, posiciones=None, **kwargs):
         self.categoria = categoria
         super().__init__(*args, **kwargs)
 
+        elegibles = grupos.equipos_para_sembrar(categoria, cuadro)
+        self.puestos = {fila['equipo'].pk: (puesto, fila)
+                        for puesto, fila in enumerate(posiciones or [], start=1)}
+        if posiciones:
+            ids = set(elegibles.values_list('pk', flat=True))
+            self.equipos = [fila['equipo'] for fila in posiciones if fila['equipo'].pk in ids]
+        else:
+            self.equipos = list(elegibles.order_by('grupo', 'nombre'))
         opciones = [('', '— elegir equipo —')] + [
-            (equipo.pk, f'{equipo.nombre}' + (f'  ({equipo.grupo})' if equipo.grupo else ''))
-            for equipo in categoria.equipos.order_by('grupo', 'nombre')
+            (equipo.pk, self._etiqueta(equipo)) for equipo in self.equipos
         ]
-        posibles = grupos.rondas_posibles(categoria)
+        posibles = grupos.rondas_posibles(categoria, cuadro)
+        desde = (categoria.PUESTOS_ANTES_DE_LA_MINI_LIGUILLA
+                 if cuadro == Partido.CUADRO_CONSOLACION else 0)
+        self.propuesta = self._proponer(posibles, desde) if posiciones else {}
         etiquetas = dict(Partido.FASE_CHOICES)
 
         self.fields['ronda'] = forms.ChoiceField(
@@ -459,6 +457,26 @@ class SiembraForm(forms.Form):
                      if isinstance(campo.widget, forms.RadioSelect)
                      else 'campo-siembra')
             campo.widget.attrs['class'] = clase
+
+    def _etiqueta(self, equipo):
+        if equipo.pk not in self.puestos:
+            return f'{equipo.nombre}  ({equipo.grupo})' if equipo.grupo else equipo.nombre
+        puesto, fila = self.puestos[equipo.pk]
+        grupo = f'Grupo {equipo.grupo}' if equipo.grupo else ''
+        partes = [f'{puesto}°', equipo.nombre, grupo, f'{fila["pts"]} pts']
+        return ' · '.join(parte for parte in partes if parte)
+
+    def _proponer(self, posibles, desde):
+        """Los cruces de cada ronda con los elegibles de la tabla general desde ese puesto."""
+        abajo = [equipo for equipo in self.equipos if self.puestos[equipo.pk][0] > desde]
+        arriba = [equipo for equipo in self.equipos if self.puestos[equipo.pk][0] <= desde]
+        candidatos = abajo + arriba
+        propuesta = {}
+        for fase, llaves in posibles:
+            mejores = candidatos[:llaves * 2]
+            propuesta[fase] = [[mejores[mejor].pk, mejores[peor].pk]
+                               for mejor, peor in relampago.CRUCES[llaves * 2]]
+        return propuesta
 
     def llaves(self):
         """Los pares de campos que dibuja la pantalla, listos para recorrer."""
@@ -492,7 +510,7 @@ class SiembraForm(forms.Form):
                 vistos.add(pk)
             elegidos.append((local, visitante))
 
-        por_pk = {str(e.pk): e for e in self.categoria.equipos.all()}
+        por_pk = {str(e.pk): e for e in self.equipos}
         self.cruces = [(por_pk[local], por_pk[visitante])
                        for local, visitante in elegidos]
         self.fase = fase
@@ -823,10 +841,22 @@ def torneo_categoria_generar(request, pk, categoria_pk):
 @admin_liga_required
 def torneo_categoria_sembrar(request, pk, categoria_pk):
     """Arma a mano la primera ronda de la liguilla de una categoría."""
+    return _armar_cuadro(request, pk, categoria_pk, Partido.CUADRO_PRINCIPAL)
+
+
+@admin_liga_required
+def torneo_categoria_sembrar_mini(request, pk, categoria_pk):
+    """Arma a mano la mini-liguilla con equipos que no juegan la liguilla."""
+    return _armar_cuadro(request, pk, categoria_pk, Partido.CUADRO_CONSOLACION)
+
+
+def _armar_cuadro(request, pk, categoria_pk, cuadro):
     torneo, categoria = _categoria_del_torneo(request.user, pk, categoria_pk)
     modal = request.GET.get('modal') == '1'
+    que_se_arma = ('la mini-liguilla' if cuadro == Partido.CUADRO_CONSOLACION
+                   else 'la liguilla')
 
-    motivo = grupos.motivo_para_no_sembrar(categoria)
+    motivo = grupos.motivo_para_no_sembrar(categoria, cuadro)
     if motivo:
         messages.error(request, motivo)
         if modal:
@@ -834,23 +864,25 @@ def torneo_categoria_sembrar(request, pk, categoria_pk):
         return redirect(categoria)
 
     if request.method == 'POST':
-        form = SiembraForm(categoria, request.POST)
+        form = SiembraForm(categoria, request.POST, cuadro=cuadro)
         if form.is_valid():
-            creados = grupos.sembrar(categoria, form.fase, form.cruces)
+            creados = grupos.sembrar(categoria, form.fase, form.cruces, cuadro)
             etiqueta = creados[0].get_fase_display().lower() if creados else 'la ronda'
+            llaves = len({partido.orden for partido in creados})
             messages.success(
                 request,
-                f'{categoria.nombre}: quedaron armadas {len(creados)} llave(s) de '
-                f'{etiqueta}. De aquí en adelante los ganadores avanzan solos.')
+                f'{categoria.nombre}: {que_se_arma} quedó armada con {llaves} '
+                f'llave(s) de {etiqueta}. De aquí en adelante los ganadores avanzan solos.')
             if modal:
                 return JsonResponse({'success': True})
             return redirect(categoria)
     else:
-        form = SiembraForm(categoria)
+        form = SiembraForm(categoria, cuadro=cuadro)
 
     contexto = {
         'form': form,
-        'title': f'Armar la liguilla · {categoria.nombre}',
+        'title': f'Armar {que_se_arma} · {categoria.nombre}',
+        'que_se_arma': que_se_arma,
         'kicker': torneo.nombre,
         'torneo': torneo,
         'categoria': categoria,

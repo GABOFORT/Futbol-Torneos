@@ -502,7 +502,8 @@ def partido_resultado(request, pk):
                 avance = motor.avanzar(resultado)
 
                 if avance['rehechas']:
-                    palmares.reabrir(resultado.categoria)
+                    if resultado.cuadro == Partido.CUADRO_PRINCIPAL:
+                        palmares.reabrir(resultado.categoria)
                     messages.warning(
                         request,
                         f'Cambió quién avanza, así que se rehízo: '

@@ -541,6 +541,47 @@ main:focus { outline: none; }
 .pie-abajo p:last-child { padding-bottom: 1.25rem; }
 .pie-nota { color: var(--verde-600) !important; font-size: var(--texto-xs) !important; }
 
+.pie-aliados {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    max-width: 72rem;
+    margin: 0 auto;
+    padding: 0 1.25rem 2rem;
+    text-align: center;
+}
+
+.pie-aliados .pie-titulo { margin-bottom: 0; }
+
+.pie-aliados .aliados-tira { margin: 0; }
+
+.portada-aliados {
+    padding: clamp(1rem, 3vw, 1.5rem);
+    border: 1px solid var(--gris-200);
+    border-radius: var(--radio-lg);
+    background-color: var(--blanco);
+    box-shadow: var(--sombra-sm);
+}
+
+.portada-aliados .aliados-tira {
+    margin: 0;
+    gap: clamp(0.75rem, 2vw, 1.25rem);
+}
+
+.portada-aliados .aliado {
+    padding: 0.625rem;
+    border: 1px solid var(--gris-200);
+    box-shadow: var(--sombra-sm);
+}
+
+.portada-aliados .aliado:hover { box-shadow: var(--sombra-md); }
+
+.portada-aliados .aliado img {
+    height: clamp(3rem, 8vw, 4.5rem);
+    max-width: clamp(7rem, 30vw, 12rem);
+}
+
 .seccion-cabecera {
     display: flex;
     flex-wrap: wrap;

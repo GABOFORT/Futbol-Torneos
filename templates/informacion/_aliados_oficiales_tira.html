@@ -1,0 +1,12 @@
+<ul class="aliados-tira">
+    {% for patrocinador in lista %}
+        <li>
+            <a href="{% url 'aliado-oficial-ficha' patrocinador.pk %}" class="open-modal aliado"
+               data-url="{% url 'aliado-oficial-ficha' patrocinador.pk %}?modal=1"
+               title="{{ patrocinador.nombre }}">
+                <img src="{{ patrocinador.logo_url }}" alt="{{ patrocinador.nombre }}"
+                     loading="lazy" decoding="async">
+            </a>
+        </li>
+    {% endfor %}
+</ul>

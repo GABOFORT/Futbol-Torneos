@@ -549,6 +549,12 @@ textarea.campo-invalido {
 
 .campo-penal-bloqueado .penal-actuacion { pointer-events: none; }
 
+@media (max-width: 40rem) {
+    .filtro-select,
+    .cantidad-actuacion,
+    .campo-penal .penal-actuacion { font-size: var(--texto-base); }
+}
+
 .check-en-contra {
     display: inline-flex;
     align-items: center;
@@ -1119,6 +1125,7 @@ textarea.campo-invalido {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    min-width: var(--toque);
     min-height: var(--toque);
     flex-shrink: 0;
     padding: 0.25rem 0.5rem;
@@ -4578,6 +4585,7 @@ body.con-portada {
 }
 
 .torneo-ui .tabla-grupo-datos {
+    --ancho-col-puesto: 2.4rem;
     width: 100%;
     min-width: 21rem;
     border-collapse: collapse;
@@ -4612,7 +4620,10 @@ body.con-portada {
 .torneo-ui .tabla-grupo-datos tbody tr + tr td { border-top: 1px solid var(--t-linea); }
 .torneo-ui .tabla-grupo-datos tbody td { color: var(--t-tinta-suave); }
 
-.torneo-ui .tabla-grupo-datos .col-puesto { width: 2.4rem; }
+.torneo-ui .tabla-grupo-datos .col-puesto {
+    width: var(--ancho-col-puesto);
+    min-width: var(--ancho-col-puesto);
+}
 
 .torneo-ui .tabla-grupo-datos .col-equipo {
     text-align: left;
@@ -4637,7 +4648,7 @@ body.con-portada {
 }
 
 .torneo-ui .tabla-grupo-datos .col-puesto { left: 0; }
-.torneo-ui .tabla-grupo-datos .col-equipo { left: 2.4rem; }
+.torneo-ui .tabla-grupo-datos .col-equipo { left: var(--ancho-col-puesto); }
 
 .torneo-ui .tabla-grupo-datos .col-puntos {
     right: 0;
@@ -5776,6 +5787,108 @@ body.con-portada {
     .torneo-ui .siembra-pie > * { width: auto; }
 }
 
+.torneo-ui.hoja-formulario.hoja-siembra-ancha { max-width: 96rem; }
+
+.torneo-ui .siembra-marco-ancho {
+    max-width: none;
+    overflow: visible;
+}
+
+.torneo-ui .siembra-marco-ancho .siembra-cabecera { border-radius: var(--t-r-xl) var(--t-r-xl) 0 0; }
+.torneo-ui .siembra-marco-ancho .siembra-cuerpo { overflow: visible; }
+
+.torneo-ui .siembra-marco-ancho .siembra-pie {
+    bottom: 0;
+    border-radius: 0 0 var(--t-r-xl) var(--t-r-xl);
+}
+
+.torneo-ui .siembra-columnas {
+    display: grid;
+    gap: 1.25rem;
+    align-items: start;
+}
+
+.torneo-ui .siembra-columna-principal {
+    display: grid;
+    gap: 1.25rem;
+    align-content: start;
+    min-width: 0;
+}
+
+.torneo-ui .siembra-general .siembra-tabla li { transition: background-color var(--t-paso); }
+
+.torneo-ui .siembra-grupo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.3rem;
+    height: 1.3rem;
+    flex-shrink: 0;
+    border-radius: var(--t-r-sm);
+    background-color: var(--t-humo);
+    font-size: 0.62rem;
+    font-weight: 800;
+    color: var(--t-pasto-700);
+}
+
+.torneo-ui .siembra-general .siembra-elegido {
+    background-color: var(--t-lima-suave);
+    font-weight: 700;
+    color: var(--t-pasto-900);
+}
+
+.torneo-ui .siembra-general .siembra-elegido .siembra-puesto {
+    background: linear-gradient(135deg, var(--t-pasto-800), var(--t-pasto-600));
+    color: var(--t-nieve);
+}
+
+.torneo-ui .siembra-fuera { opacity: 0.55; }
+
+.torneo-ui .siembra-general .siembra-tabla .siembra-zona {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.6rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+}
+
+.torneo-ui .siembra-general .siembra-tabla .siembra-zona-liguilla {
+    background-color: var(--t-pasto-700);
+    color: var(--t-nieve);
+}
+
+.torneo-ui .siembra-general .siembra-tabla .siembra-zona-mini {
+    background: linear-gradient(135deg, var(--t-oro-fuerte), var(--t-oro));
+    color: #2a1c00;
+}
+
+.torneo-ui .siembra-general .siembra-tabla .siembra-zona-sin {
+    background-color: var(--t-humo);
+    color: var(--t-tinta-debil);
+}
+
+.torneo-ui .siembra-etiqueta-fuera {
+    flex-shrink: 0;
+    font-size: 0.58rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--t-tinta-debil);
+    white-space: nowrap;
+}
+
+@media (min-width: 64rem) {
+    .torneo-ui .siembra-columnas { grid-template-columns: minmax(18rem, 24rem) minmax(0, 1fr); }
+
+    .torneo-ui .siembra-general {
+        position: sticky;
+        top: 7.5rem;
+        max-height: calc(100vh - 9rem);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+}
+
 .torneo-ui .pastilla-letra-cruce {
     width: auto;
     padding: 0 0.4rem;
@@ -6036,7 +6149,7 @@ body.con-portada {
     opacity: 0.6;
 }
 
-.ficha-cerrar {
+.ficha-hero .ficha-cerrar {
     position: absolute;
     top: 0.75rem;
     right: 0.75rem;
@@ -6052,7 +6165,7 @@ body.con-portada {
     transition: background-color var(--paso-rapido);
 }
 
-.ficha-cerrar:hover { background-color: rgba(255, 255, 255, 0.28); }
+.ficha-hero .ficha-cerrar:hover { background-color: rgba(255, 255, 255, 0.28); }
 
 .ficha-hero-marco {
     display: grid;
