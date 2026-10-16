@@ -37,7 +37,7 @@ urlpatterns = [
     path('estadisticas/', include('apps.estadisticas.urls')),
     path('informacion/', include('apps.informacion.urls')),
     re_path(r'^static/(?P<path>.*)$', servir_estatico, {'document_root': settings.STATIC_ROOT}),
-    re_path(r'^media/(?P<path>.*)$', servir_estatico, {'document_root': settings.MEDIA_ROOT}),
+    re_path(r'^media/(?!jugadores/)(?P<path>.*)$', servir_estatico, {'document_root': settings.MEDIA_ROOT}),
 ]
 
 if settings.DEBUG:

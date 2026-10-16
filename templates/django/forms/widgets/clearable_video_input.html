@@ -1,0 +1,14 @@
+<div class="campo-archivo">
+    {% if widget.is_initial %}
+        <div class="campo-archivo-actual">
+            <a href="{{ widget.value.url }}" target="_blank" rel="noopener" class="campo-archivo-nombre">{{ widget.value }}</a>
+            {% if not widget.required %}
+                <label class="campo-archivo-borrar" for="{{ widget.checkbox_id }}">
+                    <input type="checkbox" name="{{ widget.checkbox_name }}" id="{{ widget.checkbox_id }}">
+                    Eliminar
+                </label>
+            {% endif %}
+        </div>
+    {% endif %}
+    <input type="{{ widget.type }}" name="{{ widget.name }}"{% include "django/forms/widgets/attrs.html" %}>
+</div>

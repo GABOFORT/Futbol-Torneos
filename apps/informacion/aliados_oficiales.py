@@ -7,6 +7,7 @@ from apps.torneos.patrocinadores import CENTRO_POR_DEFECTO
 from apps.usuarios.eliminar import vista_eliminar
 from apps.usuarios.forms import StyledFormMixin
 from apps.usuarios.permissions import superadmin_required
+from apps.usuarios.videos import CampoVideo
 
 from .models import PatrocinadorOficial
 
@@ -21,9 +22,10 @@ class PatrocinadorOficialForm(StyledFormMixin, forms.ModelForm):
     class Meta:
         model = PatrocinadorOficial
         fields = [
-            'nombre', 'logo', 'giro', 'direccion', 'latitud', 'longitud',
+            'nombre', 'logo', 'video', 'giro', 'direccion', 'latitud', 'longitud',
             'telefono', 'enlace', 'orden', 'activo',
         ]
+        field_classes = {'video': CampoVideo}
         widgets = {
             'latitud': forms.HiddenInput(),
             'longitud': forms.HiddenInput(),

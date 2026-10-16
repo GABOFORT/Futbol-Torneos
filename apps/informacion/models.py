@@ -5,8 +5,10 @@ from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models.functions import Lower
 
+from apps.equipos.redes import ConRedesSociales, url_de_red
 from apps.usuarios.imagenes import achicar_imagen
 from apps.usuarios.monograma import monograma
+from apps.usuarios.videos import AYUDA_VIDEO
 
 
 class PatrocinadorOficialQuerySet(models.QuerySet):
@@ -20,6 +22,8 @@ class PatrocinadorOficial(models.Model):
         'Logo', upload_to='aliados-oficiales/', blank=True, null=True,
         help_text='Opcional. Si lo dejas vacío se muestran sus iniciales.',
     )
+    video = models.FileField(
+        'Video', upload_to='aliados-oficiales/', blank=True, null=True, help_text=AYUDA_VIDEO)
     giro = models.CharField(
         'Giro o actividad', max_length=120, blank=True,
         help_text='Taquería, refaccionaria, farmacia… Se muestra en su ficha.',
@@ -97,3 +101,21 @@ class PatrocinadorOficial(models.Model):
     def url_como_llegar(self):
         consulta = self._consulta_de_mapa
         return f'https://www.google.com/maps/search/?api=1&query={consulta}' if consulta else ''
+
+
+class RedesDeBuho(ConRedesSociales, models.Model):
+    red_instagram = url_de_red('red_instagram')
+    red_facebook = url_de_red('red_facebook')
+    red_twitter = url_de_red('red_twitter')
+    red_tiktok = url_de_red('red_tiktok')
+
+    class Meta:
+        verbose_name = 'Redes sociales de BUHO'
+        verbose_name_plural = 'Redes sociales de BUHO'
+
+    def __str__(self):
+        return 'Redes sociales de BUHO'
+
+    @classmethod
+    def la_unica(cls):
+        return cls.objects.get_or_create(pk=1)[0]

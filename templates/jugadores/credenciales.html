@@ -1,0 +1,46 @@
+{% load estaticos %}<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Credenciales · {{ equipo.nombre }} · BUHO Sports League</title>
+    <link rel="icon" href="/favicon.ico" sizes="48x48">
+    <link rel="stylesheet" href="{% static_v 'css/tokens.css' %}">
+    <link rel="stylesheet" href="{% static_v 'css/tailwind.css' %}">
+    <link rel="stylesheet" href="{% static_v 'css/sistema.css' %}">
+    <script defer src="{% static_v 'js/credencial.js' %}"></script>
+</head>
+<body class="impresion-credenciales">
+    <header class="impresion-barra">
+        <div class="min-w-0">
+            <p class="kicker">Credenciales · {{ equipo.categoria.nombre }}</p>
+            <h1 class="impresion-barra-titulo">{{ equipo.nombre }}</h1>
+            <p class="impresion-barra-nota">
+                {{ total }} credencial{{ total|pluralize:'es' }} · 4 por hoja carta horizontal.
+                Recorta por la línea punteada, dobla por el centro y enmica.
+            </p>
+        </div>
+        <div class="impresion-barra-acciones">
+            <a href="{% url 'jugador-list' equipo.pk %}" class="boton-suave">Volver a la plantilla</a>
+            {% if total %}
+                <button type="button" class="boton-principal" data-credencial-imprimir>Imprimir</button>
+            {% endif %}
+        </div>
+    </header>
+
+    {% for hoja in hojas %}
+        <section class="impresion-hoja">
+            {% for jugador in hoja %}
+                <div class="impresion-credencial" data-tema="{{ equipo.categoria.diseno_credencial }}">
+                    {% include 'torneos/_credencial.html' with liga=equipo.liga categoria=equipo.categoria.nombre sufijo=jugador.pk %}
+                </div>
+            {% endfor %}
+        </section>
+    {% empty %}
+        <p class="impresion-vacia">
+            No hay jugadores para imprimir. Vuelve a la plantilla y elige al menos uno.
+        </p>
+    {% endfor %}
+</body>
+</html>

@@ -1,0 +1,46 @@
+{% with muestra=form.credencial_muestra %}
+<div class="credencial-selector" data-credencial-selector data-campo="{{ field.name }}">
+    <div>
+        <p class="block text-sm font-medium text-gray-700" id="{{ field.auto_id }}_rotulo">{{ field.label }}</p>
+        {% if field.help_text %}<p class="mt-1 text-sm text-gray-500">{{ field.help_text }}</p>{% endif %}
+    </div>
+
+    <div class="credencial-opciones" role="radiogroup" aria-labelledby="{{ field.auto_id }}_rotulo">
+        {% for radio in field %}
+            <label class="credencial-opcion" for="{{ radio.id_for_label }}">
+                {{ radio.tag }}
+                <span class="credencial-muestra" data-tema="{{ radio.data.value }}" aria-hidden="true"></span>
+                <span class="credencial-opcion-nombre">{{ radio.choice_label }}</span>
+            </label>
+        {% endfor %}
+    </div>
+    {% for error in field.errors %}<p class="error-campo">{{ error }}</p>{% endfor %}
+
+    <div class="credencial-vista credencial-vista-previa" data-credencial-vista data-credencial-ampliar data-tema="{{ field.value }}">
+        {% include 'torneos/_credencial.html' with liga=muestra.liga categoria=muestra.categoria sufijo='previa' %}
+    </div>
+    <button type="button" class="credencial-ampliar" data-credencial-ampliar>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M11 8v6M8 11h6"/></svg>
+        Ver en grande
+    </button>
+
+    <dialog class="credencial-ampliada" aria-label="Vista previa de la credencial">
+        <div class="credencial-ampliada-cabecera">
+            <p class="credencial-ampliada-titulo">Vista previa de la credencial</p>
+            <button type="button" class="credencial-ampliada-cerrar" data-credencial-cerrar aria-label="Cerrar vista previa">&#10005;</button>
+        </div>
+        <div class="credencial-vista" data-credencial-vista data-tema="{{ field.value }}">
+            {% include 'torneos/_credencial.html' with liga=muestra.liga categoria=muestra.categoria sufijo='grande' %}
+        </div>
+    </dialog>
+
+    {% if muestra.ligas|length > 1 %}
+        <ul hidden data-credencial-ligas>
+            {% for liga in muestra.ligas %}
+                <li data-id="{{ liga.pk }}" data-nombre="{{ liga.nombre }}" data-iniciales="{{ liga.iniciales }}" data-temporada="{{ liga.temporada_texto }}"
+                    data-logo="{% if liga.logo %}{{ liga.logo.url }}{% endif %}"></li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+</div>
+{% endwith %}

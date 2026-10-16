@@ -5,6 +5,7 @@ from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
+from apps.jugadores.models import Jugador
 from apps.partidos import altas
 from apps.partidos.models import Partido
 
@@ -13,7 +14,7 @@ from apps.usuarios.eliminar import vista_eliminar
 from apps.usuarios.filtros import buscar, campo_texto, campo_opciones, hay_filtros
 from apps.usuarios.permissions import (
     admin_liga_required, ligas_administradas, ligas_visibles,
-    ligas_y_torneos_administrados, ligas_y_torneos_visibles,
+    gestiona_equipo, ligas_y_torneos_administrados, ligas_y_torneos_visibles,
 )
 
 from apps.torneos import palmares
@@ -255,7 +256,7 @@ def equipo_perfil(request, pk):
 
 def equipo_detail(request, liga, categoria, equipo):
     equipo = get_object_or_404(
-        Equipo.objects.select_related('liga', 'categoria', 'entrenador').prefetch_related('jugadores'),
+        Equipo.objects.select_related('liga', 'categoria', 'entrenador'),
         liga__slug=liga, categoria__slug=categoria, slug=equipo
     )
     user = request.user
@@ -270,7 +271,10 @@ def equipo_detail(request, liga, categoria, equipo):
 
     premios = palmares.trofeos_por_categoria([equipo.categoria_id]).get(equipo.categoria_id, {})
     de_jugadores = premios.get('jugadores', {})
-    jugadores = list(equipo.jugadores.all())
+    jugadores = equipo.jugadores.all()
+    if not gestiona_equipo(user, equipo):
+        jugadores = jugadores.exclude(estado=Jugador.ESTADO_BAJA)
+    jugadores = list(jugadores)
     for jugador in jugadores:
         jugador.trofeos = de_jugadores.get(f'{jugador.nombre} {jugador.apellido}', [])
 

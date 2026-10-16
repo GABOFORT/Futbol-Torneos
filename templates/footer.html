@@ -1,5 +1,6 @@
 {% load static estaticos aliados_oficiales %}
 {% patrocinadores_oficiales as oficiales %}
+{% redes_de_buho as redes_buho %}
 
 <footer class="pie">
     <div class="pie-interior">
@@ -10,6 +11,12 @@
                 Plataforma de ligas de fútbol infantil y juvenil. Calendario, tablas,
                 estadísticas y palmarés, abiertos para todos.
             </p>
+            {% if redes_buho %}
+                <div class="redes-buho redes-buho-pie">
+                    <p class="redes-buho-titulo">Síguenos</p>
+                    {% include '_redes.html' with redes=redes_buho de='BUHO Sports League' %}
+                </div>
+            {% endif %}
         </div>
 
         <div class="pie-columna">

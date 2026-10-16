@@ -1,5 +1,5 @@
 from django.urls import path
-from . import aliados_oficiales, views
+from . import aliados_oficiales, redes_buho, views
 
 urlpatterns = [
     path('quienes-somos/', views.quienes_somos, name='quienes-somos'),
@@ -11,4 +11,5 @@ urlpatterns = [
     path('aliados-oficiales/<int:pk>/', aliados_oficiales.ficha, name='aliado-oficial-ficha'),
     path('aliados-oficiales/<int:pk>/editar/', aliados_oficiales.editar, name='aliado-oficial-edit'),
     path('aliados-oficiales/<int:pk>/eliminar/', aliados_oficiales.eliminar, name='aliado-oficial-delete'),
+    path('redes-de-buho/', redes_buho.editar, name='redes-buho'),
 ]

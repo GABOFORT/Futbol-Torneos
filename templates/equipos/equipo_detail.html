@@ -105,16 +105,21 @@
                     <div class="resultados">
                         {% for partido in proximos %}
                             <a href="{{ partido.get_absolute_url }}" class="fecha-fila">
-                                <span class="fecha-cuando">{{ partido.fecha|date:'d/m H:i' }}</span>
-                                <span class="fecha-rival">
-                                    {% if partido.equipo_local_id == equipo.pk %}
-                                        vs {{ partido.equipo_visitante.nombre }}
-                                    {% else %}
-                                        en local de {{ partido.equipo_local.nombre }}
-                                    {% endif %}
+                                <span class="fecha-cuando">
+                                    {{ partido.fecha|date:'d/m' }}
+                                    <span class="fecha-hora">{{ partido.fecha|date:'H:i' }}</span>
                                 </span>
-                                <span class="fecha-donde">
-                                    {{ partido.etiqueta_corta }}{% if partido.sede %} · {{ partido.sede.nombre }}{% endif %}
+                                <span class="fecha-detalle">
+                                    <span class="fecha-rival">
+                                        {% if partido.equipo_local_id == equipo.pk %}
+                                            vs {{ partido.equipo_visitante.nombre }}
+                                        {% else %}
+                                            en local de {{ partido.equipo_local.nombre }}
+                                        {% endif %}
+                                    </span>
+                                    <span class="fecha-donde">
+                                        {{ partido.etiqueta_corta }}{% if partido.sede %} · {{ partido.sede.nombre }}{% endif %}
+                                    </span>
                                 </span>
                             </a>
                         {% endfor %}
@@ -131,12 +136,14 @@
                         {% for partido in ultimos %}
                             <a href="{{ partido.get_absolute_url }}" class="fecha-fila">
                                 <span class="fecha-cuando">{{ partido.fecha|date:'d/m' }}</span>
-                                <span class="fecha-rival">
-                                    {{ partido.equipo_local.nombre }}
-                                    <strong>{{ partido.goles_local }}-{{ partido.goles_visitante }}</strong>
-                                    {{ partido.equipo_visitante.nombre }}
+                                <span class="fecha-detalle">
+                                    <span class="fecha-rival">
+                                        {{ partido.equipo_local.nombre }}
+                                        <strong>{{ partido.goles_local }}-{{ partido.goles_visitante }}</strong>
+                                        {{ partido.equipo_visitante.nombre }}
+                                    </span>
+                                    <span class="fecha-donde">{{ partido.etiqueta_corta }}</span>
                                 </span>
-                                <span class="fecha-donde">{{ partido.etiqueta_corta }}</span>
                             </a>
                         {% endfor %}
                     </div>

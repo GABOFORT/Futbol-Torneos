@@ -1,5 +1,5 @@
-
-{% if jugador.foto %}
+{% load fotos_jugadores %}
+{% if jugador.foto and jugador|foto_visible_para:request.user %}
     <img src="{{ jugador.foto.url }}" alt="Foto de {{ jugador.nombre }} {{ jugador.apellido }}" class="avatar-jugador" loading="lazy" decoding="async">
 {% else %}
     <span class="dorsal" role="img" data-digitos="{% if jugador.numero is not None %}{{ jugador.numero|stringformat:'s'|length }}{% endif %}"

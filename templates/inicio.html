@@ -55,6 +55,13 @@
                 <a href="{% url 'partido-calendario' %}" class="hero-boton">Ver el calendario</a>
                 <a href="{% url 'estadisticas-ligas' %}" class="hero-boton hero-boton-borde">Tablas de posiciones</a>
             </div>
+            {% redes_de_buho as redes_buho %}
+            {% if redes_buho %}
+                <div class="redes-buho redes-buho-hero">
+                    <p class="redes-buho-titulo">Síguenos en redes</p>
+                    {% include '_redes.html' with redes=redes_buho de='BUHO Sports League' %}
+                </div>
+            {% endif %}
         </div>
 
         {% if destacado %}
@@ -429,18 +436,6 @@
                     <p class="campeon-torneo">{{ p.liga_nombre }} · {{ p.categoria_nombre }}</p>
                 </a>
             {% endfor %}
-        </div>
-    </section>
-{% endif %}
-
-{% patrocinadores_oficiales as oficiales %}
-{% if oficiales %}
-    <section class="ancho-pagina">
-        <div class="seccion-cabecera">
-            <h2 class="seccion-titulo">Patrocinadores oficiales</h2>
-        </div>
-        <div class="portada-aliados">
-            {% include 'informacion/_aliados_oficiales_tira.html' with lista=oficiales %}
         </div>
     </section>
 {% endif %}

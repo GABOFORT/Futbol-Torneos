@@ -189,3 +189,38 @@ def cascada_equipos(user, parametros):
         {'liga': liga, 'categoria': categoria, 'equipo': equipo},
         {'ligas': ligas, 'categorias': categorias, 'equipos': equipos},
     )
+
+
+def gestiona_equipo(user, equipo):
+    if not getattr(user, 'is_authenticated', False):
+        return False
+    if user.es_super_admin():
+        return True
+    if user.role == user.ROLE_ADMIN_LIGA:
+        return ligas_y_torneos_administrados(user).filter(pk=equipo.liga_id).exists()
+    return equipo.entrenador_id == user.id
+
+
+def puede_ver_foto_de_jugador(user, jugador):
+    if not getattr(user, 'is_authenticated', False):
+        return False
+    if user.es_super_admin():
+        return True
+    if not hasattr(user, '_ids_equipos_gestionados'):
+        from apps.equipos.models import Equipo
+
+        if user.role == user.ROLE_ADMIN_LIGA:
+            equipos = Equipo.objects.filter(liga__in=ligas_y_torneos_administrados(user))
+        else:
+            equipos = Equipo.objects.filter(entrenador=user)
+        user._ids_equipos_gestionados = set(equipos.values_list('pk', flat=True))
+    return jugador.equipo_id in user._ids_equipos_gestionados
+
+
+def puede_imprimir_credenciales(user, equipo):
+    if not getattr(user, 'is_authenticated', False):
+        return False
+    if user.es_super_admin():
+        return True
+    return (user.role == user.ROLE_ADMIN_LIGA
+            and ligas_y_torneos_administrados(user).filter(pk=equipo.liga_id).exists())

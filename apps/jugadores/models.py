@@ -1,6 +1,15 @@
+from pathlib import PurePosixPath
+
+from django.core.files.storage import FileSystemStorage
 from django.db import models
+from django.urls import reverse
 
 from apps.usuarios.imagenes import achicar_imagen
+
+
+class AlmacenFotosJugadores(FileSystemStorage):
+    def url(self, name):
+        return reverse('jugador-foto', args=[PurePosixPath(name).name])
 
 
 class Jugador(models.Model):
@@ -36,7 +45,8 @@ class Jugador(models.Model):
         on_delete=models.CASCADE,
         related_name='jugadores',
     )
-    foto = models.ImageField('Foto', upload_to='jugadores/', blank=True, null=True)
+    foto = models.ImageField(
+        'Foto', upload_to='jugadores/', storage=AlmacenFotosJugadores(), blank=True, null=True)
     nombre = models.CharField('Nombre', max_length=100)
     apellido = models.CharField('Apellido', max_length=100)
     documento = models.CharField('Documento', max_length=50, blank=True)

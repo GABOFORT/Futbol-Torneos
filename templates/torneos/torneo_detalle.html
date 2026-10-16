@@ -60,7 +60,7 @@
                         <img src="{{ equipo.escudo_url }}" alt="Escudo de {{ equipo.nombre }}" loading="lazy" decoding="async">
                         <div class="min-w-0">
                             <p class="tarjeta-equipo-nombre">{{ equipo.nombre }}</p>
-                            <p class="tarjeta-equipo-nota">{{ equipo.entrenador.nombre_visible }} · {{ equipo.jugadores.count }} jugador(es)</p>
+                            <p class="tarjeta-equipo-nota">{{ equipo.entrenador.nombre_visible }} · {{ equipo.plantel }} jugador(es)</p>
                         </div>
                     </a>
                 {% empty %}
@@ -109,7 +109,7 @@
                         <img src="{{ equipo.escudo_url }}" alt="Escudo de {{ equipo.nombre }}" loading="lazy" decoding="async">
                         <div class="min-w-0">
                             <p class="tarjeta-equipo-nombre">{{ equipo.nombre }}</p>
-                            <p class="tarjeta-equipo-nota">{{ equipo.entrenador.nombre_visible }} · {{ equipo.jugadores.count }} jugador(es)</p>
+                            <p class="tarjeta-equipo-nota">{{ equipo.entrenador.nombre_visible }} · {{ equipo.plantel }} jugador(es)</p>
                         </div>
                     </a>
                 {% endfor %}

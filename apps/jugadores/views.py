@@ -1,12 +1,15 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseForbidden, JsonResponse
+from django.http import FileResponse, Http404, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.equipos.models import Equipo
 from apps.torneos import palmares
-from apps.usuarios.permissions import ligas_y_torneos_administrados
+from apps.usuarios.permissions import (
+    gestiona_equipo, puede_imprimir_credenciales, puede_ver_foto_de_jugador,
+)
 
+from . import credenciales
 from .forms import JugadorForm
 from .models import Jugador
 
@@ -15,25 +18,18 @@ def jugadores_index(request):
     return redirect('equipo-list')
 
 
-def _puede_gestionar(user, equipo):
-    if not user.is_authenticated:
-        return False
-    if user.is_superuser or user.role == user.ROLE_SUPERADMIN:
-        return True
-    if user.role == user.ROLE_ADMIN_LIGA:
-        return equipo.liga_id in ligas_y_torneos_administrados(user).values_list('id', flat=True)
-    return equipo.entrenador_id == user.id
-
-
 def jugador_list(request, equipo_id):
     equipo = get_object_or_404(Equipo, pk=equipo_id)
     user = request.user
-    puede_gestionar = _puede_gestionar(user, equipo)
+    puede_gestionar = gestiona_equipo(user, equipo)
 
     if user.is_authenticated and user.role == user.ROLE_ENTRENADOR and not user.is_superuser and not puede_gestionar:
         return HttpResponseForbidden('No puedes ver la plantilla de otro equipo.')
 
-    jugadores = list(equipo.jugadores.order_by('apellido', 'nombre'))
+    jugadores = equipo.jugadores.order_by('apellido', 'nombre')
+    if not puede_gestionar:
+        jugadores = jugadores.exclude(estado=Jugador.ESTADO_BAJA)
+    jugadores = list(jugadores)
 
     premios = palmares.trofeos_por_categoria([equipo.categoria_id]).get(equipo.categoria_id, {})
     de_jugadores = premios.get('jugadores', {})
@@ -44,6 +40,7 @@ def jugador_list(request, equipo_id):
         'equipo': equipo,
         'jugadores': jugadores,
         'puede_gestionar': puede_gestionar,
+        'puede_imprimir': puede_imprimir_credenciales(user, equipo),
         'trofeos_equipo': premios.get('equipos', {}).get(equipo.nombre, []),
     })
 
@@ -51,7 +48,7 @@ def jugador_list(request, equipo_id):
 @login_required
 def jugador_create(request, equipo_id):
     equipo = get_object_or_404(Equipo, pk=equipo_id)
-    if not _puede_gestionar(request.user, equipo):
+    if not gestiona_equipo(request.user, equipo):
         return HttpResponseForbidden('No tienes acceso a este equipo.')
 
     modal = request.GET.get('modal') == '1'
@@ -77,7 +74,7 @@ def jugador_create(request, equipo_id):
 @login_required
 def jugador_edit(request, pk):
     jugador = get_object_or_404(Jugador.objects.select_related('equipo'), pk=pk)
-    if not _puede_gestionar(request.user, jugador.equipo):
+    if not gestiona_equipo(request.user, jugador.equipo):
         return HttpResponseForbidden('No tienes acceso a este jugador.')
 
     modal = request.GET.get('modal') == '1'
@@ -98,3 +95,53 @@ def jugador_edit(request, pk):
     return render(request, 'jugadores/jugador_form.html', context)
 
 
+@login_required
+def jugador_credenciales(request, equipo_id):
+    equipo = get_object_or_404(Equipo.objects.select_related('liga', 'categoria'), pk=equipo_id)
+    if not puede_imprimir_credenciales(request.user, equipo):
+        return HttpResponseForbidden('La impresión de credenciales la hace la liga.')
+
+    elegidos = [valor for valor in request.GET.getlist('jugadores') if valor.isdigit()]
+    jugadores = equipo.jugadores.order_by('apellido', 'nombre')
+    if elegidos:
+        jugadores = jugadores.filter(pk__in=elegidos)
+    else:
+        jugadores = jugadores.exclude(estado=Jugador.ESTADO_BAJA)
+    jugadores = list(jugadores)
+
+    return render(request, 'jugadores/credenciales.html', {
+        'equipo': equipo,
+        'hojas': credenciales.en_hojas(jugadores),
+        'total': len(jugadores),
+        'qr': credenciales.qr_del_equipo(equipo),
+    })
+
+
+@login_required
+def jugador_credencial(request, pk):
+    jugador = get_object_or_404(
+        Jugador.objects.select_related('equipo__liga', 'equipo__categoria'), pk=pk)
+    equipo = jugador.equipo
+    if not puede_imprimir_credenciales(request.user, equipo):
+        return HttpResponseForbidden('No tienes acceso a este jugador.')
+    if request.GET.get('modal') != '1':
+        return redirect('jugador-list', equipo_id=equipo.pk)
+
+    return render(request, 'jugadores/_credencial_modal.html', {
+        'jugador': jugador,
+        'equipo': equipo,
+        'qr': credenciales.qr_del_equipo(equipo),
+    })
+
+
+def jugador_foto(request, archivo):
+    jugador = Jugador.objects.filter(foto=f'jugadores/{archivo}').first()
+    if jugador is None or not puede_ver_foto_de_jugador(request.user, jugador):
+        raise Http404
+    try:
+        archivo_abierto = jugador.foto.open('rb')
+    except FileNotFoundError:
+        raise Http404
+    respuesta = FileResponse(archivo_abierto)
+    respuesta['Cache-Control'] = 'private, max-age=600'
+    return respuesta

@@ -372,19 +372,21 @@ main:focus { outline: none; }
 
 .fecha-fila {
     display: grid;
-    grid-template-columns: 4.5rem 1fr auto;
+    grid-template-columns: 3.25rem minmax(0, 1fr);
     align-items: center;
-    gap: 0.625rem;
-    padding: 0.5rem 0.75rem;
+    gap: 0.75rem;
+    padding: 0.625rem 0.875rem;
     font-size: var(--texto-sm);
 }
 .fecha-fila + .fecha-fila { border-top: 1px solid var(--gris-100); }
 .fecha-fila:hover { background-color: var(--verde-50); }
 
-.fecha-cuando { font-weight: 700; color: var(--verde-900); }
-.fecha-rival { color: var(--gris-700); overflow-wrap: anywhere; }
+.fecha-cuando { display: flex; flex-direction: column; font-weight: 700; line-height: 1.25; color: var(--verde-900); }
+.fecha-hora { font-size: var(--texto-xs); font-weight: 600; color: var(--texto-debil); }
+.fecha-detalle { display: flex; flex-direction: column; gap: 0.125rem; min-width: 0; }
+.fecha-rival { color: var(--gris-700); line-height: 1.35; overflow-wrap: anywhere; }
 .fecha-rival strong { color: var(--verde-900); }
-.fecha-donde { font-size: var(--texto-xs); color: var(--texto-debil); text-align: right; white-space: nowrap; }
+.fecha-donde { font-size: var(--texto-xs); color: var(--texto-debil); overflow-wrap: anywhere; }
 .fecha-sin { padding: 1rem; font-size: var(--texto-sm); color: var(--texto-debil); }
 
 .franja {
@@ -2120,4 +2122,30 @@ body.modal-abierto { overflow: hidden; }
     margin-bottom: 1rem;
     font-size: var(--texto-md);
     color: var(--texto-normal);
+}
+
+.redes-buho {
+    margin-top: 1.25rem;
+}
+
+.redes-buho-titulo {
+    font-size: var(--texto-sm);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--verde-200);
+}
+
+.redes-buho .redes-equipo {
+    margin-top: 0.5rem;
+}
+
+.redes-buho-hero .red-enlace {
+    width: 2.75rem;
+    height: 2.75rem;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25);
+}
+
+.redes-buho-pie .redes-buho-titulo {
+    color: var(--verde-300);
 }

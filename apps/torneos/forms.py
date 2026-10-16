@@ -35,6 +35,11 @@ class CategoriaForm(StyledFormMixin, forms.ModelForm):
             'descripcion': '',
             'campos': ['reglas', 'activa'],
         },
+        {
+            'titulo': 'Credencial',
+            'descripcion': 'Elige cómo se verán las credenciales de los jugadores de esta categoría.',
+            'campos': ['diseno_credencial'],
+        },
     ]
 
     CAMPOS_DE_FORMATO = ('formato', 'grupos', 'cruces_entre_grupos',
@@ -80,18 +85,20 @@ class CategoriaForm(StyledFormMixin, forms.ModelForm):
             'libre', 'limite_edad', 'edad_minima', 'peso_minimo',
             'grupos', 'cruces_entre_grupos',
             'vueltas', 'empate_define_penales', 'mini_liguilla',
-            'reglas', 'activa',
+            'reglas', 'activa', 'diseno_credencial',
         ]
         widgets = {
             'descripcion': forms.Textarea(attrs={'rows': 3}),
             'reglas': forms.Textarea(attrs={'rows': 3}),
             'limite_edad': forms.RadioSelect,
             'mini_liguilla': forms.RadioSelect,
+            'diseno_credencial': forms.RadioSelect,
         }
 
     def __init__(self, user, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['liga'].queryset = ligas_administradas(user)
+        self.credencial_muestra = self._muestra_de_credencial()
 
         self.fields['limite_edad'].choices = (
             [('', 'Ninguno')] + list(Categoria.LIMITE_EDAD_CHOICES)
@@ -160,6 +167,14 @@ class CategoriaForm(StyledFormMixin, forms.ModelForm):
         campo = self.fields['mini_liguilla']
         campo.disabled = True
         campo.help_text = 'No se puede cambiar: la liguilla de esta categoría ya empezó.'
+
+    def _muestra_de_credencial(self):
+        ligas = list(self.fields['liga'].queryset)
+        if self.instance.pk:
+            liga = self.instance.liga
+        else:
+            liga = ligas[0] if len(ligas) == 1 else None
+        return {'liga': liga, 'ligas': ligas, 'categoria': self.instance.nombre}
 
     def secciones(self):
         """Los campos ya agrupados y en orden, listos para la plantilla."""

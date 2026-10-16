@@ -57,6 +57,7 @@
         {% endif %}
 
         <div class="ficha-acciones">
+            {% include '_aliado_video.html' %}
             {% if patrocinador.url_como_llegar %}
                 <a href="{{ patrocinador.url_como_llegar }}" target="_blank" rel="noopener noreferrer"
                    class="ficha-boton ficha-boton-fuerte">Cómo llegar</a>

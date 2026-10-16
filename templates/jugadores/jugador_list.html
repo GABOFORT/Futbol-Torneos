@@ -3,95 +3,134 @@
 {% block titulo %}Plantilla - {{ equipo.nombre }}{% endblock %}
 
 {% block contenido %}
-<div class="max-w-6xl mx-auto p-6">
-    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
-        <div class="flex items-center gap-4">
-            <img src="{{ equipo.escudo_url }}" alt="Escudo de {{ equipo.nombre }}" class="escudo-grande" loading="lazy" decoding="async">
-            <div>
-                <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">Plantilla</p>
-                <h1 class="text-3xl font-bold text-green-900 flex flex-wrap items-center gap-2">
-                    {{ equipo.nombre }}
+<div class="max-w-5xl mx-auto p-6">
+    <div class="rounded-[2rem] bg-white border border-green-100 p-8 shadow-lg"{% if puede_imprimir %} data-credenciales{% endif %}>
+        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-3">
+                <img src="{{ equipo.escudo_url }}" alt="Escudo de {{ equipo.nombre }}" class="escudo-grande shrink-0" loading="lazy" decoding="async">
+                <div class="min-w-0">
+                    <p class="text-sm text-green-700 uppercase tracking-[0.2em] font-semibold">Plantilla</p>
+                    <h1 class="nombre-equipo text-3xl font-bold text-green-900 flex flex-wrap items-center gap-2">
+                        {{ equipo.nombre }}
 
-                    {% include 'torneos/_trofeos.html' with trofeos=trofeos_equipo tam='lg' %}
-                </h1>
-                <p class="text-gray-600 mt-2">{{ equipo.liga.nombre }} · {{ equipo.categoria.nombre }}</p>
-                {% if equipo.categoria.limites_texto %}
-                    <p class="text-sm text-gray-500 mt-1">{{ equipo.categoria.limite_edad }} · {{ equipo.categoria.limites_texto }}</p>
-                {% endif %}
-            </div>
-        </div>
-        {% if puede_gestionar %}
-            <button class="open-modal inline-flex items-center justify-center rounded-full bg-green-800 px-5 py-3 text-sm font-semibold text-white hover:bg-green-700" data-url="{% url 'jugador-create' equipo.pk %}?modal=1">Agregar jugador</button>
-        {% endif %}
-    </div>
-
-    <div class="overflow-x-auto rounded-3xl bg-white border border-green-100 shadow-sm">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-green-50">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Jugador</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Sexo</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Posición</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Número</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Estado</th>
-                    {% if puede_gestionar %}
-                        <th class="col-acciones px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-600">Acciones</th>
+                        {% include 'torneos/_trofeos.html' with trofeos=trofeos_equipo tam='lg' %}
+                    </h1>
+                    <p class="text-gray-600 mt-2">{{ equipo.liga.nombre }} · {{ equipo.categoria.nombre }}</p>
+                    {% if equipo.categoria.limites_texto %}
+                        <p class="text-sm text-gray-500 mt-1">{{ equipo.categoria.limite_edad }} · {{ equipo.categoria.limites_texto }}</p>
                     {% endif %}
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100 bg-white">
-                {% for jugador in jugadores %}
+                </div>
+            </div>
+            {% if puede_gestionar %}
+                <div class="flex flex-wrap gap-3">
+                    {% if puede_imprimir %}
+                    <button type="button" class="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-green-200 bg-white px-5 py-3 text-sm font-semibold text-green-800 hover:bg-green-50"
+                            data-credenciales-activar aria-expanded="false" aria-controls="credenciales-form">
+                        <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2.2"/><path stroke-linecap="round" d="M5.8 16.5c.5-1.6 1.7-2.5 3.2-2.5s2.7.9 3.2 2.5M14.5 10h4M14.5 13.5h3"/></svg>
+                        Credenciales
+                    </button>
+                    {% endif %}
+                    <button class="open-modal inline-flex flex-1 items-center justify-center rounded-full bg-green-800 px-5 py-3 text-sm font-semibold text-white hover:bg-green-700" data-url="{% url 'jugador-create' equipo.pk %}?modal=1">Agregar jugador</button>
+                </div>
+            {% endif %}
+        </div>
+
+        {% if puede_imprimir %}
+            <form id="credenciales-form" class="credenciales-barra" method="get" action="{% url 'jugador-credenciales' equipo.pk %}"
+                  target="_blank" data-credenciales-barra hidden>
+                <label class="credenciales-todos">
+                    <input type="checkbox" data-credenciales-todos>
+                    Seleccionar todos
+                </label>
+                <p class="credenciales-cuenta" data-credenciales-cuenta aria-live="polite">0 seleccionados</p>
+                <button type="submit" class="boton-principal" data-credenciales-imprimir disabled>Imprimir seleccionadas</button>
+            </form>
+        {% endif %}
+
+        <div class="overflow-x-auto rounded-3xl border border-green-100">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-green-50">
                     <tr>
-                        <td class="px-6 py-4 text-sm text-gray-800">
-                            <div class="flex items-center gap-3">
-                                {% include 'jugadores/_avatar.html' %}
-                                <span>{{ jugador.nombre }} {{ jugador.apellido }}</span>
-
-                                {% include 'torneos/_trofeos.html' with trofeos=jugador.trofeos tam='md' %}
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 text-sm">
-                            <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap
-                                {% if jugador.es_femenino %}bg-pink-100 text-pink-800{% else %}bg-sky-100 text-sky-800{% endif %}"
-                                {% if jugador.edad_maxima_permitida %}title="Puede tener hasta {{ jugador.edad_maxima_permitida }} años en esta categoría"{% endif %}>
-                                {{ jugador.get_sexo_display }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 text-sm text-gray-800">{{ jugador.get_posicion_display }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-800">{{ jugador.numero|default:'-' }}</td>
-                        <td class="px-6 py-4 text-sm">
-                            <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold
-                                {% if jugador.estado == 'activo' %}bg-green-100 text-green-800
-                                {% elif jugador.estado == 'lesion' %}bg-yellow-100 text-yellow-800
-                                {% elif jugador.estado == 'sancion' %}bg-orange-100 text-orange-800
-                                {% else %}bg-gray-100 text-gray-700{% endif %}">
-                                {{ jugador.get_estado_display }}
-                            </span>
-                        </td>
+                        {% if puede_imprimir %}
+                            <th class="col-credencial px-4 py-3"><span class="sr-only">Elegir</span></th>
+                        {% endif %}
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Jugador</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Sexo</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Posición</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Número</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Estado</th>
                         {% if puede_gestionar %}
-                            <td class="col-acciones px-6 py-4">
-                                <div class="acciones">
-
-                                    <button data-url="{% url 'jugador-edit' jugador.pk %}?modal=1" class="open-modal btn-accion">
-                                        <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
-                                        </svg>
-                                        Editar
-                                    </button>
-                                </div>
-                            </td>
+                            <th class="col-acciones px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-600">Acciones</th>
                         {% endif %}
                     </tr>
-                {% empty %}
-                    <tr>
-                        <td colspan="{% if puede_gestionar %}6{% else %}5{% endif %}" class="px-6 py-8 text-center text-sm text-gray-500">Sin jugadores registrados todavía.</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+                </thead>
+                <tbody class="divide-y divide-gray-100 bg-white">
+                    {% for jugador in jugadores %}
+                        <tr>
+                            {% if puede_imprimir %}
+                                <td class="col-credencial px-4 py-4">
+                                    <input type="checkbox" name="jugadores" value="{{ jugador.pk }}" form="credenciales-form"
+                                           data-credencial-jugador{% if jugador.estado == 'baja' %} data-baja{% endif %}
+                                           aria-label="Credencial de {{ jugador.nombre }} {{ jugador.apellido }}">
+                                </td>
+                            {% endif %}
+                            <td class="px-6 py-4 text-sm text-gray-800">
+                                <div class="flex items-center gap-3">
+                                    {% include 'jugadores/_avatar.html' %}
+                                    <span>{{ jugador.nombre }} {{ jugador.apellido }}</span>
 
-    <a href="{{ equipo.get_absolute_url }}" class="mt-6 inline-flex items-center text-sm font-semibold text-green-700 hover:text-green-900">← Volver al equipo</a>
+                                    {% include 'torneos/_trofeos.html' with trofeos=jugador.trofeos tam='md' %}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-sm">
+                                <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap
+                                    {% if jugador.es_femenino %}bg-pink-100 text-pink-800{% else %}bg-sky-100 text-sky-800{% endif %}"
+                                    {% if jugador.edad_maxima_permitida %}title="Puede tener hasta {{ jugador.edad_maxima_permitida }} años en esta categoría"{% endif %}>
+                                    {{ jugador.get_sexo_display }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-800">{{ jugador.get_posicion_display }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-800">{{ jugador.numero|default:'-' }}</td>
+                            <td class="px-6 py-4 text-sm">
+                                <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold
+                                    {% if jugador.estado == 'activo' %}bg-green-100 text-green-800
+                                    {% elif jugador.estado == 'lesion' %}bg-yellow-100 text-yellow-800
+                                    {% elif jugador.estado == 'sancion' %}bg-orange-100 text-orange-800
+                                    {% else %}bg-gray-100 text-gray-700{% endif %}">
+                                    {{ jugador.get_estado_display }}
+                                </span>
+                            </td>
+                            {% if puede_gestionar %}
+                                <td class="col-acciones px-6 py-4">
+                                    <div class="acciones">
+
+                                        <button data-url="{% url 'jugador-edit' jugador.pk %}?modal=1" class="open-modal btn-accion">
+                                            <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+                                            </svg>
+                                            Editar
+                                        </button>
+                                        {% if puede_imprimir %}
+                                            <a href="{% url 'jugador-credenciales' equipo.pk %}?jugadores={{ jugador.pk }}" target="_blank" rel="noopener" class="btn-accion">
+                                                <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2.2"/><path stroke-linecap="round" d="M5.8 16.5c.5-1.6 1.7-2.5 3.2-2.5s2.7.9 3.2 2.5M14.5 10h4M14.5 13.5h3"/></svg>
+                                                Credencial
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            {% endif %}
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="{% if puede_imprimir %}7{% elif puede_gestionar %}6{% else %}5{% endif %}" class="px-6 py-8 text-center text-sm text-gray-500">Sin jugadores registrados todavía.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <a href="{{ equipo.get_absolute_url }}" class="mt-8 inline-flex items-center text-sm font-semibold text-green-700 hover:text-green-900">← Volver al equipo</a>
+    </div>
 </div>
 
 {% endblock %}

@@ -17,6 +17,7 @@ from apps.usuarios.forms import StyledFormMixin
 from apps.usuarios.permissions import (
     admin_liga_required, ligas_y_torneos_administrados, ligas_y_torneos_visibles,
 )
+from apps.usuarios.videos import CampoVideo
 
 from .models import Patrocinador
 
@@ -33,9 +34,10 @@ class PatrocinadorForm(StyledFormMixin, forms.ModelForm):
     class Meta:
         model = Patrocinador
         fields = [
-            'nombre', 'logo', 'giro', 'direccion', 'latitud', 'longitud',
+            'nombre', 'logo', 'video', 'giro', 'direccion', 'latitud', 'longitud',
             'telefono', 'enlace', 'orden', 'activo',
         ]
+        field_classes = {'video': CampoVideo}
         widgets = {
             'latitud': forms.HiddenInput(),
             'longitud': forms.HiddenInput(),

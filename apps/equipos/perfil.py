@@ -23,6 +23,7 @@ import math
 from django.db.models import Q, Sum
 
 from apps.estadisticas import porteros, tabla
+from apps.jugadores.models import Jugador
 from apps.partidos import ficha
 from apps.partidos.models import Actuacion, Partido
 from apps.usuarios.barras import a_paso
@@ -60,7 +61,7 @@ def armar(equipo):
         'asistidores': ficha.lideres(equipo, 'asistencias', CUANTAS_FIGURAS),
         'radar': radar(equipo, posiciones),
         'minimo_radar': MINIMO_PARA_RADAR,
-        'plantel_total': equipo.jugadores.count(),
+        'plantel_total': equipo.jugadores.exclude(estado=Jugador.ESTADO_BAJA).count(),
         'sin_jugar': not jugados,
     }
 

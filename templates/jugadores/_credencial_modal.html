@@ -1,0 +1,15 @@
+<article class="credencial-modal">
+    <header class="credencial-modal-cabecera">
+        <div class="min-w-0">
+            <p class="kicker">Credencial · {{ equipo.categoria.nombre }}</p>
+            <h2 class="credencial-modal-titulo">{{ jugador.nombre }} {{ jugador.apellido }}</h2>
+        </div>
+        <button type="button" id="modal-close" class="credencial-ampliada-cerrar" aria-label="Cerrar">&#10005;</button>
+    </header>
+
+    <div class="credencial-vista" data-tema="{{ equipo.categoria.diseno_credencial }}">
+        {% include 'torneos/_credencial.html' with liga=equipo.liga categoria=equipo.categoria.nombre sufijo='modal' %}
+    </div>
+
+    <p class="credencial-modal-nota">La impresión de las credenciales la hace la liga.</p>
+</article>

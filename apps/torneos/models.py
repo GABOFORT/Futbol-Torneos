@@ -13,6 +13,7 @@ from apps.usuarios import rutas
 from apps.usuarios.estaticos import url_estatico
 from apps.usuarios.imagenes import TOPE_PANTALLA_PX, achicar_imagen
 from apps.usuarios.monograma import iniciales_de, monograma
+from apps.usuarios.videos import AYUDA_VIDEO
 
 
 class Liga(ConRedesSociales, models.Model):
@@ -97,6 +98,13 @@ class Liga(ConRedesSociales, models.Model):
             return f'del {inicio:%d/%m/%Y} al {fin:%d/%m/%Y}'
         unica = inicio or fin
         return f'desde el {unica:%d/%m/%Y}' if inicio else f'hasta el {unica:%d/%m/%Y}'
+
+    @property
+    def temporada_texto(self):
+        anios = sorted({fecha.year for fecha in (self.fecha_inicio, self.fecha_final) if fecha})
+        if not anios:
+            return str(datetime.date.today().year)
+        return ' - '.join(str(anio) for anio in anios)
 
     @property
     def fecha_vencimiento(self):
@@ -309,6 +317,27 @@ class Categoria(models.Model):
 
     cerrada = models.BooleanField('Categoría concluida', default=False)
     fecha_cierre = models.DateTimeField('Concluida el', null=True, blank=True)
+
+    CREDENCIAL_AZUL_MARINO = 'azul-marino'
+    DISENOS_CREDENCIAL = [
+        (CREDENCIAL_AZUL_MARINO, 'Azul Marino'),
+        ('amarillo-marino', 'Amarillo Marino'),
+        ('celeste', 'Celeste'),
+        ('lima-nocturno', 'Lima Nocturno'),
+        ('morado-real', 'Morado Real'),
+        ('carbon-naranja', 'Carbón Naranja'),
+        ('turquesa-tech', 'Turquesa Tech'),
+        ('oro-negro', 'Oro Negro'),
+        ('rojo-pasion', 'Rojo Pasión'),
+    ]
+
+    diseno_credencial = models.CharField(
+        'Diseño de la credencial',
+        max_length=20,
+        choices=DISENOS_CREDENCIAL,
+        default=CREDENCIAL_AZUL_MARINO,
+        help_text='Con este diseño salen las credenciales de los jugadores de la categoría.',
+    )
 
     class Meta:
         verbose_name = 'Categoría'
@@ -1052,6 +1081,8 @@ class Patrocinador(models.Model):
         'Logo', upload_to='aliados/', blank=True, null=True,
         help_text='Opcional. Si lo dejas vacío se muestran sus iniciales.',
     )
+    video = models.FileField(
+        'Video', upload_to='aliados/', blank=True, null=True, help_text=AYUDA_VIDEO)
     giro = models.CharField(
         'Giro o actividad', max_length=120, blank=True,
         help_text='Taquería, refaccionaria, farmacia… Se muestra debajo del nombre.',

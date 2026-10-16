@@ -1,0 +1,1 @@
+<span class="credencial-logo{% if chico %} credencial-logo-chico{% endif %}" data-credencial-logo>{% if liga.logo %}<img src="{{ liga.logo.url }}" alt="Logo de {{ liga.nombre }}">{% elif liga %}{{ liga.iniciales }}{% endif %}</span>

@@ -6,6 +6,8 @@
 {% elif field.name == 'sede' %}
 
     {% include 'partidos/_selector_sede.html' %}
+{% elif field.name == 'diseno_credencial' %}
+    {% include 'torneos/_selector_credencial.html' %}
 {% elif field.name == 'direccion' and form.mapa %}
     {% include 'torneos/_patrocinador_mapa.html' %}
 {% elif field.field.widget.input_type == 'radio' %}

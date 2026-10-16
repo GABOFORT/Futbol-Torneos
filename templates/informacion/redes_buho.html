@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Redes sociales de BUHO{% endblock %}
+
+{% block contenido %}
+<div class="max-w-3xl mx-auto p-6">
+    <div class="rounded-[2rem] bg-white border border-green-100 p-6 sm:p-8 shadow-lg">
+        <div class="mb-8">
+            <p class="kicker">BUHO Sports League · Redes sociales</p>
+            <h1 class="mt-3 text-3xl font-bold text-green-900">Redes sociales de BUHO</h1>
+            <p class="mt-3 text-sm text-gray-600">
+                Se muestran en la portada y al pie de todas las pantallas. La que dejes vacía no aparece.
+            </p>
+        </div>
+        <form method="post" novalidate class="space-y-5">
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+            {% include 'equipos/_redes_campos.html' with texto_redes='Pega el enlace de cada cuenta de BUHO.' %}
+            <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4 border-t border-green-100">
+                <a href="{% url 'dashboard' %}" class="boton-suave">Volver</a>
+                <button type="submit" class="boton-principal">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

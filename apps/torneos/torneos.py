@@ -11,7 +11,7 @@ cruzarse entre ellas.
 from django import forms
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -233,6 +233,10 @@ class TorneoCategoriaForm(StyledFormMixin, forms.Form):
         help_text='Cada grupo juega su propio todos contra todos y lleva su tabla.')
     descripcion = forms.CharField(
         widget=forms.Textarea(attrs={'rows': 2}), required=False, label='Notas')
+    diseno_credencial = forms.ChoiceField(
+        choices=Categoria.DISENOS_CREDENCIAL, initial=Categoria.CREDENCIAL_AZUL_MARINO,
+        widget=forms.RadioSelect, label='Diseño de la credencial',
+        help_text='Con este diseño salen las credenciales de los jugadores de la categoría.')
 
     def __init__(self, torneo, *args, instancia=None, **kwargs):
         self.torneo = torneo
@@ -242,8 +246,14 @@ class TorneoCategoriaForm(StyledFormMixin, forms.Form):
                 'nombre': instancia.nombre,
                 'grupos': instancia.grupos,
                 'descripcion': instancia.descripcion,
+                'diseno_credencial': instancia.diseno_credencial,
             })
         super().__init__(*args, **kwargs)
+        self.credencial_muestra = {
+            'liga': torneo.liga,
+            'ligas': [torneo.liga],
+            'categoria': instancia.nombre if instancia else '',
+        }
 
         self.fields['grupos'].choices = Categoria.opciones_de_grupos()
 
@@ -292,7 +302,8 @@ class TorneoCategoriaForm(StyledFormMixin, forms.Form):
             categoria.nombre = datos['nombre']
             categoria.grupos = datos['grupos']
             categoria.descripcion = datos['descripcion']
-            categoria.save(update_fields=['nombre', 'grupos', 'descripcion'])
+            categoria.diseno_credencial = datos['diseno_credencial']
+            categoria.save(update_fields=['nombre', 'grupos', 'descripcion', 'diseno_credencial'])
             return categoria
 
         return Categoria.objects.create(
@@ -306,6 +317,7 @@ class TorneoCategoriaForm(StyledFormMixin, forms.Form):
             vueltas=Categoria.VUELTA_UNICA,
             empate_define_penales=penales,
             mini_liguilla=Categoria.SIN_MINI_LIGUILLA,
+            diseno_credencial=datos['diseno_credencial'],
         )
 
 
@@ -644,7 +656,9 @@ def torneo_detalle(request, torneo):
         return render(request, 'torneos/torneo_categorias.html', contexto)
 
     categoria = torneo.categoria
-    equipos = (list(categoria.equipos.select_related('entrenador').order_by('nombre'))
+    equipos = (list(categoria.equipos.select_related('entrenador')
+                    .annotate(plantel=Count('jugadores', filter=~Q(jugadores__estado=Jugador.ESTADO_BAJA)))
+                    .order_by('nombre'))
                if categoria else [])
     partidos = (list(Partido.objects
                      .filter(categoria=categoria)
